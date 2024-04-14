@@ -1,14 +1,14 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
 /* eslint-disable no-console, no-inner-declarations, no-undef, import/no-unresolved */
-import {expect} from "chai";
+import { expect } from "chai";
 import path = require("path");
 import fs = require("fs");
 
 import * as dotenv from "dotenv";
-dotenv.config({path: path.resolve(__dirname, "../../.env")});
-import {ethers, upgrades} from "hardhat";
+import { ethers, upgrades } from "hardhat";
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
-const {create2Deployment} = require("../helpers/deployment-helpers");
+const { create2Deployment } = require("../helpers/deployment-helpers");
 
 const pathOutputJson = path.join(__dirname, "./deploy_output.json");
 const pathOngoingDeploymentJson = path.join(__dirname, "./deploy_ongoing.json");
@@ -162,6 +162,9 @@ async function main() {
      */
 
     // Deploy proxy admin:
+
+    // Mandatory to override the gasLimit since the estimation with create are mess up D:
+    let overrideGasLimit = 1000000n;
     const proxyAdminFactory = await ethers.getContractFactory(
         "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
         deployer
@@ -173,7 +176,8 @@ async function main() {
         salt,
         deployTransactionAdmin,
         dataCallAdmin,
-        deployer
+        deployer,
+        overrideGasLimit
     );
 
     if (isProxyAdminDeployed) {
@@ -197,7 +201,7 @@ async function main() {
     const deployTransactionBridge = (await polygonZkEVMBridgeFactory.getDeployTransaction()).data;
     const dataCallNull = null;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
-    const overrideGasLimit = 5500000n;
+    overrideGasLimit = 5500000n;
     const [bridgeImplementationAddress, isBridgeImplDeployed] = await create2Deployment(
         zkEVMDeployerContract,
         salt,
@@ -247,7 +251,7 @@ async function main() {
             from: deployer.address,
             nonce: nonceProxyGlobalExitRoot,
         });
-        precalculateRollupManager = ethers.getCreateAddress({from: deployer.address, nonce: nonceProxyRollupManager});
+        precalculateRollupManager = ethers.getCreateAddress({ from: deployer.address, nonce: nonceProxyRollupManager });
 
         // deploy timelock
         console.log("\n#######################");
