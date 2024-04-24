@@ -393,7 +393,8 @@ async function main() {
         expect(precalculateRollupManager).to.be.equal(await polygonZkEVMGlobalExitRoot.rollupManager());
     }
 
-    const timelockAddressRollupManager = deployParameters.test ? deployer.address : timelockContract.target;
+    //const timelockAddressRollupManager = deployParameters.test ? deployer.address : timelockContract.target;
+    const timelockAddressRollupManager = deployer.address;
 
     // deploy Rollup Manager
     console.log("\n#######################");
