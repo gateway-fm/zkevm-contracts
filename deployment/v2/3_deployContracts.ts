@@ -162,6 +162,9 @@ async function main() {
      */
 
     // Deploy proxy admin:
+
+    // Mandatory to override the gasLimit since the estimation with create are mess up D:
+    let overrideGasLimit = 1000000n;
     const proxyAdminFactory = await ethers.getContractFactory(
         "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
         deployer
@@ -173,7 +176,8 @@ async function main() {
         salt,
         deployTransactionAdmin,
         dataCallAdmin,
-        deployer
+        deployer,
+        overrideGasLimit
     );
 
     if (isProxyAdminDeployed) {
@@ -197,7 +201,7 @@ async function main() {
     const deployTransactionBridge = (await polygonZkEVMBridgeFactory.getDeployTransaction()).data;
     const dataCallNull = null;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
-    const overrideGasLimit = 5500000n;
+    overrideGasLimit = 5500000n;
     const [bridgeImplementationAddress, isBridgeImplDeployed] = await create2Deployment(
         zkEVMDeployerContract,
         salt,
