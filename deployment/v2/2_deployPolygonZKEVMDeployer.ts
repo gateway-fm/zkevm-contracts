@@ -8,9 +8,12 @@ import * as dotenv from "dotenv";
 dotenv.config({path: path.resolve(__dirname, "../../.env")});
 import {ethers, upgrades} from "hardhat";
 import {HardhatEthersSigner} from "@nomicfoundation/hardhat-ethers/signers";
+import {HardhatRuntimeEnvironment} from "hardhat/types";
 
 import {deployPolygonZkEVMDeployer} from "../helpers/deployment-helpers";
 import "../helpers/utils";
+
+const hre: HardhatRuntimeEnvironment = require("hardhat");
 
 const pathDeployParameters = path.join(__dirname, "./deploy_parameters.json");
 const deployParameters = require("./deploy_parameters.json");
@@ -20,9 +23,9 @@ async function main() {
     let currentProvider = ethers.provider;
     if (deployParameters.multiplierGas || deployParameters.maxFeePerGas) {
         if (process.env.HARDHAT_NETWORK !== "hardhat") {
-            currentProvider = ethers.getDefaultProvider(
-                `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
-            ) as any;
+            const networkName = hre.network.name;
+            const networkConfig = hre.config.networks[networkName];
+            currentProvider = ethers.getDefaultProvider((networkConfig as any).url) as any;
             if (deployParameters.maxPriorityFeePerGas && deployParameters.maxFeePerGas) {
                 console.log(
                     `Hardcoded gas used: MaxPriority${deployParameters.maxPriorityFeePerGas} gwei, MaxFee${deployParameters.maxFeePerGas} gwei`
