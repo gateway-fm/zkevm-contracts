@@ -8,6 +8,8 @@ import * as dotenv from "dotenv";
 dotenv.config({path: path.resolve(__dirname, "../../.env")});
 import {ethers, upgrades} from "hardhat";
 import {HardhatEthersSigner} from "@nomicfoundation/hardhat-ethers/signers";
+import {HardhatRuntimeEnvironment} from "hardhat/types";
+const hre: HardhatRuntimeEnvironment = require("hardhat");
 const {create2Deployment} = require("../helpers/deployment-helpers");
 
 const pathGenesis = path.join(__dirname, "./genesis.json");
@@ -89,9 +91,9 @@ async function main() {
     let currentProvider = ethers.provider;
     if (createRollupParameters.multiplierGas || createRollupParameters.maxFeePerGas) {
         if (process.env.HARDHAT_NETWORK !== "hardhat") {
-            currentProvider = ethers.getDefaultProvider(
-                `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
-            ) as any;
+            const networkName = hre.network.name;
+            const networkConfig = hre.config.networks[networkName];
+            currentProvider = ethers.getDefaultProvider((networkConfig as any).url) as any;
             if (createRollupParameters.maxPriorityFeePerGas && createRollupParameters.maxFeePerGas) {
                 console.log(
                     `Hardcoded gas used: MaxPriority${createRollupParameters.maxPriorityFeePerGas} gwei, MaxFee${createRollupParameters.maxFeePerGas} gwei`
