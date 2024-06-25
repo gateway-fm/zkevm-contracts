@@ -25,6 +25,7 @@ import {
     PolygonZkEVMBridgeV2,
     PolygonValidium,
     PolygonValidiumEtrog,
+    PolygonDataCommittee
 } from "../../typechain-types";
 
 async function main() {
@@ -103,6 +104,13 @@ async function main() {
         }
     }
     await polygonDataCommittee?.waitForDeployment();
+
+    if (deployDacParameters.adminAddress){
+        console.log("Transferring ownership of PolygonDataCommittee to ", deployDacParameters.adminAddress);
+        const dacContract = PolygonDataCommitteeContract.attach(polygonDataCommittee?.target) as PolygonDataCommittee;
+        await dacContract.transferOwnership(deployDacParameters.adminAddress);
+        console.log("PolygonDataCommittee ownership transferred to ", deployDacParameters.adminAddress);
+    }
 
     console.log("polygonDataCommittee deployed at ", polygonDataCommittee?.target);
 
