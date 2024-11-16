@@ -1,5 +1,5 @@
 # Add Rollup Type
-Script to call `addNewRollupType` function with no timelock involved
+Script to call `addNewRollupType` function
 
 ## Install
 ```
@@ -10,8 +10,8 @@ npm i
 - Config file
   - `consensusContract`: select between consensus contract. Supported: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"]`
   - `consensusContractAddress`: gets this address instead of deploying a new consensus implementation
-  - `polygonRollupManagerAddress`: polygonRollupManager smart contract address
-  - `verifierAddress`: verifier to be used
+  - `polygonRollupManagerAddress`: `PolygonRollupManager.sol` smart contract address
+  - `verifierAddress`: verifier address to be used
   - `description`: string to describe rollup type added. Example: "Type: Validium, Version: etrog, genesis: /ipfs/QmUXnRoPbUmZuEZCGyiHjEsoNcFVu3hLtSvhpnfBS2mAYU"
   - `forkID`: forkID to be used
   - `programVKey`: program key for pessimistic consensus
