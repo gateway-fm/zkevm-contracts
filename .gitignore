@@ -18,6 +18,7 @@ deployments
 upgrade_parameters.json
 docker/gethData/
 *.ignore/
+*.ignore
 typechain-types/
 create_rollup_parameters.json
 
