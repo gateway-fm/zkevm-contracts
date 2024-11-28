@@ -1,0 +1,4 @@
+{
+    "adminAddress" : "0xaddress",
+    "multiplierGas": "empty for 1, 1500 for 1.5, 2000 for 2"
+}
