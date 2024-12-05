@@ -7,7 +7,7 @@ npm i
 ```
 
 ## Setup
-- Config file
+- Config file `updateRollup.json`:
   - `rollupAddress`: rollup address of the rollup that is going to be updated
   - `newRollupTypeID`: select which is the `rollupTypeID` to upgrade
   - `upgradeData`: data necessary to perform the upgrade (default to `0x`)
@@ -27,7 +27,7 @@ npm i
 ## Usage
 > All commands are done from root repository.
 
-### Call 'addNewRollupType' from an EOA
+### Call 'updateRollup' from an EOA
 - Copy configuration file:
 ```
 cp ./tools/updateRollup/updateRollup.json.example ./tools/updateRollup/updateRollup.json
@@ -37,7 +37,7 @@ cp ./tools/updateRollup/updateRollup.json.example ./tools/updateRollup/updateRol
 - Run tool:
 - Standrad transaction:
 ```
-npx hardhat run ./tools/updateRollup/updateRollup.ts --network sepolia
+npx hardhat run ./tools/updateRollup/updateRollup.ts --network <network>
 ```
 
 ### Generate 'updateRollup' data to the Timelock SC
@@ -50,7 +50,7 @@ cp ./tools/updateRollup/updateRollup.json.example ./tools/updateRollup/updateRol
 - Set your parameters
 - Run tool:
 ```
-npx hardhat run ./tools/updateRollup/updateRollupTimelock.ts --network sepolia
+npx hardhat run ./tools/updateRollup/updateRollupTimelock.ts --network <network>
 ```
 - Output:
   - scheduleData
