@@ -8,6 +8,7 @@ import * as dotenv from "dotenv";
 dotenv.config({path: path.resolve(__dirname, "../../../.env")});
 import {ethers, network, upgrades} from "hardhat";
 const deployParameters = require("./deploy_claimCompressor.json");
+const pathOutput = path.resolve(__dirname, "./deploy_claim_compressor_output.json")
 
 async function main() {
     // Load provider
@@ -68,6 +69,11 @@ async function main() {
     const ClaimCompressorContract = await ClaimCompressor.deploy(bridgeAddress, networkId);
     await ClaimCompressorContract.waitForDeployment();
 
+    const outputJson = {
+        deployer: deployer.address,
+        ClaimCompressorContract: ClaimCompressorContract.target
+    };
+
     console.log("#######################\n");
     console.log("Claim Compressor deployed to:", ClaimCompressorContract.target);
     console.log("#######################\n");
@@ -77,6 +83,8 @@ async function main() {
         `npx hardhat verify --constructor-args upgrade/arguments.js ${ClaimCompressorContract.target} --network ${process.env.HARDHAT_NETWORK}\n`
     );
     console.log("Copy the following constructor arguments on: upgrade/arguments.js \n", [bridgeAddress, networkId]);
+
+    await fs.writeFileSync(pathOutput, JSON.stringify(outputJson, null, 1));
 }
 
 main().catch((e) => {
