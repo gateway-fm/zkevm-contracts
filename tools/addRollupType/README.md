@@ -7,7 +7,7 @@ npm i
 ```
 
 ## Setup
-- Config file
+- Config file `add_rollup_type.json`:
   - `consensusContract`: select between consensus contract. Supported: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"]`
   - `consensusContractAddress`: gets this address instead of deploying a new consensus implementation
   - `polygonRollupManagerAddress`: `PolygonRollupManager.sol` smart contract address
@@ -25,7 +25,7 @@ npm i
   - `maxPriorityFeePerGas(optional)`: string, Set `maxPriorityFeePerGas`, must define as well `maxFeePerGas` to use it
   - `multiplierGas(optional)`: number, Gas multiplier with 3 decimals. If `maxFeePerGas` and `maxPriorityFeePerGas` are set, this will not take effect
 - A network should be selected when running the script
-  - examples: `-- sepolia` or `--mainnet`
+  - examples: `--sepolia` or `--mainnet`
   - This uses variables set in `hardhat.config.ts`
   - Which uses some environment variables that should be set in `.env`
 > All paths are from root repository
@@ -47,7 +47,7 @@ cp ./tools/addRollupType/genesis.json.example ./tools/addRollupType/genesis.json
 - Set your parameters
 - Run tool:
 ```
-npx hardhat run ./tools/addRollupType/addRollupType.ts --network sepolia
+npx hardhat run ./tools/addRollupType/addRollupType.ts --network <network>
 ```
 
 ### Generate 'addNewRollupType' to the Timelock SC
@@ -60,7 +60,7 @@ cp ./tools/addRollupType/add_rollup_type.json.example ./tools/addRollupType/add_
 - Set your parameters
 - Run tool:
 ```
-npx hardhat run ./tools/addRollupType/addRollupType.ts --network sepolia
+npx hardhat run ./tools/addRollupType/addRollupTypeTimelock.ts --network <network>
 ```
 - Output:
   - scheduleData
