@@ -7,7 +7,7 @@ import {PlonkVerifier} from "./PlonkVerifier.sol";
 /// @title SP1 Verifier
 /// @author Succinct Labs
 /// @notice This contracts implements a solidity verifier for SP1.
-contract SP1Verifier is PlonkVerifier, ISP1VerifierWithHash {
+contract SP1VerifierPlonk is PlonkVerifier, ISP1VerifierWithHash {
     /// @notice Thrown when the verifier selector from this proof does not match the one in this
     /// verifier. This indicates that this proof was sent to the wrong verifier.
     /// @param received The verifier selector from the first 4 bytes of the proof.
