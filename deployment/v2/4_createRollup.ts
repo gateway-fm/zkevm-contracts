@@ -186,7 +186,7 @@ async function main() {
             verifierContract = await VerifierRollup.deploy();
             await verifierContract.waitForDeployment();
         } else {
-            verifierName = "SP1Verifier";
+            verifierName = "SP1VerifierPlonk";
             const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
             verifierContract = await VerifierRollup.deploy();
             await verifierContract.waitForDeployment();

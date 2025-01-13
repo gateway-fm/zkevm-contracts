@@ -2,7 +2,7 @@
 import {expect} from "chai";
 import {ethers, upgrades} from "hardhat";
 import {
-    SP1Verifier,
+    SP1VerifierPlonk,
     ERC20PermitMock,
     PolygonRollupManagerMock,
     PolygonZkEVMGlobalExitRootV2Mock,
@@ -25,7 +25,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
     let admin: any;
     let beneficiary: any;
 
-    let verifierContract: SP1Verifier;
+    let verifierContract: SP1VerifierPlonk;
     let polygonZkEVMBridgeContract: PolygonZkEVMBridgeV2;
     let polTokenContract: ERC20PermitMock;
     let polygonZkEVMGlobalExitRoot: PolygonZkEVMGlobalExitRootV2Mock;
@@ -70,11 +70,10 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         upgrades.silenceWarnings();
 
         // load signers
-        [deployer, trustedAggregator, admin, timelock, emergencyCouncil, beneficiary] =
-            await ethers.getSigners();
+        [deployer, trustedAggregator, admin, timelock, emergencyCouncil, beneficiary] = await ethers.getSigners();
         trustedSequencer = inputProof.signer;
         // deploy mock verifier
-        const VerifierRollupHelperFactory = await ethers.getContractFactory("SP1Verifier");
+        const VerifierRollupHelperFactory = await ethers.getContractFactory("SP1VerifierPlonk");
         verifierContract = await VerifierRollupHelperFactory.deploy();
 
         // deploy pol
@@ -278,7 +277,13 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         await expect(
             rollupManagerContract
                 .connect(trustedAggregator)
-                .verifyPessimisticTrustedAggregator(pessimisticRollupID, l1InfoTreeLeafCount, newLER, newPPRoot, proofPP)
+                .verifyPessimisticTrustedAggregator(
+                    pessimisticRollupID,
+                    l1InfoTreeLeafCount,
+                    newLER,
+                    newPPRoot,
+                    proofPP
+                )
         ).to.be.revertedWithCustomError(rollupManagerContract, "L1InfoTreeLeafCountInvalid");
 
         const l1InfoRoot = inputProof["pp-inputs"]["l1-info-root"];
@@ -312,7 +317,13 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         await expect(
             rollupManagerContract
                 .connect(trustedAggregator)
-                .verifyPessimisticTrustedAggregator(pessimisticRollupID, l1InfoTreeLeafCount, newLER, newPPRoot, proofPP)
+                .verifyPessimisticTrustedAggregator(
+                    pessimisticRollupID,
+                    l1InfoTreeLeafCount,
+                    newLER,
+                    newPPRoot,
+                    proofPP
+                )
         )
             .to.emit(rollupManagerContract, "VerifyBatchesTrustedAggregator")
             .withArgs(pessimisticRollupID, 0, ethers.ZeroHash, newLER, trustedAggregator.address);
