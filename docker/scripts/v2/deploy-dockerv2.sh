@@ -1,6 +1,13 @@
 #!/bin/bash
 # Set the -e option to stop the script if any command fails
 set -e
+# Define cleanup function
+cleanup() {
+    sudo DEV_PERIOD=1 docker compose -f docker/docker-compose.yml down
+}
+# Configure "trap" in case there's an error
+trap cleanup ERR
+
 sudo rm -rf docker/gethData/geth_data
 sudo DEV_PERIOD=1 docker compose -f docker/docker-compose.yml up -d geth
 sleep 5
