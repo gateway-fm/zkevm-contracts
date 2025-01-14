@@ -20,7 +20,7 @@ contract BridgeL2SovereignChain is
     mapping(address wrappedAddress => bool isNotMintable)
         public wrappedAddressIsNotMintable;
 
-    // Bridge manager address; can set custom mapping for any token
+    // Bridge manager address; can set custom mapping for any token. It's highly recommend to set a timelock at this address after bootstrapping phase
     address public bridgeManager;
 
     /**
@@ -382,7 +382,7 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @notice Updated bridge manager address
+     * @notice Updated bridge manager address, recommended to set a timelock at this address after bootstrapping phase
      * @param _bridgeManager Bridge manager address
      */
     function setBridgeManager(
