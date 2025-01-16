@@ -5,8 +5,9 @@ import {
     GlobalExitRootManagerL2SovereignChain,
     BridgeL2SovereignChain,
     TokenWrapped,
+    ERC20Decimals,
 } from "../../typechain-types";
-import {processorUtils, contractUtils, MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
+import {MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
 const MerkleTreeBridge = MTBridge;
 const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
 
@@ -97,7 +98,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             "0x",
             ethers.Typed.address(bridgeManager),
             ethers.ZeroAddress,
-            false,
+            false
         );
 
         // deploy token
@@ -108,6 +109,143 @@ describe("BridgeL2SovereignChain Contract", () => {
             deployer.address,
             tokenInitialBalance
         );
+    });
+
+    it("Should remap source 6 decimal token to 18 sovereign wrapped token and bridge", async () => {
+        const originNetwork = networkIDMainnet;
+        const destinationNetwork = networkIDRollup2;
+        const destinationAddress = acc1.address;
+        const sixDecimal = 6;
+        const eighteenDecimal = 18;
+        const amountSIXBridged = 1;
+        // Deploy 6 decimals token
+        const sixDecimalsTokenFactory = await ethers.getContractFactory("ERC20Decimals");
+        const sixDecimalsTokenContract = await sixDecimalsTokenFactory.deploy(
+            "6DEC",
+            "SIX",
+            deployer.address,
+            ethers.parseUnits("10", sixDecimal), // 10 SIX
+            sixDecimal
+        );
+        const sovereignTokenContract = await sixDecimalsTokenFactory.deploy(
+            "18DEC",
+            "EIGHTEEN",
+            deployer.address,
+            ethers.parseUnits("20", eighteenDecimal), // 20 EIGHTEEN
+            eighteenDecimal
+        );
+        // Remap token
+        await expect(
+            sovereignChainBridgeContract
+                .connect(bridgeManager)
+                .setMultipleSovereignTokenAddress(
+                    [networkIDMainnet],
+                    [sixDecimalsTokenContract.target],
+                    [sovereignTokenContract.target],
+                    [false]
+                )
+        )
+            .to.emit(sovereignChainBridgeContract, "SetSovereignTokenAddress")
+            .withArgs(networkIDMainnet, sixDecimalsTokenContract.target, sovereignTokenContract.target, false);
+
+        // Add allowance
+        await sixDecimalsTokenContract.approve(
+            sovereignChainBridgeContract.target,
+            ethers.parseUnits("10", sixDecimal)
+        );
+
+        // bridge asset
+        await sovereignChainBridgeContract.bridgeAsset(
+            originNetwork,
+            destinationAddress,
+            ethers.parseUnits(String(amountSIXBridged), sixDecimal), // 1 SIX
+            sixDecimalsTokenContract.target,
+            true,
+            "0x"
+        );
+
+        // Check burnt balance is 1 SIX
+        const balanceOfSIX = await sixDecimalsTokenContract.balanceOf(deployer.address);
+        const balanceOfEIGHTEEN = await sovereignTokenContract.balanceOf(deployer.address);
+        expect(balanceOfSIX).to.be.equal(ethers.parseUnits(String(10 - amountSIXBridged), 6));
+        const metadata = "0x"; // since is ether does not have metadata
+        const metadataHash = ethers.solidityPackedKeccak256(["bytes"], [metadata]);
+
+        // Claim Asset
+        const height = 32;
+        const merkleTree = new MerkleTreeBridge(height);
+        const leafValue = getLeafValue(
+            LEAF_TYPE_ASSET,
+            originNetwork,
+            sixDecimalsTokenContract.target,
+            destinationNetwork,
+            destinationAddress,
+            ethers.parseUnits(String(amountSIXBridged), sixDecimal), // 1 SIX
+            metadataHash
+        );
+        merkleTree.add(leafValue);
+        // check merkle root with SC
+        const rootJSRollup = merkleTree.getRoot();
+        const merkleTreeRollup = new MerkleTreeBridge(height);
+        merkleTreeRollup.add(rootJSRollup);
+        const rollupRoot = merkleTreeRollup.getRoot();
+
+        // add rollup Merkle root
+        await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
+        const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
+        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+
+        // check roots
+        const rollupExitRootSC = await sovereignChainGlobalExitRootContract.lastRollupExitRoot();
+        expect(rollupExitRootSC).to.be.equal(rollupRoot);
+
+        const mainnetExitRoot = ethers.ZeroHash;
+        const computedGlobalExitRoot = calculateGlobalExitRoot(mainnetExitRoot, rollupExitRootSC);
+        // Insert global exit root
+        await sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot);
+
+        // Check GER has value in mapping
+        expect(await sovereignChainGlobalExitRootContract.globalExitRootMap(computedGlobalExitRoot)).to.not.be.eq(0);
+
+        // check merkle proof
+        const index = 0;
+        const proofLocal = merkleTree.getProofTreeByIndex(0);
+        const proofRollup = merkleTreeRollup.getProofTreeByIndex(0);
+        const globalIndex = computeGlobalIndex(index, index, false);
+
+        // verify merkle proof
+        expect(verifyMerkleProof(leafValue, proofLocal, index, rootJSRollup)).to.be.equal(true);
+        expect(
+            await sovereignChainBridgeContract.verifyMerkleProof(leafValue, proofLocal, index, rootJSRollup)
+        ).to.be.equal(true);
+
+        await expect(
+            sovereignChainBridgeContract.claimAsset(
+                proofLocal,
+                proofRollup,
+                globalIndex,
+                mainnetExitRoot,
+                rollupExitRootSC,
+                originNetwork,
+                sixDecimalsTokenContract.target,
+                destinationNetwork,
+                destinationAddress,
+                ethers.parseUnits(String(amountSIXBridged), sixDecimal), // 1 SIX
+                metadata
+            )
+        )
+            .to.emit(sovereignChainBridgeContract, "ClaimEvent")
+            .withArgs(
+                index,
+                originNetwork,
+                sixDecimalsTokenContract.target,
+                destinationAddress,
+                ethers.parseUnits(String(amountSIXBridged), sixDecimal)
+            );
+        // Check balance is with 6 decimals and check is from sovereign token
+        const sovereignTokenAmount = await sovereignTokenContract.balanceOf(destinationAddress);
+        const sixDecimalsTokenAmount = await sixDecimalsTokenContract.balanceOf(destinationAddress);
+        expect(String(sovereignTokenAmount)).to.be.equal(ethers.parseUnits(String(amountSIXBridged), sixDecimal));
     });
 
     it("should check the initialize function", async () => {
@@ -129,7 +267,7 @@ describe("BridgeL2SovereignChain Contract", () => {
                 metadataToken,
                 ethers.Typed.address(bridgeManager.address),
                 ethers.ZeroAddress,
-                false,
+                false
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "GasTokenNetworkMustBeZeroOnEther");
 
@@ -144,7 +282,7 @@ describe("BridgeL2SovereignChain Contract", () => {
                 metadataToken,
                 ethers.Typed.address(bridgeManager.address),
                 bridge.target, // Not zero, revert
-                false,
+                false
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidSovereignWETHAddressParams");
 
@@ -158,7 +296,7 @@ describe("BridgeL2SovereignChain Contract", () => {
                 metadataToken,
                 ethers.Typed.address(bridgeManager.address),
                 ethers.ZeroAddress,
-                true, // Not false, revert,
+                true // Not false, revert,
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidSovereignWETHAddressParams");
     });
@@ -184,11 +322,21 @@ describe("BridgeL2SovereignChain Contract", () => {
         // Make first remapping
         await sovereignChainBridgeContract
             .connect(bridgeManager)
-            .setMultipleSovereignTokenAddress([networkIDRollup1], [polTokenContract.target], [legacyToken.target], [true]);
+            .setMultipleSovereignTokenAddress(
+                [networkIDRollup1],
+                [polTokenContract.target],
+                [legacyToken.target],
+                [true]
+            );
         await expect(
             sovereignChainBridgeContract
                 .connect(bridgeManager)
-                .setMultipleSovereignTokenAddress([networkIDRollup1], [polTokenContract.target], [legacyToken.target], [true])
+                .setMultipleSovereignTokenAddress(
+                    [networkIDRollup1],
+                    [polTokenContract.target],
+                    [legacyToken.target],
+                    [true]
+                )
         ).to.revertedWithCustomError(sovereignChainBridgeContract, "TokenAlreadyMapped");
         // Deploy token 2
         const updatedToken = await tokenFactory.deploy(tokenName, tokenSymbol, deployer.address, iBalance);
@@ -198,7 +346,12 @@ describe("BridgeL2SovereignChain Contract", () => {
         // Make second remapping
         await sovereignChainBridgeContract
             .connect(bridgeManager)
-            .setMultipleSovereignTokenAddress([networkIDRollup1], [polTokenContract.target], [updatedToken.target], [true]);
+            .setMultipleSovereignTokenAddress(
+                [networkIDRollup1],
+                [polTokenContract.target],
+                [updatedToken.target],
+                [true]
+            );
 
         // Try migrate a token already updated
         await expect(
@@ -515,7 +668,12 @@ describe("BridgeL2SovereignChain Contract", () => {
         await expect(
             sovereignChainBridgeContract
                 .connect(rollupManager)
-                .setMultipleSovereignTokenAddress([networkIDMainnet], [ethers.ZeroAddress], [sovereignToken.target], [false])
+                .setMultipleSovereignTokenAddress(
+                    [networkIDMainnet],
+                    [ethers.ZeroAddress],
+                    [sovereignToken.target],
+                    [false]
+                )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidZeroAddress");
         // Invalid origin network
         await expect(
@@ -616,13 +774,13 @@ describe("BridgeL2SovereignChain Contract", () => {
                 "0x",
                 ethers.Typed.address(bridgeManager),
                 ethers.ZeroAddress,
-                false,
+                false
             )
         ).to.be.revertedWith("Initializable: contract is already initialized");
 
-        await expect(sovereignChainGlobalExitRootContract.initialize(ethers.ZeroAddress, ethers.ZeroAddress)).to.be.revertedWith(
-            "Initializable: contract is already initialized"
-        );
+        await expect(
+            sovereignChainGlobalExitRootContract.initialize(ethers.ZeroAddress, ethers.ZeroAddress)
+        ).to.be.revertedWith("Initializable: contract is already initialized");
     });
 
     it("should check bridgeMessageWETH reverts", async () => {
@@ -1068,7 +1226,7 @@ describe("BridgeL2SovereignChain Contract", () => {
                 metadata
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "AlreadyClaimed");
-       });
+    });
 
     it("should claim tokens from Rollup to Mainnet", async () => {
         const originNetwork = networkIDRollup;
@@ -1384,24 +1542,25 @@ describe("BridgeL2SovereignChain Contract", () => {
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(index2, indexRollup + 1));
 
-        await expect(sovereignChainBridgeContract.connect(bridgeManager).unsetMultipleClaimedBitmap(
-            [indexLocal, index2],
-            [indexRollup + 1]
-        )).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InputArraysLengthMismatch");
+        await expect(
+            sovereignChainBridgeContract
+                .connect(bridgeManager)
+                .unsetMultipleClaimedBitmap([indexLocal, index2], [indexRollup + 1])
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InputArraysLengthMismatch");
 
-        await sovereignChainBridgeContract.connect(bridgeManager).unsetMultipleClaimedBitmap(
-            [indexLocal, index2],
-            [indexRollup + 1, indexRollup + 1]
-        );
+        await sovereignChainBridgeContract
+            .connect(bridgeManager)
+            .unsetMultipleClaimedBitmap([indexLocal, index2], [indexRollup + 1, indexRollup + 1]);
 
         expect(false).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
         expect(false).to.be.equal(await sovereignChainBridgeContract.isClaimed(index2, indexRollup + 1));
 
         // Try to unset again
-        await expect(sovereignChainBridgeContract.connect(bridgeManager).unsetMultipleClaimedBitmap(
-            [indexLocal, index2],
-            [indexRollup + 1, indexRollup + 1]
-        )).to.be.revertedWithCustomError(sovereignChainBridgeContract, "ClaimNotSet");
+        await expect(
+            sovereignChainBridgeContract
+                .connect(bridgeManager)
+                .unsetMultipleClaimedBitmap([indexLocal, index2], [indexRollup + 1, indexRollup + 1])
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "ClaimNotSet");
     });
 
     it("should claim tokens from Rollup to Mainnet, failing deploy wrapped", async () => {
