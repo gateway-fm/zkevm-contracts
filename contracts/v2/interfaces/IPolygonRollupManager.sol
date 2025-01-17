@@ -309,7 +309,8 @@ interface IPolygonRollupManager {
 
     enum VerifierType {
         StateTransition,
-        Pessimistic
+        Pessimistic,
+        ALGateway
     }
 
     function addNewRollupType(
@@ -405,6 +406,14 @@ interface IPolygonRollupManager {
         bytes32 selectedGlobalExitRoot,
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot
+    ) external returns (bytes memory);
+
+    function getInputPessimisticBytesV2(
+        uint32 rollupID,
+        bytes32 selectedGlobalExitRoot,
+        bytes32 newLocalExitRoot,
+        bytes32 newPessimisticRoot,
+        bytes memory customDataConsensus
     ) external returns (bytes memory);
 
     function getInputSnarkBytes(
