@@ -22,7 +22,7 @@
    }
   },
   {
-   "contractName": "PolygonZkEVMBridgeV2",
+   "contractName": "PolygonZkEVMBridgeV2 implementation",
    "balance": "0",
    "nonce": "1",
    "address": "0xBC9585CB224A8F42EF9C9F0b99c531B450b11886",
@@ -40,7 +40,7 @@
    }
   },
   {
-   "contractName": "PolygonZkEVMGlobalExitRootL2",
+   "contractName": "PolygonZkEVMGlobalExitRootL2 implementation",
    "balance": "0",
    "nonce": "1",
    "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",

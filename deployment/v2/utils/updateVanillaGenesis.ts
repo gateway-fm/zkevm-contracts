@@ -15,7 +15,7 @@ import {padTo32Bytes, padTo20Bytes} from "./deployment-utils";
 // to support them too
 const bridgeContractName = "BridgeL2SovereignChain";
 const supportedGERManagers = ["PolygonZkEVMGlobalExitRootL2 implementation", "PolygonZkEVMGlobalExitRootL2"];
-const supportedBridgeContracts = ['PolygonZkEVMBridgeV2', 'PolygonZkEVMBridge implementation'];
+const supportedBridgeContracts = ['PolygonZkEVMBridgeV2', 'PolygonZkEVMBridge implementation', 'PolygonZkEVMBridgeV2 implementation'];
 const supportedBridgeContractsProxy = ['PolygonZkEVMBridgeV2 proxy', 'PolygonZkEVMBridge proxy'];
 
 async function updateVanillaGenesis(genesis, chainID, initializeParams) {
