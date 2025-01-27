@@ -1,7 +1,6 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
 /* eslint-disable no-console, no-inner-declarations, no-undef, import/no-unresolved */
 // external dependencies
-import {expect} from "chai";
 import path = require("path");
 import fs = require("fs");
 
