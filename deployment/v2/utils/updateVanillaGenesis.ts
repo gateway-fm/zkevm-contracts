@@ -10,12 +10,12 @@ import {padTo32Bytes, padTo20Bytes} from "./deployment-utils";
 // Those contracts names came from the genesis creation:
 //  - https://github.com/0xPolygonHermez/zkevm-contracts/blob/main/deployment/v2/1_createGenesis.ts#L294
 //  - https://github.com/0xPolygonHermez/zkevm-contracts/blob/main/deployment/v2/1_createGenesis.ts#L328
-// Some genesis have been created time ago and they have ald naming as in the links above
+// Genesis files have been created previoudly and so they have old naming, as it shown in the links above
 // Those genesis are already imported on different tooling and added as a metedata on-chain. Therefore, this util aims
 // to support them too
 const bridgeContractName = "BridgeL2SovereignChain";
-const supportedGERManagers = ["PolygonZkEVMGlobalExitRootL2 implementation", "PolygonZkEVMGlobalExitRootL2"];
-const supportedBridgeContracts = ['PolygonZkEVMBridgeV2', 'PolygonZkEVMBridge implementation', 'PolygonZkEVMBridgeV2 implementation'];
+const supportedGERManagers = ["PolygonZkEVMGlobalExitRootL2 implementation"];
+const supportedBridgeContracts = ['PolygonZkEVMBridge implementation', 'PolygonZkEVMBridgeV2 implementation'];
 const supportedBridgeContractsProxy = ['PolygonZkEVMBridgeV2 proxy', 'PolygonZkEVMBridge proxy'];
 
 async function updateVanillaGenesis(genesis, chainID, initializeParams) {
@@ -103,13 +103,13 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     await zkEVMDB.consolidate(batch);
 
     // replace old bridge and ger manager by sovereign contracts bytecode
-    oldBridge.contractName = bridgeContractName;
+    oldBridge.contractName = bridgeContractName + " implementation";
     oldBridge.bytecode = `0x${await zkEVMDB.getBytecode(sovereignBridgeAddress)}`;
 
     const oldGer = genesis.genesis.find(function (obj) {
         return supportedGERManagers.includes(obj.contractName);
     });
-    oldGer.contractName = gerContractName;
+    oldGer.contractName = gerContractName + " implementation";
     oldGer.bytecode = `0x${await zkEVMDB.getBytecode(GERAddress)}`;
 
     // Setup a second zkEVM to initialize both contracts

@@ -6,7 +6,7 @@ import fs = require("fs");
 
 import * as dotenv from "dotenv";
 dotenv.config({path: path.resolve(__dirname, "../../.env")});
-import {ethers, hardhatArguments, network} from "hardhat";
+import {ethers, hardhatArguments} from "hardhat";
 
 // internal dependencies
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
@@ -148,29 +148,37 @@ async function main() {
     // Populate final output
     outputJson.network = hardhatArguments.network;
     outputJson.rollupID = createGenesisSovereignParams.rollupID;
-    outputJson.rollupManagerAddress;
-    outputJson.rollupID;
-    outputJson.chainID;
-    outputJson.bridgeManager;
-    outputJson.sovereignWETHAddress;
-    outputJson.sovereignWETHAddressIsNotMintable;
-    outputJson.globalExitRootUpdater;
-    outputJson.globalExitRootRemover;
+    outputJson.gasTokenAddress = gasTokenAddress;
+    outputJson.gasTokenNetwork = gasTokenNetwork;
+    outputJson.gasTokenMetadata = gasTokenMetadata;
+    outputJson.rollupManagerAddress = createGenesisSovereignParams.rollupManagerAddress;
+    outputJson.chainID = createGenesisSovereignParams.chainID;
+    outputJson.bridgeManager = createGenesisSovereignParams.bridgeManager;
+    outputJson.sovereignWETHAddress = createGenesisSovereignParams.sovereignWETHAddress;
+    outputJson.sovereignWETHAddressIsNotMintable = createGenesisSovereignParams.sovereignWETHAddressIsNotMintable;
+    outputJson.globalExitRootUpdater = createGenesisSovereignParams.globalExitRootUpdater;
+    outputJson.globalExitRootRemover = createGenesisSovereignParams.globalExitRootRemover;
+
     if (typeof outWETHAddress !== 'undefined') {
         outputJson.WETHAddress = outWETHAddress;
     }
-    outputJson.genesisSovereign = finalGenesis;
 
     // path output genesis
     const pathOutputGenesisJson = createGenesisSovereignParams.outputGenesisPath
     ? path.join(__dirname, createGenesisSovereignParams.outputGenesisPath)
-    : path.join(__dirname, `./output-${createGenesisSovereignParams.rollupID}-${dateStr}.json`);
+    : path.join(__dirname, `./genesis-rollupID-${createGenesisSovereignParams.rollupID}__${dateStr}.json`);
+
+    const pathOutputJson = createGenesisSovereignParams.outputPath
+    ? path.join(__dirname, createGenesisSovereignParams.outputPath)
+    : path.join(__dirname, `./output-rollupID-${createGenesisSovereignParams.rollupID}__${dateStr}.json`);
 
     // write files
     fs.writeFileSync(pathOutputGenesisJson, JSON.stringify(finalGenesis, null, 1));
+    fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 1));
 
     console.log("Output saved at:");
-    console.log(`   output tool: ${pathOutputGenesisJson}`);
+    console.log(`   output genesis: ${pathOutputGenesisJson}`);
+    console.log(`   output info   : ${pathOutputJson}`);
 }
 
 main().catch((e) => {
