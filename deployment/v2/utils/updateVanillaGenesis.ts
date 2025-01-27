@@ -1,9 +1,22 @@
-import {MemDB, ZkEVMDB, getPoseidon, smtUtils, processorUtils} from "@0xpolygonhermez/zkevm-commonjs";
-import {ethers} from "hardhat";
-const {getContractAddress} = require("@ethersproject/address");
-const bridgeContractName = "BridgeL2SovereignChain";
 import {expect} from "chai";
+import {ethers} from "hardhat";
+
+import {MemDB, ZkEVMDB, getPoseidon, smtUtils, processorUtils} from "@0xpolygonhermez/zkevm-commonjs";
+const {getContractAddress} = require("@ethersproject/address");
+
 import {padTo32Bytes, padTo20Bytes} from "./deployment-utils";
+
+// constants
+// Those contracts names came from the genesis creation:
+//  - https://github.com/0xPolygonHermez/zkevm-contracts/blob/main/deployment/v2/1_createGenesis.ts#L294
+//  - https://github.com/0xPolygonHermez/zkevm-contracts/blob/main/deployment/v2/1_createGenesis.ts#L328
+// Some genesis have been created time ago and they have ald naming as in the links above
+// Those genesis are already imported on different tooling and added as a metedata on-chain. Therefore, this util aims
+// to support them too
+const bridgeContractName = "BridgeL2SovereignChain";
+const supportedGERManagers = ["PolygonZkEVMGlobalExitRootL2 implementation", "PolygonZkEVMGlobalExitRootL2"];
+const supportedBridgeContracts = ['PolygonZkEVMBridgeV2', 'PolygonZkEVMBridge implementation'];
+const supportedBridgeContractsProxy = ['PolygonZkEVMBridgeV2 proxy', 'PolygonZkEVMBridge proxy'];
 
 async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Load genesis on a zkEVMDB
@@ -71,11 +84,11 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     const gerContractName = "GlobalExitRootManagerL2SovereignChain";
     const gerFactory = await ethers.getContractFactory(gerContractName);
     const oldBridge = genesis.genesis.find(function (obj) {
-        return obj.contractName == "PolygonZkEVMBridgeV2";
+        return supportedBridgeContracts.includes(obj.contractName);
     });
     // Get bridge proxy address
     const bridgeProxy = genesis.genesis.find(function (obj) {
-        return obj.contractName == "PolygonZkEVMBridgeV2 proxy";
+        return supportedBridgeContractsProxy.includes(obj.contractName);
     });
     const deployGERData = await gerFactory.getDeployTransaction(bridgeProxy.address);
     injectedTx.data = deployGERData.data;
@@ -94,7 +107,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     oldBridge.bytecode = `0x${await zkEVMDB.getBytecode(sovereignBridgeAddress)}`;
 
     const oldGer = genesis.genesis.find(function (obj) {
-        return obj.contractName == "PolygonZkEVMGlobalExitRootL2";
+        return supportedGERManagers.includes(obj.contractName);
     });
     oldGer.contractName = gerContractName;
     oldGer.bytecode = `0x${await zkEVMDB.getBytecode(GERAddress)}`;
