@@ -14,7 +14,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// the verifier route is not frozen.
 contract AggLayerGateway is ISP1VerifierGateway, Initializable {
     mapping(bytes4 => bytes32) public storedAuthenticatorVKeys;
-
+    // Question why?? why not just pass vkey and selector from function input?
     mapping(bytes4 => VerifierRoute) public routes;
 
     // admin

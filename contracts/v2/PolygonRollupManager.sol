@@ -1182,7 +1182,7 @@ contract PolygonRollupManager is
         );
         (, bytes32 pessimisticVKey, ) = aggLayerGateway.routes(selector);
         // Verify proof
-        ISP1Verifier(rollup.verifier).verifyProof(
+        ISP1Verifier(rollup.verifier).verifyProof( // Use verifier from routes
             pessimisticVKey,
             inputPessimisticBytes,
             proof

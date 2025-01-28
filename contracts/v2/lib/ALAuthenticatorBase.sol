@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "../interfaces/IALAuthenticatorBase.sol";
-import "../PolygonRollupManager.sol";
 import "./PolygonConsensusBase.sol";
+import "../AggLayerGateway.sol";
 
 /**
  * Contract responsible for managing the states and the updates of L2 network.
@@ -36,6 +36,8 @@ abstract contract ALAuthenticatorBase is
     // Flag to enable/disable the use of the custom chain gateway to handle the authenticator keys. In case  of false (default), the keys are managed by the aggregation layer gateway
     bool public useCustomChainGateway;
 
+    AggLayerGateway public immutable aggLayerGateway;
+
     // authenticatorVKeys mapping
     mapping(bytes4 => AuthRoute) public authRoutes;
 
@@ -46,41 +48,36 @@ abstract contract ALAuthenticatorBase is
     uint256[50] private _gap;
 
     constructor(
-        address _rollupManager
+        IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
+        IERC20Upgradeable _pol,
+        IPolygonZkEVMBridgeV2 _bridgeAddress,
+        PolygonRollupManager _rollupManager,
+        AggLayerGateway _aggLayerGateway
     )
         PolygonConsensusBase(
-            IPolygonZkEVMGlobalExitRootV2(address(0)),
-            IERC20Upgradeable(address(0)),
-            IPolygonZkEVMBridgeV2(address(0)),
-            PolygonRollupManager(_rollupManager)
+            _globalExitRootManager,
+            _pol,
+            _bridgeAddress,
+            _rollupManager
         )
-    {}
+    {
+        aggLayerGateway = _aggLayerGateway;
+    }
 
     /**
-     * @param initializeBytesCustomChain TODO
+     * @notice Override the function to prevent the contract from being initialized with this initializer implemented at PolygonConsensusBase.
+     * @dev The function modifiers and initializer found in the original function have been removed for bytecode optimizations.
      */
     function initialize(
-        bytes calldata initializeBytesCustomChain
-    ) external virtual override onlyRollupManager initializer {
-        (
-            address _admin,
-            address _trustedSequencer,
-            address _gasTokenAddress,
-            uint32 _networkID,
-            uint64 _chainID,
-            string memory _sequencerURL,
-            string memory _networkName
-        ) = abi.decode(
-                initializeBytesCustomChain,
-                (address, address, address, uint32, uint64, string, string)
-            );
-        admin = _admin;
-        trustedSequencer = _trustedSequencer;
-        gasTokenAddress = _gasTokenAddress;
-        networkID = _networkID;
-        chainID = _chainID;
-        trustedSequencerURL = _sequencerURL;
-        networkName = _networkName;
+        address, // _admin
+        address, // sequencer
+        uint32, //networkID,
+        address, // _gasTokenAddress,
+        string memory, // sequencerURL,
+        string memory // _networkName
+    ) external pure override(PolygonConsensusBase) {
+        // Set initialize variables
+        revert InvalidInitializeFunction();
     }
 
     //////////////////
@@ -126,16 +123,18 @@ abstract contract ALAuthenticatorBase is
         emit UpdateAuthenticatorVKey(selector, updatedAuthVKey);
     }
 
+    /**
+     * @notice returns the current authenticator verification key. If the flag `useCustomChainGateway` is set to false, the gateway verification key is returned, else, the custom chain verification key is returned.
+     * @param selector The selector for the verification key query
+     */
     function _getAuthenticatorVKey(
         bytes4 selector
     ) internal view returns (bytes32) {
         if (useCustomChainGateway) {
             return authRoutes[selector].authVKey;
         }
-        // Retrieve authenticator key from VerifierGateway
-        AggLayerGateway aggLayerGatewayAddress = PolygonRollupManager(
-            rollupManager
-        ).aggLayerGateway();
-        return aggLayerGatewayAddress.getAuthenticatorVKey(selector);
+        // Retrieve authenticator key from AggLayerGateway
+        return aggLayerGateway.getAuthenticatorVKey(selector);
     }
+
 }

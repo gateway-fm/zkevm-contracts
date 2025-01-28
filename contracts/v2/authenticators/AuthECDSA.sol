@@ -3,45 +3,69 @@ pragma solidity 0.8.20;
 
 import "../interfaces/IALAuthenticator.sol";
 import "../lib/ALAuthenticatorBase.sol";
-import "../AggLayerGateway.sol";
 
+/**
+ * @title AuthECDSA
+ * @notice Generic authenticator based on ECDSA signature.
+ * An address signs the new_ler and the commit_imported_bridge_exits in order to do state
+ * transitions on the pessimistic trees (local_exit_tree, local_balance_tree & nullifier_tree).
+ * That address is the trustedSequencer and is set during the chain initialization.
+ */
 contract AuthECDSA is ALAuthenticatorBase, IALAuthenticator {
-    //////////
-    // Events
-    /////////
-
+    /**
+     * @dev Emitted when Pessimistic proof is verified.
+     */
     event OnVerifyPessimistic();
 
     /**
-     * @param _rollupManager Rollup manager address
+     * @param _rollupManager Rollup manager address.
      */
     constructor(
-        address _rollupManager
-    ) ALAuthenticatorBase(_rollupManager) {}
+        IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
+        IERC20Upgradeable _pol,
+        IPolygonZkEVMBridgeV2 _bridgeAddress,
+        PolygonRollupManager _rollupManager,
+        AggLayerGateway _aggLayerGateway
+    )
+        ALAuthenticatorBase(
+            _globalExitRootManager,
+            _pol,
+            _bridgeAddress,
+            _rollupManager,
+            _aggLayerGateway
+        )
+    {}
 
     /**
-     * @param initializeBytesCustomChain Encoded params to initialize the chain
+     * @param initializeBytesCustomChain Encoded params to initialize the chain.
+     * Each authenticator has its decoded params.
      */
     function initialize(
         bytes memory initializeBytesCustomChain
     ) external override onlyRollupManager initializer {
         // custom parsing of the initializeBytesCustomChain
-        address _trustedSequencer = abi.decode(
-            initializeBytesCustomChain,
-            (address)
-        );
+        (
+            uint32 _networkID,
+            string memory _networkName,
+            address _admin,
+            address _trustedSequencer
+        ) = abi.decode(initializeBytesCustomChain, (uint32, string, address, address));
 
         // set chain variables
+        networkID = _networkID;
+        networkName = _networkName;
+        admin = _admin;
         trustedSequencer = _trustedSequencer;
     }
 
     /**
-     * Note Return the necessary authenticator information for the proof hashed
+     * @dev Return the necessary authenticator information for the proof hashed
      * AuthenticatorHash:
-     * Field:           | AUTH_TYPE | authenticatorVKey   | authConfig |
-     * length (bits):   |    32     |       256           | 256       |
+     * Field:           | authenticatorVKey   | authConfig |
+     * length (bits):   |       256           | 256       |
      * authConfig = keccak256(abi.encodePacked(trusted_sequencer))
      */
+    /// @inheritdoc IALAuthenticator
     function getAuthenticatorHash(
         bytes memory customChainData
     ) external view returns (bytes32) {
@@ -55,13 +79,21 @@ contract AuthECDSA is ALAuthenticatorBase, IALAuthenticator {
             );
     }
 
+    /**
+     * @notice returns the current authenticator verification key, used to verify chain's FEP.
+     * @param selector The selector for the verification key query.
+     * @return The verification key.
+     */
     function getAuthenticatorVKey(
         bytes4 selector
     ) external view returns (bytes32) {
         return _getAuthenticatorVKey(selector);
     }
 
-    // function to save the customData
+    /**
+     * @notice For ECDSA chains, a plain event is emitted after pessimistic verification
+     * @dev The customData is not used at this kind of chain, added to match the interface
+     */
     function onVerifyPessimistic(
         bytes memory // customData
     ) external onlyRollupManager {

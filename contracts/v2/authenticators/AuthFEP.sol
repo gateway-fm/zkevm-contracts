@@ -5,8 +5,13 @@ import "../lib/ALAuthenticatorBase.sol";
 import "../interfaces/IALAuthenticator.sol";
 import "../AggLayerGateway.sol";
 
+/*
+ * Generic authenticator based on full execution proof that relies on op-succinct stack.
+ * op-succinct (more concretely op-proposer) will build the state transition proof (op-fep).
+ * This proof, along with bridge checks, constitutes the final FEP proof.
+ */
 contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
-    // final vKey to verify final FEP aggregation
+    // op-stack parameters
     bytes32 public aggregationVkey;
     bytes32 public chainConfigHash;
     bytes32 public rangeVkeyCommitment;
@@ -23,6 +28,9 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
     // Events
     /////////
 
+    /**
+     * @dev Emitted when Pessimistic proof is verified
+     */
     event OnVerifyPessimistic(
         bytes32 initStateRoot,
         uint128 initTimestamp,
@@ -33,30 +41,55 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
      * @param _rollupManager TODO
      */
     constructor(
-        address _rollupManager
-    ) ALAuthenticatorBase(_rollupManager) {}
-
+        IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
+        IERC20Upgradeable _pol,
+        IPolygonZkEVMBridgeV2 _bridgeAddress,
+        PolygonRollupManager _rollupManager,
+        AggLayerGateway _aggLayerGateway
+    )
+        ALAuthenticatorBase(
+            _globalExitRootManager,
+            _pol,
+            _bridgeAddress,
+            _rollupManager,
+            _aggLayerGateway
+        )
+    {}
     /**
-     * @param initializeBytesCustomChain  Encoded params to initialize the chain
+     * @param initializeBytesCustomChain  Encoded params to initialize the chain. Each authenticator has its decoded params
      */
     function initialize(
         bytes memory initializeBytesCustomChain
     ) external override onlyRollupManager initializer {
         // custom parsing of the initializeBytesCustomChain
         (
-            bytes32 initStateRoot,
-            uint128 initTimestamp,
-            uint128 initL2BlockNumber,
+            uint32 _networkID,
+            string memory _networkName,
             address _admin,
             bytes32 _aggregationVkey,
             bytes32 _chainConfigHash,
-            bytes32 _rangeVkeyCommitment
+            bytes32 _rangeVkeyCommitment,
+            bytes32 initStateRoot,
+            uint128 initTimestamp,
+            uint128 initL2BlockNumber
         ) = abi.decode(
                 initializeBytesCustomChain,
-                (bytes32, uint128, uint128, address, bytes32, bytes32, bytes32)
+                (
+                    uint32,
+                    string,
+                    address,
+                    bytes32,
+                    bytes32,
+                    bytes32,
+                    bytes32,
+                    uint128,
+                    uint128
+                )
             );
 
-        // set the admin
+        // set chain variables
+        networkID = _networkID;
+        networkName = _networkName;
         admin = _admin;
         aggregationVkey = _aggregationVkey;
         chainConfigHash = _chainConfigHash;
@@ -72,7 +105,7 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
      * AuthenticatorHash:
      * Field:           | AUTH_TYPE | authenticatorVKey   | authConfig |
      * length (bits):   |    32     |       256           | 256       |
-     * uint256 auth_config = keccak256(abi.encodePacked(l1Head, l2PreRoot, claimRoot, claimBlockNum, rollupConfigHash, rangeVkeyCommitment, aggregationVkey))
+     * uint256 auth_config = keccak256(abi.encodePacked(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey))
      * @param customChainData TODO
      */
     function getAuthenticatorHash(
@@ -105,8 +138,6 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
                 abi.encodePacked(
                     AUTH_TYPE,
                     _getAuthenticatorVKey(selector),
-                    chainConfigHash,
-                    rangeVkeyCommitment,
                     authConfig
                 )
             );

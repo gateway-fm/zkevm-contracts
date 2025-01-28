@@ -3,24 +3,30 @@
 pragma solidity ^0.8.20;
 
 interface IALAuthenticatorBaseEvents {
-
     /**
      * @dev Emitted when the admin updates the authenticator verification key
      */
     event AddAuthenticatorVKey(bytes4 selector, bytes32 newAuthenticatorVKey);
 
-    event UpdateAuthenticatorVKey(bytes4 selector, bytes32 newAuthenticatorVKey);
+    event UpdateAuthenticatorVKey(
+        bytes4 selector,
+        bytes32 newAuthenticatorVKey
+    );
 
     event UpdateUseCustomChainGatewayFlag(bool useCustomChainGateway);
 }
 
 interface IALAuthenticatorBaseErrors {
-
     error InvalidAuthVKey();
 
     error AuthRouteAlreadyAdded();
 
     error AuthRouteNotFound();
+
+    /**
+     * @dev Thrown when trying to initialize the incorrect initialize function
+     */
+    error InvalidInitializeFunction();
 }
 
 interface IALAuthenticatorBase is
@@ -29,7 +35,5 @@ interface IALAuthenticatorBase is
 {
     function initialize(bytes calldata initializeBytesCustomChain) external;
 
-    function getAuthenticatorVKey(
-        bytes4 selector
-    ) external returns (bytes32);
+    function getAuthenticatorVKey(bytes4 selector) external returns (bytes32);
 }
