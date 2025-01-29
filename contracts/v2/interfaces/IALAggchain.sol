@@ -2,11 +2,11 @@
 
 pragma solidity ^0.8.20;
 
-interface IALAuthenticator {
+interface IALAggchain{
     /// @notice Gets consensus chain hash.
     /// @dev Each chain should properly manage its own consensus hash.
     /// @param customChainData Custom chain data to build the consensus hash.
-    function getAuthenticatorHash(
+    function getAggchainHash(
         bytes memory customChainData
     ) external view returns (bytes32);
 

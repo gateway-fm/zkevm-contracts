@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.20;
 
-import "../lib/ALAuthenticatorBase.sol";
-import "../interfaces/IALAuthenticator.sol";
+import "../lib/ALAggchainBase.sol";
+import "../interfaces/IALAggchain.sol";
 import "../AggLayerGateway.sol";
 
 /*
- * Generic authenticator based on full execution proof that relies on op-succinct stack.
+ * Generic aggchain based on full execution proof that relies on op-succinct stack.
  * op-succinct (more concretely op-proposer) will build the state transition proof (op-fep).
  * This proof, along with bridge checks, constitutes the final FEP proof.
  */
-contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
+contract AggchainFEP is ALAggchainFEPBase, IALAggchainFEP {
     // op-stack parameters
     bytes32 public aggregationVkey;
     bytes32 public chainConfigHash;
@@ -47,7 +47,7 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
         PolygonRollupManager _rollupManager,
         AggLayerGateway _aggLayerGateway
     )
-        ALAuthenticatorBase(
+        ALAggchainBase(
             _globalExitRootManager,
             _pol,
             _bridgeAddress,
@@ -56,7 +56,7 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
         )
     {}
     /**
-     * @param initializeBytesCustomChain  Encoded params to initialize the chain. Each authenticator has its decoded params
+     * @param initializeBytesCustomChain  Encoded params to initialize the chain. Each aggchain has its decoded params
      */
     function initialize(
         bytes memory initializeBytesCustomChain
@@ -101,14 +101,14 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
     }
 
     /**
-     * Note Return the necessary authenticator information for the proof hashed
-     * AuthenticatorHash:
-     * Field:           | AUTH_TYPE | authenticatorVKey   | authConfig |
+     * Note Return the necessary aggchain information for the proof hashed
+     * AggchainHash:
+     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainConfig |
      * length (bits):   |    32     |       256           | 256       |
-     * uint256 auth_config = keccak256(abi.encodePacked(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey))
+     * uint256 aggchain_config = keccak256(abi.encodePacked(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey))
      * @param customChainData TODO
      */
-    function getAuthenticatorHash(
+    function getAggchainHash(
         bytes memory customChainData
     ) external view returns (bytes32) {
         (
@@ -121,7 +121,7 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
                 customChainData,
                 (bytes4, bytes32, bytes32, bytes32, uint256)
             );
-        bytes32 authConfig = keccak256(
+        bytes32 aggchainConfig = keccak256(
             abi.encodePacked(
                 l1Head,
                 l2PreRoot,
@@ -136,17 +136,17 @@ contract AuthFEP is ALAuthenticatorBase, IALAuthenticator {
         return
             keccak256(
                 abi.encodePacked(
-                    AUTH_TYPE,
-                    _getAuthenticatorVKey(selector),
-                    authConfig
+                    AGGCHAIN_TYPE,
+                    _getAggchainVKey(selector),
+                    aggchainConfig
                 )
             );
     }
 
-    function getAuthenticatorVKey(
+    function getAggchainVKey(
         bytes4 selector
     ) external view returns (bytes32) {
-        return _getAuthenticatorVKey(selector);
+        return _getAggchainVKey(selector);
     }
 
     /**

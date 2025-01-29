@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "../interfaces/IALAuthenticatorBase.sol";
+import "../interfaces/IALAggchainBase.sol";
 import "./PolygonConsensusBase.sol";
 import "../AggLayerGateway.sol";
 
@@ -14,18 +14,18 @@ import "../AggLayerGateway.sol";
  * The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
  * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
  */
-abstract contract ALAuthenticatorBase is
+abstract contract ALAggchainBase is
     PolygonConsensusBase,
-    IALAuthenticatorBase
+    IALAggchainBase
 {
-    struct AuthRoute {
+    struct AggchainRoute {
         bytes plonkVKey;
-        bytes32 authVKey;
+        bytes32 aggchainVKey;
         bool frozen;
     }
 
     // Consensus type that support generic consensus
-    uint32 public constant AUTH_TYPE = 1;
+    uint32 public constant AGGCHAIN_TYPE = 1;
 
     // Network/Rollup identifier
     uint32 public networkID;
@@ -33,13 +33,13 @@ abstract contract ALAuthenticatorBase is
     // Chain identifier
     uint64 public chainID;
 
-    // Flag to enable/disable the use of the custom chain gateway to handle the authenticator keys. In case  of false (default), the keys are managed by the aggregation layer gateway
+    // Flag to enable/disable the use of the custom chain gateway to handle the aggchain keys. In case  of false (default), the keys are managed by the aggregation layer gateway
     bool public useCustomChainGateway;
 
     AggLayerGateway public immutable aggLayerGateway;
 
-    // authenticatorVKeys mapping
-    mapping(bytes4 => AuthRoute) public authRoutes;
+    // aggchainVKeys mapping
+    mapping(bytes4 => AggchainRoute) public aggchainRoutes;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -90,51 +90,51 @@ abstract contract ALAuthenticatorBase is
         emit UpdateUseCustomChainGatewayFlag(useCustomChainGateway);
     }
 
-    function addAuthenticatorRoute(
+    function addAggchainRoute(
         bytes4 selector,
-        bytes32 authVKey,
+        bytes32 aggchainVKey,
         bytes calldata plonkVKey
     ) external onlyAdmin {
-        if (authVKey == bytes32(0)) {
-            revert InvalidAuthVKey();
+        if (aggchainVKey == bytes32(0)) {
+            revert InvalidAggchainVKey();
         }
-        AuthRoute storage authRoute = authRoutes[selector];
+        AggchainRoute storage aggchainRoute = aggchainRoutes[selector];
         // Check already added
-        if (authRoute.authVKey != bytes32(0)) {
-            revert AuthRouteAlreadyAdded();
+        if (aggchainRoute.aggchainVKey != bytes32(0)) {
+            revert AggchainRouteAlreadyAdded();
         }
-        authRoute.authVKey = authVKey;
-        authRoute.plonkVKey = plonkVKey;
-        emit AddAuthenticatorVKey(selector, authVKey);
+        aggchainRoute.aggchainVKey = aggchainVKey;
+        aggchainRoute.plonkVKey = plonkVKey;
+        emit AddAggchainVKey(selector, aggchainVKey);
     }
 
-    function updateAuthenticatorRoute(
+    function updateAggchainRoute(
         bytes4 selector,
-        bytes32 updatedAuthVKey,
+        bytes32 updatedAggchainVKey,
         bytes calldata updatedPlonkVKey
     ) external onlyAdmin {
-        AuthRoute storage authRoute = authRoutes[selector];
+        AggchainRoute storage aggchainRoute = aggchainRoutes[selector];
         // Check already added
-        if (authRoute.authVKey != bytes32(0)) {
-            revert AuthRouteNotFound();
+        if (aggchainRoute.aggchainVKey != bytes32(0)) {
+            revert AggchainRouteNotFound();
         }
-        authRoute.authVKey = updatedAuthVKey;
-        authRoute.plonkVKey = updatedPlonkVKey;
-        emit UpdateAuthenticatorVKey(selector, updatedAuthVKey);
+        aggchainRoute.aggchainVKey = updatedAggchainVKey;
+        aggchainRoute.plonkVKey = updatedPlonkVKey;
+        emit UpdateAggchainVKey(selector, updatedAggchainVKey);
     }
 
     /**
-     * @notice returns the current authenticator verification key. If the flag `useCustomChainGateway` is set to false, the gateway verification key is returned, else, the custom chain verification key is returned.
+     * @notice returns the current aggchain verification key. If the flag `useCustomChainGateway` is set to false, the gateway verification key is returned, else, the custom chain verification key is returned.
      * @param selector The selector for the verification key query
      */
-    function _getAuthenticatorVKey(
+    function _getAggchainVKey(
         bytes4 selector
     ) internal view returns (bytes32) {
         if (useCustomChainGateway) {
-            return authRoutes[selector].authVKey;
+            return aggchainRoutes[selector].aggchainVKey;
         }
-        // Retrieve authenticator key from AggLayerGateway
-        return aggLayerGateway.getAuthenticatorVKey(selector);
+        // Retrieve aggchain key from AggLayerGateway
+        return aggLayerGateway.getAggchainVKey(selector);
     }
 
 }

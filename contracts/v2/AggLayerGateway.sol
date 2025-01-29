@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// selector contained in the first 4 bytes of the proof. It additionally checks that to see that
 /// the verifier route is not frozen.
 contract AggLayerGateway is ISP1VerifierGateway, Initializable {
-    mapping(bytes4 => bytes32) public storedAuthenticatorVKeys;
+    mapping(bytes4 => bytes32) public storedAggchainVKeys;
     // Question why?? why not just pass vkey and selector from function input?
     mapping(bytes4 => VerifierRoute) public routes;
 
@@ -42,12 +42,12 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
         bytes32 newPessimisticVKey
     );
 
-    event AddAuthenticatorVKey(
+    event AddAggchainVKey(
         bytes4 selector,
         bytes32 newVKey
     );
 
-    event UpdateAuthenticatorVKey(
+    event UpdateAggchainVKey(
         bytes4 selector,
         bytes32 newVKey
     );
@@ -62,13 +62,6 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
      */
     event AcceptAggLayerAdminRole(address newAggLayerAdmin);
 
-    /**
-     * @dev Emitted when a whitelisted authenticator is added or updated
-     */
-    event UpdateWhitelistedAuthenticator(
-        address authenticator,
-        bool whitelisted
-    );
     /**
      * @dev Disable initializers on the implementation following the best practices
      */
@@ -174,48 +167,48 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
         return routes[selector].pessimisticVKey;
     }
     /**
-     * @notice Function to add an authenticator verification key
+     * @notice Function to add an aggchain verification key
      * @param selector Selector of the SP1 verifier route
-     * @param newAuthenticatorVKey New pessimistic program verification key
+     * @param newAggchainVKey New pessimistic program verification key
      */
-    function addAuthenticatorVKey(
+    function addAggchainVKey(
         bytes4 selector,
-        bytes32 newAuthenticatorVKey
+        bytes32 newAggchainVKey
     ) external onlyAggLayerAdmin {
         // Check already exists
-        if (storedAuthenticatorVKeys[selector] != bytes32(0)) {
-            revert AuthenticatorVKeyAlreadyExists();
+        if (storedAggchainVKeys[selector] != bytes32(0)) {
+            revert AggchainVKeyAlreadyExists();
         }
         // Add the new VKey to the mapping
-        storedAuthenticatorVKeys[selector] = newAuthenticatorVKey;
+        storedAggchainVKeys[selector] = newAggchainVKey;
 
-        emit AddAuthenticatorVKey(
+        emit AddAggchainVKey(
             selector,
-            newAuthenticatorVKey
+            newAggchainVKey
         );
     }
 
-    function updateAuthenticatorVKey(
+    function updateAggchainVKey(
         bytes4 selector,
-        bytes32 newAuthenticatorVKey
+        bytes32 newAggchainVKey
     ) external onlyAggLayerAdmin {
         // Check if the key exists
-        if (storedAuthenticatorVKeys[selector] == bytes32(0)) {
-            revert AuthenticatorVKeyNotFound();
+        if (storedAggchainVKeys[selector] == bytes32(0)) {
+            revert AggchainVKeyNotFound();
         }
         // Update the VKey
-        storedAuthenticatorVKeys[selector] = newAuthenticatorVKey;
+        storedAggchainVKeys[selector] = newAggchainVKey;
 
-        emit UpdateAuthenticatorVKey(
+        emit UpdateAggchainVKey(
             selector,
-            newAuthenticatorVKey
+            newAggchainVKey
         );
     }
 
-    function getAuthenticatorVKey(
+    function getAggchainVKey(
         bytes4 selector
     ) external view returns (bytes32) {
-        return storedAuthenticatorVKeys[selector];
+        return storedAggchainVKeys[selector];
     }
 
     /**

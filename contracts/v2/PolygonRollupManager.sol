@@ -17,8 +17,8 @@ import "./interfaces/IPolygonPessimisticConsensus.sol";
 import "./interfaces/IPolygonPessimisticConsensusV2.sol";
 import "./interfaces/ISP1Verifier.sol";
 import "./interfaces/IPolygonRollupManager.sol";
-import "./interfaces/IALAuthenticatorBase.sol";
-import "./interfaces/IALAuthenticator.sol";
+import "./interfaces/IALAggchainBase.sol";
+import "./interfaces/IALAggchain.sol";
 import "./AggLayerGateway.sol";
 /**
  * Contract responsible for managing rollups and the verification of their batches.
@@ -600,7 +600,7 @@ contract PolygonRollupManager is
         );
 
         if (rollupType.rollupVerifierType == VerifierType.ALGateway) {
-            IALAuthenticatorBase(rollupAddress).initialize(
+            IALAggchainBase(rollupAddress).initialize(
                 initializeBytesCustomChain
             );
         } else {
@@ -1201,7 +1201,7 @@ contract PolygonRollupManager is
         // allow chains to manage customData
         // Callback to the rollup address
 
-        IALAuthenticator(rollup.rollupContract).onVerifyPessimistic(
+        IALAggchain(rollup.rollupContract).onVerifyPessimistic(
             customChainData
         );
 
@@ -1510,8 +1510,8 @@ contract PolygonRollupManager is
         if (rollup.rollupVerifierType != VerifierType.ALGateway) {
             revert InvalidRollupType();
         }
-        bytes32 consensusHash = IALAuthenticator(rollup.rollupContract)
-            .getAuthenticatorHash(customChainData);
+        bytes32 consensusHash = IALAggchain(rollup.rollupContract)
+            .getAggchainHash(customChainData);
 
         return
             abi.encodePacked(
