@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {ISP1Verifier, ISP1VerifierWithHash} from "./interfaces/ISP1Verifier.sol";
-import {ISP1VerifierGateway, VerifierRoute} from "./interfaces/ISP1VerifierGateway.sol";
+import {IAggLayerGateway} from "./interfaces/IAggLayerGateway.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/SP1VerifierGateway.sol
@@ -12,12 +12,12 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @notice This contract verifies proofs by routing to the correct verifier based on the verifier
 /// selector contained in the first 4 bytes of the proof. It additionally checks that to see that
 /// the verifier route is not frozen.
-contract AggLayerGateway is ISP1VerifierGateway, Initializable {
-    mapping(bytes4 => bytes32) public storedAggchainVKeys;
-    // Question why?? why not just pass vkey and selector from function input?
-    mapping(bytes4 => VerifierRoute) public routes;
+contract AggLayerGateway is IAggLayerGateway, Initializable {
+    mapping(bytes4 => bytes32) public defaultAggchainVKeys;
+    mapping(bytes4 => VerifierRoute) public pessimisticVKeyRoutes;
 
     // admin
+    // todo: Comment admin features/timelock
     address public aggLayerAdmin;
 
     // This account will be able to accept the admin role
@@ -28,29 +28,6 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
      * variables without shifting down storage in the inheritance chain.
      */
     uint256[50] private _gap;
-
-    //////////
-    // events
-    //////////
-
-    /**
-     * @dev Emitted when the aggLayerAdmin updates the pessimistic program verification key
-     */
-    event UpdatePessimisticVKey(
-        bytes4 selector,
-        address verifier,
-        bytes32 newPessimisticVKey
-    );
-
-    event AddAggchainVKey(
-        bytes4 selector,
-        bytes32 newVKey
-    );
-
-    event UpdateAggchainVKey(
-        bytes4 selector,
-        bytes32 newVKey
-    );
 
     /**
      * @dev Emitted when the admin starts the two-step transfer role setting a new pending admin
@@ -85,87 +62,92 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
         _;
     }
 
-    /// @inheritdoc ISP1VerifierGateway
+    /**
+     * @notice Function to verify the pessimistic proof
+     * @param publicValues Public values of the proof
+     * @param proofBytes Proof for the pessimistic verification
+     * @dev First 4 bytes of the pessimistic proof are the pp selector
+     * proof[0:4]: 4 bytes selector pp
+     * proof[4:8]: 4 bytes selector SP1 verifier
+     * proof[8:]: proof
+     */
     function verifyPessimisticProof(
         bytes calldata publicValues,
         bytes calldata proofBytes
     ) external view {
-        bytes4 selector = bytes4(proofBytes[:4]);
-        VerifierRoute memory route = routes[selector];
+        bytes4 ppSelector = bytes4(proofBytes[:4]);
+        VerifierRoute memory route = pessimisticVKeyRoutes[ppSelector];
         if (route.verifier == address(0)) {
-            revert RouteNotFound(selector);
+            revert RouteNotFound(ppSelector);
         } else if (route.frozen) {
-            revert RouteIsFrozen(selector);
+            revert RouteIsFrozen(ppSelector);
         }
         ISP1Verifier(route.verifier).verifyProof(
             route.pessimisticVKey,
             publicValues,
-            proofBytes
+            proofBytes[4:]
         );
     }
 
     //////////////////
     // admin functions
     //////////////////
-
-    /// @inheritdoc ISP1VerifierGateway
-    function addRoute(
-        bytes4 selector,
+    function addPessimisticVKeyRoute(
+        bytes4 pessimisticVKeySelector,
         address verifier,
         bytes32 pessimisticVKey
     ) external onlyAggLayerAdmin {
-        if (selector == bytes4(0)) {
+        if (pessimisticVKeySelector == bytes4(0)) {
             revert SelectorCannotBeZero();
         }
 
-        VerifierRoute storage route = routes[selector];
+        VerifierRoute storage route = pessimisticVKeyRoutes[pessimisticVKeySelector];
         if (route.verifier != address(0)) {
             revert RouteAlreadyExists(route.verifier);
         }
 
         route.verifier = verifier;
         route.pessimisticVKey = pessimisticVKey;
-        emit RouteAdded(selector, verifier, pessimisticVKey);
+        emit RouteAdded(pessimisticVKeySelector, verifier, pessimisticVKey);
     }
 
-    function updatePessimisticVKeyFromRoute(
-        bytes4 selector,
+    function updatePessimisticVKeyRoute(
+        bytes4 pessimisticVKeySelector,
         bytes32 newPessimisticVKey
     ) external onlyAggLayerAdmin {
-        VerifierRoute storage route = routes[selector];
+        VerifierRoute storage route = pessimisticVKeyRoutes[pessimisticVKeySelector];
         if (route.verifier == address(0)) {
-            revert RouteNotFound(selector);
+            revert RouteNotFound(pessimisticVKeySelector);
         } else if (route.frozen) {
-            revert RouteIsFrozen(selector);
+            revert RouteIsFrozen(pessimisticVKeySelector);
         }
 
         route.pessimisticVKey = newPessimisticVKey;
 
         emit UpdatePessimisticVKey(
-            selector,
+            pessimisticVKeySelector,
             route.verifier,
             newPessimisticVKey
         );
     }
 
-    /// @inheritdoc ISP1VerifierGateway
-    function freezeRoute(bytes4 selector) external onlyAggLayerAdmin {
-        VerifierRoute storage route = routes[selector];
+    function freezePessimisticVKeyRoute(bytes4 pessimisticVKeySelector) external onlyAggLayerAdmin {
+        VerifierRoute storage route = pessimisticVKeyRoutes[pessimisticVKeySelector];
         if (route.verifier == address(0)) {
-            revert RouteNotFound(selector);
+            revert RouteNotFound(pessimisticVKeySelector);
         }
         if (route.frozen) {
-            revert RouteIsFrozen(selector);
+            revert RouteIsFrozen(pessimisticVKeySelector);
         }
 
         route.frozen = true;
 
-        emit RouteFrozen(selector, route.verifier);
+        emit RouteFrozen(pessimisticVKeySelector, route.verifier);
     }
 
-    function getPessimisticVKey(bytes4 selector) public view returns (bytes32) {
-        return routes[selector].pessimisticVKey;
-    }
+    //////////////////
+    // defaultAggChainVkey functions
+    //////////////////
     /**
      * @notice Function to add an aggchain verification key
      * @param selector Selector of the SP1 verifier route
@@ -176,16 +158,13 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
         bytes32 newAggchainVKey
     ) external onlyAggLayerAdmin {
         // Check already exists
-        if (storedAggchainVKeys[selector] != bytes32(0)) {
+        if (defaultAggchainVKeys[selector] != bytes32(0)) {
             revert AggchainVKeyAlreadyExists();
         }
         // Add the new VKey to the mapping
-        storedAggchainVKeys[selector] = newAggchainVKey;
+        defaultAggchainVKeys[selector] = newAggchainVKey;
 
-        emit AddAggchainVKey(
-            selector,
-            newAggchainVKey
-        );
+        emit AddAggchainVKey(selector, newAggchainVKey);
     }
 
     function updateAggchainVKey(
@@ -193,22 +172,19 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
         bytes32 newAggchainVKey
     ) external onlyAggLayerAdmin {
         // Check if the key exists
-        if (storedAggchainVKeys[selector] == bytes32(0)) {
+        if (defaultAggchainVKeys[selector] == bytes32(0)) {
             revert AggchainVKeyNotFound();
         }
         // Update the VKey
-        storedAggchainVKeys[selector] = newAggchainVKey;
+        defaultAggchainVKeys[selector] = newAggchainVKey;
 
-        emit UpdateAggchainVKey(
-            selector,
-            newAggchainVKey
-        );
+        emit UpdateAggchainVKey(selector, newAggchainVKey);
     }
 
     function getAggchainVKey(
-        bytes4 selector
+        bytes4 defaultAggchainSelector
     ) external view returns (bytes32) {
-        return storedAggchainVKeys[selector];
+        return defaultAggchainVKeys[defaultAggchainSelector];
     }
 
     /**
@@ -216,7 +192,9 @@ contract AggLayerGateway is ISP1VerifierGateway, Initializable {
      * This is a two step process, the pending admin must accepted to finalize the process
      * @param newPendingAggLayerAdmin Address of the new pending admin
      */
-    function transferAdminRole(address newPendingAggLayerAdmin) external onlyAggLayerAdmin {
+    function transferAdminRole(
+        address newPendingAggLayerAdmin
+    ) external onlyAggLayerAdmin {
         pendingAggLayerAdmin = newPendingAggLayerAdmin;
         emit TransferAggLayerAdminRole(newPendingAggLayerAdmin);
     }

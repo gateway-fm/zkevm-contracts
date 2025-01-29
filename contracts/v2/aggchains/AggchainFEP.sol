@@ -1,27 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.20;
 
-import "../lib/ALAggchainBase.sol";
+import "../lib/AggchainBase.sol";
 import "../interfaces/IALAggchain.sol";
 import "../AggLayerGateway.sol";
 
-/*
- * Generic aggchain based on full execution proof that relies on op-succinct stack.
+/**
+ * @title AggchainFEP
+ * @notice Generic aggchain based on full execution proof that relies on op-succinct stack.
  * op-succinct (more concretely op-proposer) will build the state transition proof (op-fep).
  * This proof, along with bridge checks, constitutes the final FEP proof.
  */
-contract AggchainFEP is ALAggchainBase, IALAggchain {
+contract AggchainFEP is AggchainBase, IALAggchain {
     // op-stack parameters
     bytes32 public aggregationVkey;
     bytes32 public chainConfigHash;
     bytes32 public rangeVkeyCommitment;
 
+    // Struct to store the chain data every time pessimistic proof is verified
     struct ChainData {
         bytes32 lastStateRoot;
         uint128 timestamp;
         uint128 l2BlockNumber;
     }
-
+    // Array of stored chain data
     ChainData[] public chainData;
 
     //////////
@@ -30,6 +32,9 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
 
     /**
      * @dev Emitted when Pessimistic proof is verified
+     * @param initStateRoot Initial state root
+     * @param initTimestamp Initial timestamp
+     * @param initL2BlockNumber Initial L2 block number
      */
     event OnVerifyPessimistic(
         bytes32 initStateRoot,
@@ -38,7 +43,11 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
     );
 
     /**
-     * @param _rollupManager TODO
+     * @param _rollupManager Rollup manager address.
+     * @param _globalExitRootManager Global exit root manager address.
+     * @param _pol POL token address.
+     * @param _bridgeAddress Bridge address.
+     * @param _aggLayerGateway AggLayerGateway address.
      */
     constructor(
         IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
@@ -47,7 +56,7 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
         PolygonRollupManager _rollupManager,
         AggLayerGateway _aggLayerGateway
     )
-        ALAggchainBase(
+        AggchainBase(
             _globalExitRootManager,
             _pol,
             _bridgeAddress,
@@ -56,7 +65,7 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
         )
     {}
     /**
-     * @param initializeBytesCustomChain  Encoded params to initialize the chain. Each aggchain has its decoded params
+     * @param initializeBytesCustomChain  Encoded params to initialize the chain. Each aggchain has its custom decoded params
      */
     function initialize(
         bytes memory initializeBytesCustomChain
@@ -94,7 +103,7 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
         aggregationVkey = _aggregationVkey;
         chainConfigHash = _chainConfigHash;
         rangeVkeyCommitment = _rangeVkeyCommitment;
-        // storage chainData struct
+        // storage first chainData struct
         chainData.push(
             ChainData(initStateRoot, initTimestamp, initL2BlockNumber)
         );
@@ -104,10 +113,10 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
      * Note Return the necessary aggchain information for the proof hashed
      * AggchainHash:
      * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainConfig |
-     * length (bits):   |    32     |       256           | 256       |
+     * length (bits):   |    32         |       256      | 256           |
      * uint256 aggchain_config = keccak256(abi.encodePacked(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey))
-     * @param customChainData TODO
      */
+    /// @inheritdoc IALAggchain
     function getAggchainHash(
         bytes memory customChainData
     ) external view returns (bytes32) {
@@ -137,28 +146,35 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
             keccak256(
                 abi.encodePacked(
                     AGGCHAIN_TYPE,
-                    _getAggchainVKey(selector),
+                    getAggchainVKey(selector),
                     aggchainConfig
                 )
             );
     }
 
-    function getAggchainVKey(
-        bytes4 selector
-    ) external view returns (bytes32) {
-        return _getAggchainVKey(selector);
+    /**
+     * Note Update the custom params set at initialization
+     * TODO: add a timelock delay to avoid invalidate proofs
+     * @param customInitializeData Encoded custom params to update
+     */
+    function updateCustomInitializeData(
+        bytes calldata customInitializeData
+    ) external onlyAdmin {
+        // custom parsing of the customInitializeData
+        (
+            bytes32 _aggregationVkey,
+            bytes32 _chainConfigHash,
+            bytes32 _rangeVkeyCommitment
+        ) = abi.decode(customInitializeData, (bytes32, bytes32, bytes32));
+        aggregationVkey = _aggregationVkey;
+        chainConfigHash = _chainConfigHash;
+        rangeVkeyCommitment = _rangeVkeyCommitment;
     }
 
     /**
-     * Note set the verification key of a zkVM program used to verify the execution-proof
-     * TODO: add a timelock delay to avoid invalidate proofs
-     * TODO: Same for trusted sequencer
+     * @notice Callback function called after verifying a pessimistic proof
+     * @param customData Encoded custom data of the chain data to store
      */
-    function setAggregationVKey(bytes32 _aggregationVkey) external onlyAdmin {
-        aggregationVkey = _aggregationVkey;
-    }
-
-    // function to save the customData
     function onVerifyPessimistic(
         bytes memory customData
     ) external onlyRollupManager {
@@ -179,9 +195,3 @@ contract AggchainFEP is ALAggchainBase, IALAggchain {
         );
     }
 }
-
-// another approach is to get the data from the rollupManager contract
-// if the networkID is known, then:
-// rollup.lastStateRoot --> call
-// newStateRoot --> calldata first context (cannot be read unless it is forwarded)
-// newL2BlockNumber --> calldata first context (cannot be read unless it is forwarded)

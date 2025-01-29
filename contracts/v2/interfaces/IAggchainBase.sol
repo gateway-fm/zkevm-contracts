@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-interface IALAggchainBaseEvents {
+interface IAggchainBaseEvents {
     /**
      * @dev Emitted when the admin updates the aggchain verification key
      */
@@ -13,10 +13,10 @@ interface IALAggchainBaseEvents {
         bytes32 newAggchainVKey
     );
 
-    event UpdateUseCustomChainGatewayFlag(bool useCustomChainGateway);
+    event UpdateUseOwnedGatewayFlag(bool useOwnedGateway);
 }
 
-interface IALAggchainBaseErrors {
+interface IAggchainBaseErrors {
     error InvalidAggchainVKey();
 
     error AggchainRouteAlreadyAdded();
@@ -27,13 +27,13 @@ interface IALAggchainBaseErrors {
      * @dev Thrown when trying to initialize the incorrect initialize function
      */
     error InvalidInitializeFunction();
+
+    error useOwnedGatewayAlreadySet();
 }
 
-interface IALAggchainBase is
-    IALAggchainBaseErrors,
-    IALAggchainBaseEvents
+interface IAggchainBase is
+    IAggchainBaseErrors,
+    IAggchainBaseEvents
 {
     function initialize(bytes calldata initializeBytesCustomChain) external;
-
-    function getAggchainVKey(bytes4 selector) external returns (bytes32);
 }

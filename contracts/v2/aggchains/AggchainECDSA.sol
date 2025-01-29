@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import "../interfaces/IALAggchain.sol";
-import "../lib/ALAggchainBase.sol";
+import "../lib/AggchainBase.sol";
 
 /**
  * @title AggchainECDSA
@@ -11,7 +11,7 @@ import "../lib/ALAggchainBase.sol";
  * transitions on the pessimistic trees (local_exit_tree, local_balance_tree & nullifier_tree).
  * That address is the trustedSequencer and is set during the chain initialization.
  */
-contract AggchainECDSA is ALAggchainBase, IALAggchain {
+contract AggchainECDSA is AggchainBase, IALAggchain {
     /**
      * @dev Emitted when Pessimistic proof is verified.
      */
@@ -25,9 +25,9 @@ contract AggchainECDSA is ALAggchainBase, IALAggchain {
         IERC20Upgradeable _pol,
         IPolygonZkEVMBridgeV2 _bridgeAddress,
         PolygonRollupManager _rollupManager,
-        AggLayerGateway _aggLayerGateway
+        IAggLayerGateway _aggLayerGateway
     )
-        ALAggchainBase(
+        AggchainBase(
             _globalExitRootManager,
             _pol,
             _bridgeAddress,
@@ -44,12 +44,16 @@ contract AggchainECDSA is ALAggchainBase, IALAggchain {
         bytes memory initializeBytesCustomChain
     ) external override onlyRollupManager initializer {
         // custom parsing of the initializeBytesCustomChain
+        // TODO: add all metadata params
         (
             uint32 _networkID,
             string memory _networkName,
             address _admin,
             address _trustedSequencer
-        ) = abi.decode(initializeBytesCustomChain, (uint32, string, address, address));
+        ) = abi.decode(
+                initializeBytesCustomChain,
+                (uint32, string, address, address)
+            );
 
         // set chain variables
         networkID = _networkID;
@@ -69,25 +73,14 @@ contract AggchainECDSA is ALAggchainBase, IALAggchain {
     function getAggchainHash(
         bytes memory customChainData
     ) external view returns (bytes32) {
-        bytes4 selector = abi.decode(customChainData, (bytes4));
+        bytes4 aggchainSelector = abi.decode(customChainData, (bytes4));
         return
             keccak256(
                 abi.encodePacked(
-                    _getAggchainVKey(selector),
+                    getAggchainVKey(aggchainSelector),
                     keccak256(abi.encodePacked(trustedSequencer))
                 )
             );
-    }
-
-    /**
-     * @notice returns the current aggchain verification key, used to verify chain's FEP.
-     * @param selector The selector for the verification key query.
-     * @return The verification key.
-     */
-    function getAggchainVKey(
-        bytes4 selector
-    ) external view returns (bytes32) {
-        return _getAggchainVKey(selector);
     }
 
     /**

@@ -17,7 +17,7 @@ import "./interfaces/IPolygonPessimisticConsensus.sol";
 import "./interfaces/IPolygonPessimisticConsensusV2.sol";
 import "./interfaces/ISP1Verifier.sol";
 import "./interfaces/IPolygonRollupManager.sol";
-import "./interfaces/IALAggchainBase.sol";
+import "./interfaces/IAggchainBase.sol";
 import "./interfaces/IALAggchain.sol";
 import "./AggLayerGateway.sol";
 /**
@@ -600,7 +600,7 @@ contract PolygonRollupManager is
         );
 
         if (rollupType.rollupVerifierType == VerifierType.ALGateway) {
-            IALAggchainBase(rollupAddress).initialize(
+            IAggchainBase(rollupAddress).initialize(
                 initializeBytesCustomChain
             );
         } else {
@@ -736,11 +736,15 @@ contract PolygonRollupManager is
      * @param newRollupTypeID New rollupTypeID to upgrade to
      * @param upgradeData Upgrade data
      */
+     // TODO: think about initializing when upgrading from ecdsa pessimistic to fep
     function _updateRollup(
         ITransparentUpgradeableProxy rollupContract,
         uint32 newRollupTypeID,
         bytes memory upgradeData
     ) internal {
+        // TODO: add checks
+        // - ALGateway only update to same type
+        // - 
         // Check that rollup type exists
         if (newRollupTypeID == 0 || newRollupTypeID > rollupTypeCount) {
             revert RollupTypeDoesNotExist();
@@ -1071,7 +1075,6 @@ contract PolygonRollupManager is
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot,
         bytes calldata proof,
-        bytes4 selector,
         bytes memory customChainData
     ) external onlyRole(_TRUSTED_AGGREGATOR_ROLE) {
         RollupData storage rollup = _rollupIDToRollupData[rollupID];
@@ -1084,7 +1087,6 @@ contract PolygonRollupManager is
                 newLocalExitRoot,
                 newPessimisticRoot,
                 proof,
-                selector,
                 customChainData
             );
             return;
@@ -1117,9 +1119,6 @@ contract PolygonRollupManager is
             inputPessimisticBytes,
             proof
         );
-        // TODO: Since there are no batches we could have either:
-        // A pool of POL for pessimistic, or make the fee system offchain, since there are already a
-        // dependency with the trusted aggregator ( or pessimistic aggregator)
 
         // Update aggregation parameters
         lastAggregationTimestamp = uint64(block.timestamp);
@@ -1159,7 +1158,6 @@ contract PolygonRollupManager is
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot,
         bytes calldata proof,
-        bytes4 selector,
         bytes memory customChainData
     ) private onlyRole(_TRUSTED_AGGREGATOR_ROLE) {
         RollupData storage rollup = _rollupIDToRollupData[rollupID];
@@ -1180,16 +1178,11 @@ contract PolygonRollupManager is
             newPessimisticRoot,
             customChainData
         );
-        (, bytes32 pessimisticVKey, ) = aggLayerGateway.routes(selector);
-        // Verify proof
-        ISP1Verifier(rollup.verifier).verifyProof( // Use verifier from routes
-            pessimisticVKey,
-            inputPessimisticBytes,
-            proof
-        );
-        // TODO: Since there are no batches we could have either:
-        // A pool of POL for pessimistic, or make the fee system offchain, since there are already a
-        // dependency with the trusted aggregator ( or pessimistic aggregator)
+        // Verify proof. The pessimistic proof selector is attached at the first 4 bytes of the proof
+        // proof[0:4]: 4 bytes selector pp
+        // proof[4:8]: 4 bytes selector SP1 verifier
+        // proof[8:]: proof
+        aggLayerGateway.verifyPessimisticProof(inputPessimisticBytes, proof);
 
         // Update aggregation parameters
         lastAggregationTimestamp = uint64(block.timestamp);
@@ -1207,13 +1200,14 @@ contract PolygonRollupManager is
 
         // Interact with globalExitRootManager
         globalExitRootManager.updateExitRoot(getRollupExitRoot());
-
+        // Precompute newLocalExitRoot to avoid stack to deep compilation issues
+        bytes32 newLocalExitRootAux = newLocalExitRoot;
         // Same event as verifyBatches to support current bridge service to synchronize everything
         emit VerifyBatchesTrustedAggregator(
             rollupID,
             0, // final batch: does not apply in pessimistic
             bytes32(0), // new state root: does not apply in pessimistic
-            newLocalExitRoot,
+            newLocalExitRootAux,
             msg.sender
         );
     }

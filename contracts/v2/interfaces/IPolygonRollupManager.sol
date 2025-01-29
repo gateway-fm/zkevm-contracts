@@ -379,7 +379,6 @@ interface IPolygonRollupManager {
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot,
         bytes calldata proof,
-        bytes4 selector,
         bytes memory customChainData
     ) external;
 
