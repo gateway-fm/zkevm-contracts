@@ -390,22 +390,24 @@ interface IPolygonRollupManager {
 
     function setBatchFee(uint256 newBatchFee) external;
 
-    function getRollupExitRoot() external returns (bytes32);
+    function getRollupExitRoot() external view returns (bytes32);
 
-    function getLastVerifiedBatch(uint32 rollupID) external returns (uint64);
+    function getLastVerifiedBatch(
+        uint32 rollupID
+    ) external view returns (uint64);
 
-    function calculateRewardPerBatch() external returns (uint256);
+    function calculateRewardPerBatch() external view returns (uint256);
 
-    function getBatchFee() external returns (uint256);
+    function getBatchFee() external view returns (uint256);
 
-    function getForcedBatchFee() external returns (uint256);
+    function getForcedBatchFee() external view returns (uint256);
 
     function getInputPessimisticBytes(
         uint32 rollupID,
         bytes32 selectedGlobalExitRoot,
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot
-    ) external returns (bytes memory);
+    ) external view returns (bytes memory);
 
     function getInputSnarkBytes(
         uint32 rollupID,
@@ -414,12 +416,15 @@ interface IPolygonRollupManager {
         bytes32 newLocalExitRoot,
         bytes32 oldStateRoot,
         bytes32 newStateRoot
-    ) external returns (bytes memory);
+    ) external view returns (bytes memory);
 
     function getRollupBatchNumToStateRoot(
         uint32 rollupID,
         uint64 batchNum
-    ) external returns (bytes32);
+    ) external view returns (bytes32);
 
-    function lastDeactivatedEmergencyStateTimestamp() external returns (uint64);
+    function lastDeactivatedEmergencyStateTimestamp()
+        external
+        view
+        returns (uint64);
 }
