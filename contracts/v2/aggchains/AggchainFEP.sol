@@ -10,7 +10,7 @@ import "../AggLayerGateway.sol";
  * op-succinct (more concretely op-proposer) will build the state transition proof (op-fep).
  * This proof, along with bridge checks, constitutes the final FEP proof.
  */
-contract AggchainFEP is ALAggchainFEPBase, IALAggchainFEP {
+contract AggchainFEP is ALAggchainBase, IALAggchain {
     // op-stack parameters
     bytes32 public aggregationVkey;
     bytes32 public chainConfigHash;
