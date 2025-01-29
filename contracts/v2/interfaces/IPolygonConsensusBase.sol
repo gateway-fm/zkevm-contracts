@@ -12,5 +12,5 @@ interface IPolygonConsensusBase {
         string memory _networkName
     ) external;
 
-    function admin() external returns (address);
+    function admin() external view returns (address);
 }
