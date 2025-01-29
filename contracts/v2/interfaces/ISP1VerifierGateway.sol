@@ -49,11 +49,11 @@ interface ISP1VerifierGatewayErrors {
     //// @notice Thrown when the caller is not the pending AggLayerAdmin
     error OnlyPendingAggLayerAdmin();
 
-    /// @notice Thrown when trying to add an authenticator verification key that already exists
-    error AuthenticatorVKeyAlreadyExists();
+    /// @notice Thrown when trying to add an aggchain verification key that already exists
+    error AggchainVKeyAlreadyExists();
 
-    /// @notice Thrown when trying to update an authenticator verification key that doesn't exists
-    error AuthenticatorVKeyNotFound();
+    /// @notice Thrown when trying to update an aggchain verification key that doesn't exists
+    error AggchainVKeyNotFound();
 }
 
 /// @title SP1 Verifier Gateway Interface
@@ -65,9 +65,9 @@ interface ISP1VerifierGateway is
     ISP1VerifierGatewayErrors
 {
     /**
-     * @notice returns the current authenticator verification key, used to verify chain's FEP
+     * @notice returns the current aggchain verification key, used to verify chain's FEP
      */
-    function getAuthenticatorVKey(bytes4 selector) external view returns (bytes32);
+    function getAggchainVKey(bytes4 selector) external view returns (bytes32);
 
     /// @notice Verifies a pessimistic proof with given public values and proof.
     /// @dev It is expected that the first 4 bytes of proofBytes must match the first 4 bytes of

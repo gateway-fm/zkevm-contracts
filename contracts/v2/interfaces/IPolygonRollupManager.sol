@@ -301,12 +301,7 @@ interface IPolygonRollupManager {
      * @dev Invalid Verifier Type when getting rollup data
      */
     error InvalidVerifierType();
-
-    /**
-     * @dev Invalid Authenticator Address, is not whitelisted for new chain creation
-     */
-    error AuthenticatorAddressNotWhitelisted();
-
+    
     enum VerifierType {
         StateTransition,
         Pessimistic,

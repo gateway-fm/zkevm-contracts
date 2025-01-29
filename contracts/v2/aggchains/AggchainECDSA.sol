@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.20;
 
-import "../interfaces/IALAuthenticator.sol";
-import "../lib/ALAuthenticatorBase.sol";
+import "../interfaces/IALAggchain.sol";
+import "../lib/ALAggchainBase.sol";
 
 /**
- * @title AuthECDSA
- * @notice Generic authenticator based on ECDSA signature.
+ * @title AggchainECDSA
+ * @notice Generic aggchain based on ECDSA signature.
  * An address signs the new_ler and the commit_imported_bridge_exits in order to do state
  * transitions on the pessimistic trees (local_exit_tree, local_balance_tree & nullifier_tree).
  * That address is the trustedSequencer and is set during the chain initialization.
  */
-contract AuthECDSA is ALAuthenticatorBase, IALAuthenticator {
+contract AggchainECDSA is ALAggchainBase, IALAggchain {
     /**
      * @dev Emitted when Pessimistic proof is verified.
      */
@@ -27,7 +27,7 @@ contract AuthECDSA is ALAuthenticatorBase, IALAuthenticator {
         PolygonRollupManager _rollupManager,
         AggLayerGateway _aggLayerGateway
     )
-        ALAuthenticatorBase(
+        ALAggchainBase(
             _globalExitRootManager,
             _pol,
             _bridgeAddress,
@@ -38,7 +38,7 @@ contract AuthECDSA is ALAuthenticatorBase, IALAuthenticator {
 
     /**
      * @param initializeBytesCustomChain Encoded params to initialize the chain.
-     * Each authenticator has its decoded params.
+     * Each aggchain has its decoded params.
      */
     function initialize(
         bytes memory initializeBytesCustomChain
@@ -59,35 +59,35 @@ contract AuthECDSA is ALAuthenticatorBase, IALAuthenticator {
     }
 
     /**
-     * @dev Return the necessary authenticator information for the proof hashed
-     * AuthenticatorHash:
-     * Field:           | authenticatorVKey   | authConfig |
+     * @dev Return the necessary aggchain information for the proof hashed
+     * AggchainHash:
+     * Field:           | aggchainVKey   | aggchainConfig |
      * length (bits):   |       256           | 256       |
-     * authConfig = keccak256(abi.encodePacked(trusted_sequencer))
+     * aggchainConfig = keccak256(abi.encodePacked(trusted_sequencer))
      */
-    /// @inheritdoc IALAuthenticator
-    function getAuthenticatorHash(
+    /// @inheritdoc IALAggchain
+    function getAggchainHash(
         bytes memory customChainData
     ) external view returns (bytes32) {
         bytes4 selector = abi.decode(customChainData, (bytes4));
         return
             keccak256(
                 abi.encodePacked(
-                    _getAuthenticatorVKey(selector),
+                    _getAggchainVKey(selector),
                     keccak256(abi.encodePacked(trustedSequencer))
                 )
             );
     }
 
     /**
-     * @notice returns the current authenticator verification key, used to verify chain's FEP.
+     * @notice returns the current aggchain verification key, used to verify chain's FEP.
      * @param selector The selector for the verification key query.
      * @return The verification key.
      */
-    function getAuthenticatorVKey(
+    function getAggchainVKey(
         bytes4 selector
     ) external view returns (bytes32) {
-        return _getAuthenticatorVKey(selector);
+        return _getAggchainVKey(selector);
     }
 
     /**
