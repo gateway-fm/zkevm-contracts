@@ -243,6 +243,11 @@ interface IPolygonRollupManager {
     error EmptyVerifySequencesData();
 
     /**
+     * @dev Update to old rollup ID
+     */
+    error UpdateToOldRollupTypeID();
+
+    /**
      * @dev All batches must be verified before the upgrade
      */
     error AllBatchesMustBeVerified();
@@ -301,7 +306,7 @@ interface IPolygonRollupManager {
      * @dev Invalid Verifier Type when getting rollup data
      */
     error InvalidVerifierType();
-    
+
     enum VerifierType {
         StateTransition,
         Pessimistic,
@@ -338,7 +343,8 @@ interface IPolygonRollupManager {
         uint64 chainID,
         bytes32 initRoot,
         VerifierType rollupVerifierType,
-        bytes32 programVKey
+        bytes32 programVKey,
+        bytes32 initPessimisticRoot
     ) external;
 
     function updateRollupByRollupAdmin(
@@ -399,13 +405,6 @@ interface IPolygonRollupManager {
     function getForcedBatchFee() external returns (uint256);
 
     function getInputPessimisticBytes(
-        uint32 rollupID,
-        bytes32 selectedGlobalExitRoot,
-        bytes32 newLocalExitRoot,
-        bytes32 newPessimisticRoot
-    ) external returns (bytes memory);
-
-    function getInputPessimisticBytesAL(
         uint32 rollupID,
         bytes32 selectedGlobalExitRoot,
         bytes32 newLocalExitRoot,

@@ -8,10 +8,7 @@ interface IAggchainBaseEvents {
      */
     event AddAggchainVKey(bytes4 selector, bytes32 newAggchainVKey);
 
-    event UpdateAggchainVKey(
-        bytes4 selector,
-        bytes32 newAggchainVKey
-    );
+    event UpdateAggchainVKey(bytes4 selector, bytes32 newAggchainVKey);
 
     event UpdateUseOwnedGatewayFlag(bool useOwnedGateway);
 }
@@ -31,9 +28,6 @@ interface IAggchainBaseErrors {
     error useOwnedGatewayAlreadySet();
 }
 
-interface IAggchainBase is
-    IAggchainBaseErrors,
-    IAggchainBaseEvents
-{
+interface IAggchainBase is IAggchainBaseErrors, IAggchainBaseEvents {
     function initialize(bytes calldata initializeBytesCustomChain) external;
 }

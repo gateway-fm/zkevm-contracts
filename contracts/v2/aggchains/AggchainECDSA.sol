@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.20;
 
-import "../interfaces/IALAggchain.sol";
+import "../interfaces/IAggchain.sol";
 import "../lib/AggchainBase.sol";
 
 /**
@@ -11,11 +11,11 @@ import "../lib/AggchainBase.sol";
  * transitions on the pessimistic trees (local_exit_tree, local_balance_tree & nullifier_tree).
  * That address is the trustedSequencer and is set during the chain initialization.
  */
-contract AggchainECDSA is AggchainBase, IALAggchain {
+contract AggchainECDSA is AggchainBase, IAggchain {
     /**
      * @dev Emitted when Pessimistic proof is verified.
      */
-    event OnVerifyPessimistic();
+    event OnVerifyPessimistic(bytes32 newStateRoot);
 
     /**
      * @param _rollupManager Rollup manager address.
@@ -39,45 +39,51 @@ contract AggchainECDSA is AggchainBase, IALAggchain {
     /**
      * @param initializeBytesCustomChain Encoded params to initialize the chain.
      * Each aggchain has its decoded params.
+     * @dev for this type of aggChain, there is no need to initialize again when upgrading from pessimistic type because the initialize is exactly the same.
      */
     function initialize(
         bytes memory initializeBytesCustomChain
     ) external override onlyRollupManager initializer {
         // custom parsing of the initializeBytesCustomChain
-        // TODO: add all metadata params
         (
-            uint32 _networkID,
-            string memory _networkName,
             address _admin,
-            address _trustedSequencer
+            address _trustedSequencer,
+            address _gasTokenAddress,
+            string memory _trustedSequencerURL,
+            string memory _networkName
         ) = abi.decode(
                 initializeBytesCustomChain,
-                (uint32, string, address, address)
+                (address, address, address, string, string)
             );
-
         // set chain variables
-        networkID = _networkID;
-        networkName = _networkName;
         admin = _admin;
+        gasTokenAddress = _gasTokenAddress;
         trustedSequencer = _trustedSequencer;
+        trustedSequencerURL = _trustedSequencerURL;
+        networkName = _networkName;
     }
 
     /**
      * @dev Return the necessary aggchain information for the proof hashed
      * AggchainHash:
-     * Field:           | aggchainVKey   | aggchainConfig |
-     * length (bits):   |       256           | 256       |
+     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainConfig |
+     * length (bits):   |    32         |       256      |     256       |
      * aggchainConfig = keccak256(abi.encodePacked(trusted_sequencer))
      */
-    /// @inheritdoc IALAggchain
+    /// @inheritdoc IAggchain
     function getAggchainHash(
         bytes memory customChainData
     ) external view returns (bytes32) {
-        bytes4 aggchainSelector = abi.decode(customChainData, (bytes4));
+        bytes2 aggchainSelector = abi.decode(customChainData, (bytes2));
+        bytes4 finalAggchainSelector = _getAggchainSelectorFromType(
+            AggchainType.ECDSA,
+            aggchainSelector
+        );
         return
             keccak256(
                 abi.encodePacked(
-                    getAggchainVKey(aggchainSelector),
+                    AGGCHAIN_TYPE,
+                    getAggchainVKey(finalAggchainSelector),
                     keccak256(abi.encodePacked(trustedSequencer))
                 )
             );
@@ -88,9 +94,10 @@ contract AggchainECDSA is AggchainBase, IALAggchain {
      * @dev The customData is not used at this kind of chain, added to match the interface
      */
     function onVerifyPessimistic(
-        bytes memory // customData
+        bytes calldata customChainData
     ) external onlyRollupManager {
-        // just throw an event
-        emit OnVerifyPessimistic();
+        bytes32 newStateRoot = abi.decode(customChainData, (bytes32));
+        // Emit event
+        emit OnVerifyPessimistic(newStateRoot);
     }
 }

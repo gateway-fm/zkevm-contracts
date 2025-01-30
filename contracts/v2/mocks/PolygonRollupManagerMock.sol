@@ -14,8 +14,9 @@ contract PolygonRollupManagerMock is PolygonRollupManager {
     constructor(
         IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
         IERC20Upgradeable _pol,
-        IPolygonZkEVMBridge _bridgeAddress
-    ) PolygonRollupManager(_globalExitRootManager, _pol, _bridgeAddress) {}
+        IPolygonZkEVMBridge _bridgeAddress,
+        AggLayerGateway _aggLayerGateway
+    ) PolygonRollupManager(_globalExitRootManager, _pol, _bridgeAddress, _aggLayerGateway) {}
 
     function initializeMock(
         address trustedAggregator,

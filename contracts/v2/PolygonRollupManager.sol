@@ -18,7 +18,7 @@ import "./interfaces/IPolygonPessimisticConsensusV2.sol";
 import "./interfaces/ISP1Verifier.sol";
 import "./interfaces/IPolygonRollupManager.sol";
 import "./interfaces/IAggchainBase.sol";
-import "./interfaces/IALAggchain.sol";
+import "./interfaces/IAggchain.sol";
 import "./AggLayerGateway.sol";
 /**
  * Contract responsible for managing rollups and the verification of their batches.
@@ -247,6 +247,9 @@ contract PolygonRollupManager is
     // POL token address
     IERC20Upgradeable public immutable pol;
 
+    // Polygon Verifier Gateway address
+    AggLayerGateway public immutable aggLayerGateway;
+
     // Number of rollup types added, every new type will be assigned sequentially a new ID
     uint32 public rollupTypeCount;
 
@@ -302,9 +305,6 @@ contract PolygonRollupManager is
     // Timestamp when the last emergency state was deactivated
     uint64 public lastDeactivatedEmergencyStateTimestamp;
 
-    // Polygon Verifier Gateway address
-    AggLayerGateway public aggLayerGateway;
-
     /**
      * @dev Emitted when a new rollup type is added
      */
@@ -345,7 +345,8 @@ contract PolygonRollupManager is
         uint64 chainID,
         VerifierType rollupVerifierType,
         uint64 lastVerifiedBatchBeforeUpgrade,
-        bytes32 programVKey
+        bytes32 programVKey,
+        bytes32 initPessimisticRoot
     );
 
     /**
@@ -401,15 +402,18 @@ contract PolygonRollupManager is
      * @param _globalExitRootManager Global exit root manager address
      * @param _pol POL token address
      * @param _bridgeAddress Bridge address
+     * @param _aggLayerGateway Polygon Verifier Gateway address
      */
     constructor(
         IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
         IERC20Upgradeable _pol,
-        IPolygonZkEVMBridge _bridgeAddress
+        IPolygonZkEVMBridge _bridgeAddress,
+        AggLayerGateway _aggLayerGateway
     ) {
         globalExitRootManager = _globalExitRootManager;
         pol = _pol;
         bridgeAddress = _bridgeAddress;
+        aggLayerGateway = _aggLayerGateway;
 
         // Disable initializers on the implementation following the best practices
         _disableInitializers();
@@ -417,12 +421,8 @@ contract PolygonRollupManager is
 
     /**
      * Initializer function to set new rollup manager version
-     * @param _aggLayerGateway Polygon Verifier Gateway address
      */
-    function initialize(
-        address _aggLayerGateway
-    ) external virtual reinitializer(4) {
-        aggLayerGateway = AggLayerGateway(_aggLayerGateway);
+    function initialize() external virtual reinitializer(4) {
         emit UpdateRollupManagerVersion(ROLLUP_MANAGER_VERSION);
     }
 
@@ -466,8 +466,6 @@ contract PolygonRollupManager is
                 genesis != bytes32(0) ||
                 programVKey != bytes32(0)
             ) revert InvalidRollupType();
-            // Set ALGateway verifier
-            verifier = address(aggLayerGateway);
         } else if (rollupVerifierType == VerifierType.StateTransition) {
             // No programVKey on state transition rollups
             if (programVKey != bytes32(0)) revert InvalidRollupType();
@@ -600,9 +598,7 @@ contract PolygonRollupManager is
         );
 
         if (rollupType.rollupVerifierType == VerifierType.ALGateway) {
-            IAggchainBase(rollupAddress).initialize(
-                initializeBytesCustomChain
-            );
+            IAggchainBase(rollupAddress).initialize(initializeBytesCustomChain);
         } else {
             // Initialize new rollup
             IPolygonRollupBase(rollupAddress).initialize(
@@ -626,6 +622,7 @@ contract PolygonRollupManager is
      * @param initRoot Genesis block for StateTransitionChains & localExitRoot for pessimistic chain
      * @param rollupVerifierType Compatibility ID for the added rollup
      * @param programVKey Hashed program that will be executed in case of using a "general purpose ZK verifier" e.g SP1
+     * @param initPessimisticRoot Pessimistic root to init the chain, contains the local balance tree and the local nullifier tree hashed
      */
     function addExistingRollup(
         address rollupAddress,
@@ -634,7 +631,8 @@ contract PolygonRollupManager is
         uint64 chainID,
         bytes32 initRoot,
         VerifierType rollupVerifierType,
-        bytes32 programVKey
+        bytes32 programVKey,
+        bytes32 initPessimisticRoot
     ) external onlyRole(_ADD_EXISTING_ROLLUP_ROLE) {
         // Check chainID nullifier
         if (chainIDToRollupID[chainID] != 0) {
@@ -672,6 +670,9 @@ contract PolygonRollupManager is
         if (rollupVerifierType == VerifierType.Pessimistic) {
             rollup.programVKey = programVKey;
             rollup.lastLocalExitRoot = initRoot;
+        } else if (rollupVerifierType == VerifierType.ALGateway) {
+            rollup.lastPessimisticRoot = initPessimisticRoot;
+            rollup.lastLocalExitRoot = initRoot;
         } else {
             rollup.batchNumToStateRoot[0] = initRoot;
         }
@@ -684,7 +685,8 @@ contract PolygonRollupManager is
             chainID,
             rollupVerifierType,
             0,
-            programVKey
+            programVKey,
+            initPessimisticRoot
         );
     }
 
@@ -713,6 +715,24 @@ contract PolygonRollupManager is
             revert AllSequencedMustBeVerified();
         }
 
+        // Only allowed to update to an older rollup type id if the destination rollup type is ALGateway
+        if (
+            rollupTypeMap[newRollupTypeID].rollupVerifierType !=
+            VerifierType.ALGateway &&
+            rollup.rollupTypeID >= newRollupTypeID
+        ) {
+            revert UpdateToOldRollupTypeID();
+        }
+
+        uint32 rollupID = rollupAddressToID[address(rollupContract)];
+        // Admin can't update to different rollup type
+        if (
+            rollupTypeMap[rollupID].rollupVerifierType !=
+            rollupTypeMap[newRollupTypeID].rollupVerifierType
+        ) {
+            revert UpdateNotCompatible();
+        }
+
         _updateRollup(rollupContract, newRollupTypeID, new bytes(0));
     }
 
@@ -736,15 +756,11 @@ contract PolygonRollupManager is
      * @param newRollupTypeID New rollupTypeID to upgrade to
      * @param upgradeData Upgrade data
      */
-     // TODO: think about initializing when upgrading from ecdsa pessimistic to fep
     function _updateRollup(
         ITransparentUpgradeableProxy rollupContract,
         uint32 newRollupTypeID,
         bytes memory upgradeData
     ) internal {
-        // TODO: add checks
-        // - ALGateway only update to same type
-        // - 
         // Check that rollup type exists
         if (newRollupTypeID == 0 || newRollupTypeID > rollupTypeCount) {
             revert RollupTypeDoesNotExist();
@@ -768,6 +784,18 @@ contract PolygonRollupManager is
         // Check rollup type is not obsolete
         if (newRollupType.obsolete) {
             revert RollupTypeObsolete();
+        }
+
+        // If not upgrading to ALGateway
+        if (newRollupType.rollupVerifierType != VerifierType.ALGateway) {
+            // Current rollup type cant be ALGateway
+            if (rollup.rollupVerifierType == VerifierType.ALGateway) {
+                revert UpdateNotCompatible();
+            }
+            // Current rollup type must be same than new rollup type
+            if (rollup.rollupVerifierType != newRollupType.rollupVerifierType) {
+                revert UpdateNotCompatible();
+            }
         }
 
         // Update rollup parameters
@@ -1068,29 +1096,19 @@ contract PolygonRollupManager is
      * @param newLocalExitRoot New local exit root
      * @param newPessimisticRoot New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
      * @param proof SP1 proof (Plonk)
+     * @param customChainData Specific custom data to verify Aggregation layer chains
      */
+    // TODO: add not reentracy modifier -> explain why
     function verifyPessimisticTrustedAggregator(
         uint32 rollupID,
         uint32 l1InfoTreeLeafCount,
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot,
         bytes calldata proof,
-        bytes memory customChainData
+        bytes calldata customChainData
     ) external onlyRole(_TRUSTED_AGGREGATOR_ROLE) {
         RollupData storage rollup = _rollupIDToRollupData[rollupID];
 
-        // If we are verifying a ALRollup, it's differently handled
-        if (rollup.rollupVerifierType == VerifierType.ALGateway) {
-            _verifyPessimisticTrustedAggregatorAL(
-                rollupID,
-                l1InfoTreeLeafCount,
-                newLocalExitRoot,
-                newPessimisticRoot,
-                proof,
-                customChainData
-            );
-            return;
-        }
         // Only for pessimistic verifiers
         if (rollup.rollupVerifierType != VerifierType.Pessimistic) {
             revert OnlyChainsWithPessimisticProofs();
@@ -1110,79 +1128,26 @@ contract PolygonRollupManager is
             rollup,
             l1InfoRoot,
             newLocalExitRoot,
-            newPessimisticRoot
-        );
-
-        // Verify proof
-        ISP1Verifier(rollup.verifier).verifyProof(
-            rollup.programVKey,
-            inputPessimisticBytes,
-            proof
-        );
-
-        // Update aggregation parameters
-        lastAggregationTimestamp = uint64(block.timestamp);
-
-        // Consolidate state
-        rollup.lastLocalExitRoot = newLocalExitRoot;
-        rollup.lastPessimisticRoot = newPessimisticRoot;
-
-        // Interact with globalExitRootManager
-        globalExitRootManager.updateExitRoot(getRollupExitRoot());
-        // Precompute newLocalExitRoot to avoid stack to deep compilation issues
-        bytes32 newLocalExitRootAux = newLocalExitRoot;
-        // Same event as verifyBatches to support current bridge service to synchronize everything
-        emit VerifyBatchesTrustedAggregator(
-            rollupID,
-            0, // final batch: does not apply in pessimistic
-            bytes32(0), // new state root: does not apply in pessimistic
-            newLocalExitRootAux,
-            msg.sender
-        );
-
-        // callback to each chain
-    }
-
-    /**
-     * @notice Allows a trusted aggregator to verify pessimistic proof
-     * @param rollupID Rollup identifier
-     * @param l1InfoTreeLeafCount Count of the L1InfoTree leaf that will be used to verify imported bridge exits
-     * @param newLocalExitRoot New local exit root
-     * @param newPessimisticRoot New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
-     * @param customChainData Specific custom data to verify chain proof
-     * @param proof SP1 proof (Plonk)
-     */
-    function _verifyPessimisticTrustedAggregatorAL(
-        uint32 rollupID,
-        uint32 l1InfoTreeLeafCount,
-        bytes32 newLocalExitRoot,
-        bytes32 newPessimisticRoot,
-        bytes calldata proof,
-        bytes memory customChainData
-    ) private onlyRole(_TRUSTED_AGGREGATOR_ROLE) {
-        RollupData storage rollup = _rollupIDToRollupData[rollupID];
-
-        // Check l1InfoTreeLeafCount has a valid l1InfoTreeRoot
-        bytes32 l1InfoRoot = globalExitRootManager.l1InfoRootMap(
-            l1InfoTreeLeafCount
-        );
-
-        if (l1InfoRoot == bytes32(0)) {
-            revert L1InfoTreeLeafCountInvalid();
-        }
-        bytes memory inputPessimisticBytes = _getInputPessimisticBytesAL(
-            rollupID,
-            rollup,
-            l1InfoRoot,
-            newLocalExitRoot,
             newPessimisticRoot,
             customChainData
         );
-        // Verify proof. The pessimistic proof selector is attached at the first 4 bytes of the proof
-        // proof[0:4]: 4 bytes selector pp
-        // proof[4:8]: 4 bytes selector SP1 verifier
-        // proof[8:]: proof
-        aggLayerGateway.verifyPessimisticProof(inputPessimisticBytes, proof);
+        if (rollup.rollupVerifierType == VerifierType.ALGateway) {
+            // Verify proof. The pessimistic proof selector is attached at the first 4 bytes of the proof
+            // proof[0:4]: 4 bytes selector pp
+            // proof[4:8]: 4 bytes selector SP1 verifier
+            // proof[8:]: proof
+            aggLayerGateway.verifyPessimisticProof(
+                inputPessimisticBytes,
+                proof
+            );
+        } else {
+            // Verify proof
+            ISP1Verifier(rollup.verifier).verifyProof(
+                rollup.programVKey,
+                inputPessimisticBytes,
+                proof
+            );
+        }
 
         // Update aggregation parameters
         lastAggregationTimestamp = uint64(block.timestamp);
@@ -1191,25 +1156,24 @@ contract PolygonRollupManager is
         rollup.lastLocalExitRoot = newLocalExitRoot;
         rollup.lastPessimisticRoot = newPessimisticRoot;
 
-        // allow chains to manage customData
-        // Callback to the rollup address
-
-        IALAggchain(rollup.rollupContract).onVerifyPessimistic(
-            customChainData
-        );
-
         // Interact with globalExitRootManager
         globalExitRootManager.updateExitRoot(getRollupExitRoot());
-        // Precompute newLocalExitRoot to avoid stack to deep compilation issues
-        bytes32 newLocalExitRootAux = newLocalExitRoot;
+
         // Same event as verifyBatches to support current bridge service to synchronize everything
         emit VerifyBatchesTrustedAggregator(
             rollupID,
-            0, // final batch: does not apply in pessimistic
+            0, // final batch: does not  apply in pessimistic
             bytes32(0), // new state root: does not apply in pessimistic
-            newLocalExitRootAux,
+            newLocalExitRoot,
             msg.sender
         );
+        if (rollup.rollupVerifierType == VerifierType.ALGateway) {
+            // Allow chains to manage customData
+            // Callback to the rollup address
+            IAggchain(rollup.rollupContract).onVerifyPessimistic(
+                customChainData
+            );
+        }
     }
 
     ////////////////////////
@@ -1404,45 +1368,22 @@ contract PolygonRollupManager is
     }
 
     /**
-     * @notice Function to calculate the pessimistic input bytes
+     * @notice Function to calculate the pessimistic or aggregation layer input bytes
      * @param rollupID Rollup id used to calculate the input snark bytes
      * @param l1InfoTreeRoot L1 Info tree root to proof imported bridges
      * @param newLocalExitRoot New local exit root
      * @param newPessimisticRoot New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
+     * @param customChainData Specific custom data to verify Aggregation layer chains
      */
     function getInputPessimisticBytes(
         uint32 rollupID,
         bytes32 l1InfoTreeRoot,
         bytes32 newLocalExitRoot,
-        bytes32 newPessimisticRoot
+        bytes32 newPessimisticRoot,
+        bytes calldata customChainData
     ) external view returns (bytes memory) {
         return
             _getInputPessimisticBytes(
-                rollupID,
-                _rollupIDToRollupData[rollupID],
-                l1InfoTreeRoot,
-                newLocalExitRoot,
-                newPessimisticRoot
-            );
-    }
-
-    /**
-     * @notice Function to calculate the pessimistic input bytes for the aggregation Layer
-     * @param rollupID Rollup id used to calculate the input snark bytes
-     * @param l1InfoTreeRoot L1 Info tree root to proof imported bridges
-     * @param newLocalExitRoot New local exit root
-     * @param newPessimisticRoot New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
-     * @param customChainData Custom Consensus data
-     */
-    function getInputPessimisticBytesAL(
-        uint32 rollupID,
-        bytes32 l1InfoTreeRoot,
-        bytes32 newLocalExitRoot,
-        bytes32 newPessimisticRoot,
-        bytes memory customChainData
-    ) external view returns (bytes memory) {
-        return
-            _getInputPessimisticBytesAL(
                 rollupID,
                 _rollupIDToRollupData[rollupID],
                 l1InfoTreeRoot,
@@ -1465,50 +1406,29 @@ contract PolygonRollupManager is
         RollupData storage rollup,
         bytes32 l1InfoTreeRoot,
         bytes32 newLocalExitRoot,
-        bytes32 newPessimisticRoot
-    ) internal view returns (bytes memory) {
-        bytes32 consensusHash = IPolygonPessimisticConsensus(
-            address(rollup.rollupContract)
-        ).getConsensusHash();
+        bytes32 newPessimisticRoot,
+        bytes calldata customChainData
+    ) internal view returns (bytes memory inputPessimisticBytes) {
+        // Different consensusHash and encoding if the rollup is ALGateway or pessimistic
+        if (rollup.rollupVerifierType == VerifierType.ALGateway) {
+            bytes32 aggchainHash = IAggchain(rollup.rollupContract)
+                .getAggchainHash(customChainData);
 
-        return
-            abi.encodePacked(
+            inputPessimisticBytes = abi.encodePacked(
                 rollup.lastLocalExitRoot,
-                rollup.lastPessimisticRoot, // AL --> Discussion
+                rollup.lastPessimisticRoot,
                 l1InfoTreeRoot,
                 rollupID,
-                consensusHash,
+                aggchainHash,
                 newLocalExitRoot,
-                newPessimisticRoot // AL
+                newPessimisticRoot
             );
-    }
+        } else {
+            bytes32 consensusHash = IPolygonPessimisticConsensus(
+                address(rollup.rollupContract)
+            ).getConsensusHash();
 
-    /**
-     * @notice Function to calculate the input snark bytes
-     * @param rollupID Rollup identifier
-     * @param rollup Rollup data storage pointer
-     * @param l1InfoTreeRoot L1 Info tree root to proof imported bridges
-     * @param newLocalExitRoot New local exit root
-     * @param newPessimisticRoot New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
-     * @param customChainData Custom Consensus data
-     */
-    function _getInputPessimisticBytesAL(
-        uint32 rollupID,
-        RollupData storage rollup,
-        bytes32 l1InfoTreeRoot,
-        bytes32 newLocalExitRoot,
-        bytes32 newPessimisticRoot,
-        bytes memory customChainData
-    ) internal view returns (bytes memory) {
-        // getInputPessimisticBytesAL can only be generated for ALGateway rollup types
-        if (rollup.rollupVerifierType != VerifierType.ALGateway) {
-            revert InvalidRollupType();
-        }
-        bytes32 consensusHash = IALAggchain(rollup.rollupContract)
-            .getAggchainHash(customChainData);
-
-        return
-            abi.encodePacked(
+            inputPessimisticBytes = abi.encodePacked(
                 rollup.lastLocalExitRoot,
                 rollup.lastPessimisticRoot,
                 l1InfoTreeRoot,
@@ -1517,6 +1437,7 @@ contract PolygonRollupManager is
                 newLocalExitRoot,
                 newPessimisticRoot
             );
+        }
     }
 
     /**
@@ -1693,5 +1614,46 @@ contract PolygonRollupManager is
         rollupData.rollupVerifierType = rollup.rollupVerifierType;
         rollupData.lastPessimisticRoot = rollup.lastPessimisticRoot;
         rollupData.programVKey = rollup.programVKey;
+    }
+
+    /**
+     * @notice Get rollup data deserialized
+     * @dev A deserialized version of the rollup data done for a better parsing from etherscan
+     * @param rollupID Rollup identifier
+     */
+    function rollupIDToRollupDataDeserialized(
+        uint32 rollupID
+    )
+        public
+        view
+        returns (
+            address rollupContract,
+            uint64 chainID,
+            address verifier,
+            uint64 forkID,
+            bytes32 lastLocalExitRoot,
+            uint64 lastBatchSequenced,
+            uint64 lastVerifiedBatch,
+            uint64 lastVerifiedBatchBeforeUpgrade,
+            uint64 rollupTypeID,
+            VerifierType rollupVerifierType,
+            bytes32 lastPessimisticRoot,
+            bytes32 programVKey
+        )
+    {
+        RollupData storage rollup = _rollupIDToRollupData[rollupID];
+
+        rollupContract = rollup.rollupContract;
+        chainID = rollup.chainID;
+        verifier = rollup.verifier;
+        forkID = rollup.forkID;
+        lastLocalExitRoot = rollup.lastLocalExitRoot;
+        lastBatchSequenced = rollup.lastBatchSequenced;
+        lastVerifiedBatch = rollup.lastVerifiedBatch;
+        lastVerifiedBatchBeforeUpgrade = rollup.lastVerifiedBatchBeforeUpgrade;
+        rollupTypeID = rollup.rollupTypeID;
+        rollupVerifierType = rollup.rollupVerifierType;
+        lastPessimisticRoot = rollup.lastPessimisticRoot;
+        programVKey = rollup.programVKey;
     }
 }

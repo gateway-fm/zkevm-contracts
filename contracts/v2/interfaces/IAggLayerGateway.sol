@@ -32,9 +32,9 @@ interface IAggLayerGatewayEvents {
         bytes32 newPessimisticVKey
     );
 
-    event AddAggchainVKey(bytes4 selector, bytes32 newVKey);
+    event AddDefaultAggchainVKey(bytes4 selector, bytes32 newVKey);
 
-    event UpdateAggchainVKey(bytes4 selector, bytes32 newVKey);
+    event UpdateDefaultAggchainVKey(bytes4 selector, bytes32 newVKey);
 }
 
 /// @dev Extended error events from https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
@@ -76,8 +76,7 @@ interface IAggLayerGateway is
     IAggLayerGatewayEvents,
     IAggLayerGatewayErrors
 {
-    // TODO: agglayererifier route
-    struct VerifierRoute {
+    struct AggLayerVerifierRoute {
         address verifier; // SP1 Verifier. It contains sanity check SP1 version with the 4 first bytes of the proof. proof[4:]
         bytes32 pessimisticVKey;
         bool frozen;
@@ -88,7 +87,7 @@ interface IAggLayerGateway is
      * @dev This function is necessary to query the map from an external function. In solidity maps are not
      * directly accessible from external functions like other state variables
      */
-    function getAggchainVKey(bytes4 selector) external view returns (bytes32);
+    function getDefaultAggchainVKey(bytes4 defaultAggchainSelector) external view returns (bytes32);
 
     /// @notice Verifies a pessimistic proof with given public values and proof.
     /// @dev It is expected that the first 4 bytes of proofBytes must match the first 4 bytes of
@@ -99,20 +98,6 @@ interface IAggLayerGateway is
         bytes calldata publicValues,
         bytes calldata proofBytes
     ) external view;
-
-    /// @notice Mapping of 4-byte verifier selectors to verifier routes.
-    /// @dev Only one verifier route can be added for each selector.
-    /// @param pessimisticVKeySelector The verifier selector, which is both the first 4 bytes of the VERIFIER_HASH
-    /// and the first 4 bytes of the proofs designed for that verifier.
-    /// @return verifier The address of the verifier contract.
-    /// @return pessimisticVKey The pessimistic verification key to use for the chosen selector/route.
-    /// @return frozen Whether the verifier is frozen.
-    // function routes(
-    //     bytes4 pessimisticVKeySelector
-    // )
-    //     external
-    //     view
-    //     returns (address verifier, bytes32 pessimisticVKey, bool frozen);
 
     /// @notice Adds a verifier route. This enable proofs to be routed to this verifier.
     /// @dev Only callable by the owner. The owner is responsible for ensuring that the specified
@@ -125,11 +110,6 @@ interface IAggLayerGateway is
         bytes4 pessimisticVKeySelector,
         address verifier,
         bytes32 pessimisticVKey
-    ) external;
-
-    function updatePessimisticVKeyRoute(
-        bytes4 pessimisticVKeySelector,
-        bytes32 newPessimisticVKey
     ) external;
 
     /// @notice Freezes a verifier route. This prevents proofs from being routed to this verifier.

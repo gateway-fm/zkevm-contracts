@@ -15,11 +15,14 @@ import "../interfaces/IAggLayerGateway.sol";
  * The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
  * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
  */
- // TODO: IALAggchainBase -> IAggchainBase
 abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     struct AggchainVKeyRoute {
         bytes32 aggchainVKey;
         bool frozen;
+    }
+    enum AggchainType {
+        FEP,
+        ECDSA
     }
 
     // Consensus type that support generic consensus
@@ -27,19 +30,11 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
 
     IAggLayerGateway public immutable aggLayerGateway;
 
-    // Network/Rollup identifier (metadata)
-    uint32 public networkID;
-
-    // Chain identifier
-    uint64 public chainID;
-
     // Flag to enable/disable the use of the custom chain gateway to handle the aggchain keys. In case  of false (default), the keys are managed by the aggregation layer gateway
-    // TODO: change to useDefaultAggchainVKeys
     bool public useOwnedGateway;
 
-
     // AggchainVKeyRoutes mapping
-    mapping(bytes4 => AggchainVKeyRoute) public aggchainVKeyRoutes;
+    mapping(bytes4 aggchainVKeySelector => AggchainVKeyRoute) public aggchainVKeyRoutes;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -85,7 +80,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     //////////////////
 
     function enableDefaultCustomChainSelector() external onlyAdmin {
-        if(!useOwnedGateway) {
+        if (!useOwnedGateway) {
             revert useOwnedGatewayAlreadySet();
         }
         useOwnedGateway = false;
@@ -94,7 +89,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     }
 
     function disableDefaultCustomChainSelector() external onlyAdmin {
-        if(useOwnedGateway) {
+        if (useOwnedGateway) {
             revert useOwnedGatewayAlreadySet();
         }
         useOwnedGateway = true;
@@ -109,7 +104,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         if (aggchainVKey == bytes32(0)) {
             revert InvalidAggchainVKey();
         }
-        AggchainVKeyRoute storage aggchainVKeyRoute = aggchainVKeyRoutes[aggchainSelector];
+        AggchainVKeyRoute storage aggchainVKeyRoute = aggchainVKeyRoutes[
+            aggchainSelector
+        ];
         // Check already added
         if (aggchainVKeyRoute.aggchainVKey != bytes32(0)) {
             revert AggchainRouteAlreadyAdded();
@@ -122,7 +119,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         bytes4 aggchainSelector,
         bytes32 updatedAggchainVKey
     ) external onlyAdmin {
-        AggchainVKeyRoute storage aggchainVKeyRoute = aggchainVKeyRoutes[aggchainSelector];
+        AggchainVKeyRoute storage aggchainVKeyRoute = aggchainVKeyRoutes[
+            aggchainSelector
+        ];
         // Check already added
         if (aggchainVKeyRoute.aggchainVKey == bytes32(0)) {
             revert AggchainRouteNotFound();
@@ -135,12 +134,20 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * @notice returns the current aggchain verification key. If the flag `useOwnedGateway` is set to false, the gateway verification key is returned, else, the custom chain verification key is returned.
      * @param aggchainSelector The selector for the verification key query. This selector identifies the aggchain type + sp1 verifier version
      */
-     // TODO: why pubic?
-    function getAggchainVKey(bytes4 aggchainSelector) public view returns (bytes32) {
+    function getAggchainVKey(
+        bytes4 aggchainSelector
+    ) public view returns (bytes32) {
         if (useOwnedGateway) {
             return aggchainVKeyRoutes[aggchainSelector].aggchainVKey;
         }
         // Retrieve aggchain key from AggLayerGateway
-        return aggLayerGateway.getAggchainVKey(aggchainSelector);
+        return aggLayerGateway.getDefaultAggchainVKey(aggchainSelector);
+    }
+
+    function _getAggchainSelectorFromType(
+        AggchainType aggchainType,
+        bytes2 aggchainSelector
+    ) internal pure returns (bytes4) {
+        return (bytes4(uint32(aggchainType)) << 16) | bytes4(aggchainSelector);
     }
 }
