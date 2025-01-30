@@ -14,7 +14,7 @@ async function main() {
     // Load provider
     let currentProvider = ethers.provider;
     if (deployParameters.multiplierGas || deployParameters.maxFeePerGas) {
-        if (process.env.HARDHAT_NETWORK !== "hardhat" && process.env.HARDHAT_NETWORK !== "zkevmDevnet") {
+        if (process.env.HARDHAT_NETWORK !== "hardhat") {
             currentProvider = ethers.getDefaultProvider(
                 `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
             ) as any;
