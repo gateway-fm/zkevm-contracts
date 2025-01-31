@@ -8,6 +8,7 @@ import "./interfaces/IPolygonRollupBase.sol";
 import "../interfaces/IVerifierRollup.sol";
 import "../lib/EmergencyManager.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./lib/PolygonTransparentProxy.sol";
 import "./lib/PolygonAccessControlUpgradeable.sol";
 import "./lib/LegacyZKEVMStateVariables.sol";
@@ -31,7 +32,8 @@ contract PolygonRollupManager is
     EmergencyManager,
     LegacyZKEVMStateVariables,
     PolygonConstantsBase,
-    IPolygonRollupManager
+    IPolygonRollupManager,
+    ReentrancyGuardUpgradeable
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -424,6 +426,8 @@ contract PolygonRollupManager is
      */
     function initialize() external virtual reinitializer(4) {
         emit UpdateRollupManagerVersion(ROLLUP_MANAGER_VERSION);
+        // Initialize OZ reentrancy guard upgradeable contract
+        __ReentrancyGuard_init();
     }
 
     ///////////////////////////////////////
@@ -1097,8 +1101,8 @@ contract PolygonRollupManager is
      * @param newPessimisticRoot New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
      * @param proof SP1 proof (Plonk)
      * @param customChainData Specific custom data to verify Aggregation layer chains
+     * @dev A reentrancy measure has been applied because this function calls `getAggchainHash`, is an open function implemented by the aggchains
      */
-    // TODO: add not reentracy modifier -> explain why
     function verifyPessimisticTrustedAggregator(
         uint32 rollupID,
         uint32 l1InfoTreeLeafCount,
@@ -1106,7 +1110,7 @@ contract PolygonRollupManager is
         bytes32 newPessimisticRoot,
         bytes calldata proof,
         bytes calldata customChainData
-    ) external onlyRole(_TRUSTED_AGGREGATOR_ROLE) {
+    ) external onlyRole(_TRUSTED_AGGREGATOR_ROLE) nonReentrant {
         RollupData storage rollup = _rollupIDToRollupData[rollupID];
 
         // Only for pessimistic verifiers
