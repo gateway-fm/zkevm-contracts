@@ -34,7 +34,8 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     bool public useOwnedGateway;
 
     // AggchainVKeyRoutes mapping
-    mapping(bytes4 aggchainVKeySelector => AggchainVKeyRoute) public aggchainVKeyRoutes;
+    mapping(bytes4 aggchainVKeySelector => AggchainVKeyRoute)
+        public aggchainVKeyRoutes;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

@@ -72,10 +72,7 @@ interface IAggLayerGatewayErrors {
 /// @author Succinct Labs
 /// @notice This contract is the interface for the SP1 Verifier Gateway.
 /// @notice Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
-interface IAggLayerGateway is
-    IAggLayerGatewayEvents,
-    IAggLayerGatewayErrors
-{
+interface IAggLayerGateway is IAggLayerGatewayEvents, IAggLayerGatewayErrors {
     struct AggLayerVerifierRoute {
         address verifier; // SP1 Verifier. It contains sanity check SP1 version with the 4 first bytes of the proof. proof[4:]
         bytes32 pessimisticVKey;
@@ -87,7 +84,9 @@ interface IAggLayerGateway is
      * @dev This function is necessary to query the map from an external function. In solidity maps are not
      * directly accessible from external functions like other state variables
      */
-    function getDefaultAggchainVKey(bytes4 defaultAggchainSelector) external view returns (bytes32);
+    function getDefaultAggchainVKey(
+        bytes4 defaultAggchainSelector
+    ) external view returns (bytes32);
 
     /// @notice Verifies a pessimistic proof with given public values and proof.
     /// @dev It is expected that the first 4 bytes of proofBytes must match the first 4 bytes of
@@ -116,5 +115,7 @@ interface IAggLayerGateway is
     /// @dev Only callable by the owner. Once a route to a verifier is frozen, it cannot be
     /// unfrozen.
     /// @param pessimisticVKeySelector The verifier selector to freeze.
-    function freezePessimisticVKeyRoute(bytes4 pessimisticVKeySelector) external;
+    function freezePessimisticVKeyRoute(
+        bytes4 pessimisticVKeySelector
+    ) external;
 }

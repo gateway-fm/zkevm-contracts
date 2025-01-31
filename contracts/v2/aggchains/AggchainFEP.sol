@@ -26,6 +26,8 @@ contract AggchainFEP is AggchainBase, IAggchain {
     // Array of stored chain data
     ChainData[] public chainData;
 
+    uint8 private transient _initializerVersion;
+
     //////////
     // Events
     /////////
@@ -70,102 +72,93 @@ contract AggchainFEP is AggchainBase, IAggchain {
      */
     function initialize(
         bytes calldata initializeBytesCustomChain
-    ) external override onlyRollupManager onlyNotInitialized reinitializer(2) {
-        // custom parsing of the initializeBytesCustomChain
-        // question: gasTokenNetwork?? gastoken metadata?
-        (
-            address _admin,
-            address _trustedSequencer,
-            address _gasTokenAddress,
-            string memory _trustedSequencerURL,
-            string memory _networkName,
-            bytes32 _aggregationVkey,
-            bytes32 _chainConfigHash,
-            bytes32 _rangeVkeyCommitment,
-            bytes32 initStateRoot,
-            uint128 initTimestamp,
-            uint128 initL2BlockNumber
-        ) = abi.decode(
-                initializeBytesCustomChain,
-                (
-                    address,
-                    address,
-                    address,
-                    string,
-                    string,
-                    bytes32,
-                    bytes32,
-                    bytes32,
-                    bytes32,
-                    uint128,
-                    uint128
-                )
+    )
+        external
+        override
+        onlyRollupManager
+        retrieveInitializerVersion
+        reinitializer(2)
+    {
+        // If initializer version is 0, it means that the chain is being initialized for the first time, so the contract has just been deployed, is not an upgrade
+        if (_initializerVersion == 0) {
+            // custom parsing of the initializeBytesCustomChain
+            // todo: question: gasTokenNetwork?? gastoken metadata?
+            (
+                address _admin,
+                address _trustedSequencer,
+                address _gasTokenAddress,
+                string memory _trustedSequencerURL,
+                string memory _networkName,
+                bytes32 _aggregationVkey,
+                bytes32 _chainConfigHash,
+                bytes32 _rangeVkeyCommitment,
+                bytes32 initStateRoot,
+                uint128 initTimestamp,
+                uint128 initL2BlockNumber
+            ) = abi.decode(
+                    initializeBytesCustomChain,
+                    (
+                        address,
+                        address,
+                        address,
+                        string,
+                        string,
+                        bytes32,
+                        bytes32,
+                        bytes32,
+                        bytes32,
+                        uint128,
+                        uint128
+                    )
+                );
+
+            // set chain variables
+            admin = _admin;
+            trustedSequencer = _trustedSequencer;
+            gasTokenAddress = _gasTokenAddress;
+            trustedSequencerURL = _trustedSequencerURL;
+            networkName = _networkName;
+            aggregationVkey = _aggregationVkey;
+            chainConfigHash = _chainConfigHash;
+            rangeVkeyCommitment = _rangeVkeyCommitment;
+            // storage first chainData struct
+            chainData.push(
+                ChainData(initStateRoot, initTimestamp, initL2BlockNumber)
             );
-
-        // set chain variables
-        admin = _admin;
-        trustedSequencer = _trustedSequencer;
-        gasTokenAddress = _gasTokenAddress;
-        trustedSequencerURL = _trustedSequencerURL;
-        networkName = _networkName;
-        aggregationVkey = _aggregationVkey;
-        chainConfigHash = _chainConfigHash;
-        rangeVkeyCommitment = _rangeVkeyCommitment;
-        // storage first chainData struct
-        chainData.push(
-            ChainData(initStateRoot, initTimestamp, initL2BlockNumber)
-        );
-    }
-
-    /**
-     * @notice Initialize the chain after upgrade.
-     * @param initializeBytesCustomChain  Encoded params to initialize the chain after upgrade. Each aggchain has its custom decoded params
-     * @dev The reinitializer(2) is set because it can also be initialized differently with 'initialize' function but only be initialized once.
-     * @dev This function can only be called if reinitializer(2) has not been initialized
-     */
-    function initializeAfterUpgrade(
-        bytes calldata initializeBytesCustomChain
-    ) external onlyRollupManager onlyInitialized reinitializer(2) {
-        // Only need to initialize values that are specific for FEP because we are performing an upgrade from a Pessimistic chain
-        (
-            bytes32 _aggregationVkey,
-            bytes32 _chainConfigHash,
-            bytes32 _rangeVkeyCommitment,
-            bytes32 initStateRoot,
-            uint128 initTimestamp,
-            uint128 initL2BlockNumber
-        ) = abi.decode(
-                initializeBytesCustomChain,
-                (bytes32, bytes32, bytes32, bytes32, uint128, uint128)
+        } else if (_initializerVersion == 1) {
+            // Only need to initialize values that are specific for FEP because we are performing an upgrade from a Pessimistic chain
+            (
+                bytes32 _aggregationVkey,
+                bytes32 _chainConfigHash,
+                bytes32 _rangeVkeyCommitment,
+                bytes32 initStateRoot,
+                uint128 initTimestamp,
+                uint128 initL2BlockNumber
+            ) = abi.decode(
+                    initializeBytesCustomChain,
+                    (bytes32, bytes32, bytes32, bytes32, uint128, uint128)
+                );
+            aggregationVkey = _aggregationVkey;
+            chainConfigHash = _chainConfigHash;
+            rangeVkeyCommitment = _rangeVkeyCommitment;
+            // storage first chainData struct
+            chainData.push(
+                ChainData(initStateRoot, initTimestamp, initL2BlockNumber)
             );
-
-        // set chain variables
-        aggregationVkey = _aggregationVkey;
-        chainConfigHash = _chainConfigHash;
-        rangeVkeyCommitment = _rangeVkeyCommitment;
-        // storage first chainData struct
-        chainData.push(
-            ChainData(initStateRoot, initTimestamp, initL2BlockNumber)
-        );
+        } else {
+            // This case should never happen because reinitializer is 2 so initializer version is 0 or 1, but it's here to avoid any possible future issue if the reinitializer version is increased
+            revert InvalidInitializer();
+        }
     }
 
     //////////////////
     // Modifiers
     //////////////////
 
-    modifier onlyNotInitialized() {
-        // This function can only be called if the storage values initializer(1)/initializer has never been initialized
-        if (_getInitializedVersion() != 0) {
-            revert InvalidInitializer();
-        }
-        _;
-    }
-
-    modifier onlyInitialized() {
-        // This function can only be called if the storage value initializer(1)/initializer has been initialized
-        if (_getInitializedVersion() != 1) {
-            revert InvalidInitializer();
-        }
+    // @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
+    modifier retrieveInitializerVersion() {
+        // Get initializer version from OZ initializer smart contract
+        _initializerVersion = _getInitializedVersion();
         _;
     }
 

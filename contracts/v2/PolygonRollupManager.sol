@@ -12,10 +12,8 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "./lib/PolygonTransparentProxy.sol";
 import "./lib/PolygonAccessControlUpgradeable.sol";
 import "./lib/LegacyZKEVMStateVariables.sol";
-import "./consensus/zkEVM/PolygonZkEVMExistentEtrog.sol";
 import "./lib/PolygonConstantsBase.sol";
 import "./interfaces/IPolygonPessimisticConsensus.sol";
-import "./interfaces/IPolygonPessimisticConsensusV2.sol";
 import "./interfaces/ISP1Verifier.sol";
 import "./interfaces/IPolygonRollupManager.sol";
 import "./interfaces/IAggchainBase.sol";

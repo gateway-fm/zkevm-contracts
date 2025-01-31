@@ -10,8 +10,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 /// @title AggLayerGateway
 contract AggLayerGateway is IAggLayerGateway, Initializable {
     // TODO: Implement roles
-    mapping(bytes4 defaultAggchainSelector => bytes32 defaultAggchainVKey) public defaultAggchainVKeys;
-    mapping(bytes4 pessimisticVKeySelector => AggLayerVerifierRoute) public pessimisticVKeyRoutes;
+    mapping(bytes4 defaultAggchainSelector => bytes32 defaultAggchainVKey)
+        public defaultAggchainVKeys;
+    mapping(bytes4 pessimisticVKeySelector => AggLayerVerifierRoute)
+        public pessimisticVKeyRoutes;
 
     // admin
     // todo: Comment admin features/timelock
@@ -162,7 +164,10 @@ contract AggLayerGateway is IAggLayerGateway, Initializable {
         // Update the VKey
         defaultAggchainVKeys[defaultAggchainSelector] = newAggchainVKey;
 
-        emit UpdateDefaultAggchainVKey(defaultAggchainSelector, newAggchainVKey);
+        emit UpdateDefaultAggchainVKey(
+            defaultAggchainSelector,
+            newAggchainVKey
+        );
     }
 
     function getDefaultAggchainVKey(
