@@ -28,7 +28,7 @@ const config: HardhatUserConfig = {
     solidity: {
         compilers: [
             {
-                version: "0.8.17",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -47,7 +47,7 @@ const config: HardhatUserConfig = {
                 },
             },
             {
-                version: "0.6.11",
+                version: "0.8.17",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -56,7 +56,7 @@ const config: HardhatUserConfig = {
                 },
             },
             {
-                version: "0.5.12",
+                version: "0.6.11",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -73,10 +73,19 @@ const config: HardhatUserConfig = {
                     },
                 },
             },
+            {
+                version: "0.5.12",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999,
+                    },
+                },
+            },
         ],
         overrides: {
             "contracts/v2/sovereignChains/BridgeL2SovereignChain.sol": {
-                version: "0.8.20",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -86,7 +95,7 @@ const config: HardhatUserConfig = {
                 }, // try yul optimizer
             },
             "contracts/v2/PolygonRollupManager.sol": {
-                version: "0.8.20",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -96,7 +105,7 @@ const config: HardhatUserConfig = {
                 }, // try yul optimizer
             },
             "contracts/v2/PolygonZkEVMBridgeV2.sol": {
-                version: "0.8.20",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -106,7 +115,7 @@ const config: HardhatUserConfig = {
                 },
             },
             "contracts/v2/newDeployments/PolygonRollupManagerNotUpgraded.sol": {
-                version: "0.8.20",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -116,7 +125,7 @@ const config: HardhatUserConfig = {
                 }, // try yul optimizer
             },
             "contracts/v2/mocks/PolygonRollupManagerMock.sol": {
-                version: "0.8.20",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -127,7 +136,7 @@ const config: HardhatUserConfig = {
             },
             // Should have the same optimizations than the RollupManager to verify
             "contracts/v2/lib/PolygonTransparentProxy.sol": {
-                version: "0.8.20",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -137,7 +146,7 @@ const config: HardhatUserConfig = {
                 }, // try yul optimizer
             },
             "contracts/v2/utils/ClaimCompressor.sol": {
-                version: "0.8.20",
+                version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
