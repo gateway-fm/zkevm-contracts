@@ -118,13 +118,13 @@ async function main() {
          * Check parameters
          * Check that every necessary parameter is fullfilled
          */
-        const mandatoryDeploymentParameters = [
+        const mandatoryParametersRollup = [
             "rollupAddress",
             "newRollupTypeID",
             "upgradeData",
         ];
 
-        for (const parameterName of mandatoryDeploymentParameters) {
+        for (const parameterName of mandatoryParametersRollup) {
             if (updateRollupParameters[parameterName] === undefined || updateRollupParameters[parameterName] === "") {
                 throw new Error(`Missing rollup[${i}] parameter: ${parameterName}`);
             }
