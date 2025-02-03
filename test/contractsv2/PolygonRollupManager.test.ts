@@ -55,8 +55,6 @@ describe("Polygon Rollup Manager", () => {
 
     const globalExitRootL2Address = "0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa" as unknown as Address;
 
-    let firstDeployment = true;
-
     //roles
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
     const ADD_ROLLUP_TYPE_ROLE = ethers.id("ADD_ROLLUP_TYPE_ROLE");
@@ -95,34 +93,24 @@ describe("Polygon Rollup Manager", () => {
             polTokenInitialBalance
         );
 
-        /*
-         * deploy global exit root manager
-         * In order to not have trouble with nonce deploy first proxy admin
-         */
-        await upgrades.deployProxyAdmin();
-
-        if ((await upgrades.admin.getInstance()).target !== "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0") {
-            firstDeployment = false;
-        }
-        const nonceProxyBridge =
-            Number(await ethers.provider.getTransactionCount(deployer.address)) + (firstDeployment ? 3 : 2);
-
-        const nonceProxyZkevm = nonceProxyBridge + 2; // Always have to redeploy impl since the polygonZkEVMGlobalExitRoot address changes
-
-        const precalculateBridgeAddress = ethers.getCreateAddress({
-            from: deployer.address,
-            nonce: nonceProxyBridge,
+        // deploy PolygonZkEVMBridge
+        const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
+        polygonZkEVMBridgeContract = await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], {
+            initializer: false,
+            unsafeAllow: ["constructor", "missing-initializer"],
         });
+
+        const currentDeployerNonce = await ethers.provider.getTransactionCount(deployer.address);
         const precalculateRollupManagerAddress = ethers.getCreateAddress({
             from: deployer.address,
-            nonce: nonceProxyZkevm,
+            nonce: currentDeployerNonce + 3,
         });
         firstDeployment = false;
         
         // deploy globalExitRoot
         const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory("PolygonZkEVMGlobalExitRootV2");
         polygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
-            constructorArgs: [precalculateRollupManagerAddress, precalculateBridgeAddress],
+            constructorArgs: [precalculateRollupManagerAddress, polygonZkEVMBridgeContract.target],
             unsafeAllow: ["constructor", "state-variable-immutable"],
         });
 
@@ -144,13 +132,12 @@ describe("Polygon Rollup Manager", () => {
                 polygonZkEVMBridgeContract.target,
                 ethers.ZeroAddress, // aggLayerGateway
             ],
-            unsafeAllow: ["constructor", "state-variable-immutable"],
+            unsafeAllow: ["constructor", "state-variable-immutable", "missing-initializer", "missing-initializer-call"],
         })) as unknown as PolygonRollupManagerMock;
 
         await rollupManagerContract.waitForDeployment();
 
         // check precalculated address
-        expect(precalculateBridgeAddress).to.be.equal(polygonZkEVMBridgeContract.target);
         expect(precalculateRollupManagerAddress).to.be.equal(rollupManagerContract.target);
 
         await polygonZkEVMBridgeContract.initialize(
@@ -442,7 +429,7 @@ describe("Polygon Rollup Manager", () => {
         const newCreatedRollupID = 1;
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
-            nonce: 1,
+            nonce: 2,
         });
 
         const newZkEVMContract = PolygonZKEVMV2Factory.attach(newZKEVMAddress) as PolygonZkEVMEtrog;
@@ -1448,7 +1435,7 @@ describe("Polygon Rollup Manager", () => {
         const newCreatedRollupID = 1;
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
-            nonce: 1,
+            nonce: 2,
         });
 
         const newZkEVMContract = PolygonZKEVMV2Factory.attach(newZKEVMAddress) as PolygonZkEVMEtrog;
@@ -2077,7 +2064,7 @@ describe("Polygon Rollup Manager", () => {
         const newCreatedRollupID = 1;
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
-            nonce: 1,
+            nonce: 2,
         });
 
         const newZkEVMContract = PolygonZKEVMV2Factory.attach(newZKEVMAddress) as PolygonZkEVMEtrog;
@@ -2776,7 +2763,7 @@ describe("Polygon Rollup Manager", () => {
         const newCreatedRollupID = 1;
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
-            nonce: 1,
+            nonce: 2,
         });
 
         const newZkEVMContract = PolygonValidiumPreviousVersion.attach(newZKEVMAddress) as PolygonValidiumEtrogPrevious;
