@@ -9,9 +9,12 @@ dotenv.config({path: path.resolve(__dirname, "../../.env")});
 import {ethers, hardhatArguments} from "hardhat";
 
 // internal dependencies
+import {MemDB, ZkEVMDB, getPoseidon, smtUtils, processorUtils} from "@0xpolygonhermez/zkevm-commonjs";
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
 import { PolygonRollupManager, PolygonZkEVMBridgeV2} from "../../typechain-types";
 import "../../deployment/helpers/utils";
+import { initializeTimelockStorage } from "../../src/genesis/genesis-helpers";
+import { logger } from "../../src/logger";
 
 // script utils
 const dateStr = new Date().toISOString();
@@ -21,7 +24,12 @@ const genesisBase = require("./genesis-base.json");
 const createGenesisSovereignParams = require("./create-genesis-sovereign-params.json");
 
 async function main() {
-    // check tool parameters
+    logger.info('Start create-sovereign-genesis tool');
+
+    /////////////////////////////
+    ///   CHECK TOOL PARAMS   ///
+    /////////////////////////////
+    logger.info('Check initial parameters');
     const mandatoryParameters = [
         "rollupManagerAddress",
         "rollupID",
@@ -31,17 +39,25 @@ async function main() {
         "sovereignWETHAddress",
         "sovereignWETHAddressIsNotMintable",
         "globalExitRootUpdater",
-        "globalExitRootRemover"
+        "globalExitRootRemover",
+        "preMintAmount",
+        "preMintAddress",
+        "timelockAdminAddress",
+        "minDelayTimelock"
     ];
 
     for (const parameterName of mandatoryParameters) {
         if (createGenesisSovereignParams[parameterName] === undefined || createGenesisSovereignParams[parameterName] === "") {
+            logger.error(`Missing parameter: ${parameterName}`);
             throw new Error(`Missing parameter: ${parameterName}`);
         }
     }
 
-    // Load provider
-    const currentProvider = ethers.provider;
+
+    /////////////////////////////////////////////
+    ///    CHECK SC PARAMS & ON-CHAIN DATA    ///
+    /////////////////////////////////////////////
+    logger.info('Check SovereignBridge requirements for its correct initialization');
 
     // Load Rollup manager
     const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager");
@@ -85,6 +101,7 @@ async function main() {
         ethers.isAddress(createGenesisSovereignParams.gasTokenAddress) &&
         createGenesisSovereignParams.gasTokenAddress !== ethers.ZeroAddress
     ) {
+        logger.info('Getting data from the gasTokenAddress');
         // Get token metadata
         gasTokenMetadata = await rollupBridgeContract.getTokenMetadata(createGenesisSovereignParams.gasTokenAddress);
         outputJson.gasTokenMetadata = gasTokenMetadata;
@@ -111,6 +128,10 @@ async function main() {
     }
 
 
+    ////////////////////////////////////
+    ///    FINAL GENESIS CREATION    ///
+    ////////////////////////////////////
+
     // start final genesis creation
     let finalGenesis = genesisBase;
 
@@ -128,6 +149,7 @@ async function main() {
         globalExitRootRemover: createGenesisSovereignParams.globalExitRootRemover,
     };
 
+    logger.info('Update genesis-base to the SovereignContracts');
     finalGenesis = await updateVanillaGenesis(finalGenesis, createGenesisSovereignParams.chainID, initializeParams);
 
     // Add weth address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
@@ -144,6 +166,52 @@ async function main() {
         });
         outWETHAddress = wethObject.address;
     }
+
+    // check preMintAddress is an address
+    if(ethers.isAddress(createGenesisSovereignParams.preMintAddress) == false){
+        logger.error('preMintAddress: not a valid address');
+        throw new Error('preMintAddress: not a valid address');
+    }
+
+    // add preMint address & preMint value
+    logger.info('Add preMintAddress and preMintAmount');
+    finalGenesis.genesis.push({
+        accountName: "preMint Account",
+        balance: BigInt(createGenesisSovereignParams.preMintAmount).toString(),
+        address: createGenesisSovereignParams.preMintAddress,
+    });
+
+    // set timelock storage
+    logger.info('Add timelock setup');
+    const timelockContractInfo = finalGenesis.genesis.find(function (obj) {
+        return obj.contractName === "PolygonZkEVMTimelock";
+    });
+
+    const storageTimelock = initializeTimelockStorage(
+        createGenesisSovereignParams.minDelayTimelock,
+        createGenesisSovereignParams.timelockAdminAddress,
+        timelockContractInfo.address
+    );
+
+    timelockContractInfo.storage = storageTimelock;
+
+    // regenerate root with the zkEVM root
+    const poseidon = await getPoseidon();
+    const {F} = poseidon;
+
+    const zkEVMDB = await ZkEVMDB.newZkEVM(
+        new MemDB(F),
+        poseidon,
+        [F.zero, F.zero, F.zero, F.zero],
+        [F.zero, F.zero, F.zero, F.zero],
+        finalGenesis.genesis,
+        null,
+        null,
+        createGenesisSovereignParams.chainID
+    );
+
+    // update genesis root
+    finalGenesis.root = smtUtils.h4toString(zkEVMDB.getCurrentStateRoot());
 
     // Populate final output
     outputJson.network = hardhatArguments.network;
@@ -163,6 +231,11 @@ async function main() {
         outputJson.WETHAddress = outWETHAddress;
     }
 
+    ///////////////////////////////////
+    ///      WRITE FINAL FILES      ///
+    ///////////////////////////////////
+    logger.info('Writing final output files');
+
     // path output genesis
     const pathOutputGenesisJson = createGenesisSovereignParams.outputGenesisPath
     ? path.join(__dirname, createGenesisSovereignParams.outputGenesisPath)
@@ -176,9 +249,9 @@ async function main() {
     fs.writeFileSync(pathOutputGenesisJson, JSON.stringify(finalGenesis, null, 1));
     fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 1));
 
-    console.log("Output saved at:");
-    console.log(`   output genesis: ${pathOutputGenesisJson}`);
-    console.log(`   output info   : ${pathOutputJson}`);
+    logger.info("Output saved at:");
+    logger.info(`   output genesis: ${pathOutputGenesisJson}`);
+    logger.info(`   output info   : ${pathOutputJson}`);
 }
 
 main().catch((e) => {

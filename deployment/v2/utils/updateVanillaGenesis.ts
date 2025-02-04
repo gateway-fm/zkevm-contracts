@@ -10,7 +10,7 @@ import {padTo32Bytes, padTo20Bytes} from "./deployment-utils";
 // Those contracts names came from the genesis creation:
 //  - https://github.com/0xPolygonHermez/zkevm-contracts/blob/main/deployment/v2/1_createGenesis.ts#L294
 //  - https://github.com/0xPolygonHermez/zkevm-contracts/blob/main/deployment/v2/1_createGenesis.ts#L328
-// Genesis files have been created previoudly and so they have old naming, as it shown in the links above
+// Genesis files have been created previously and so they have old naming, as it shown in the links above
 // Those genesis are already imported on different tooling and added as a metedata on-chain. Therefore, this util aims
 // to support them too
 const bridgeContractName = "BridgeL2SovereignChain";

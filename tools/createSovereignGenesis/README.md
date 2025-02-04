@@ -39,6 +39,10 @@ cp ./tools/createSovereignGenesis/genesis-base.json.example ./tools/createSovere
   - `sovereignWETHAddressIsNotMintable`: Flag to indicate if the wrapped ETH is not mintable
   - `globalExitRootUpdater`: Address of globalExitRootUpdater for sovereign chains
   - `globalExitRootRemover`: Address of globalExitRootRemover for sovereign chains
+  - `preMintAmount`: amount to be credited to `preMintAddress`
+  - `preMintAddress`: ethereum address to receive `preMintAmount`
+  - `timelockAdminAddress`: address that will have all timelocks roles (ADMIN, PROPOSER, CANCELLER, EXECUTOR)
+  - `minDelayTimelock`: minimum delay set in the timelock smart contract
 
 -  Run tool:
 ```
