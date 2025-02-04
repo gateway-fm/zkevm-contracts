@@ -1,5 +1,4 @@
 import { ethers } from "hardhat";
-import hre from "hardhat";
 import fs from "fs";
 import input from "./input.json";
 

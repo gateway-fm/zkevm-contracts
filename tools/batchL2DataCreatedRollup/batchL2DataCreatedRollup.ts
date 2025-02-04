@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import output from "./info.json";
 import fs from "fs";
 
@@ -8,7 +8,11 @@ async function main() {
   await toolContract.waitForDeployment()
   const txPath = "./tx.json"
   const tx = await toolContract.generateInitializeTransaction(output.networkID, output.bridgeAddress, output.gasTokenAddress, output.gasTokenNetwork, output.gasTokenMetadata)
-  await fs.writeFileSync(txPath, JSON.stringify(tx, null, 1))
+  const outputTx = {
+    networkID: output.networkID,
+    tx: tx,
+  }
+  await fs.writeFileSync(txPath, JSON.stringify(outputTx, null, 1))
 }
 
 main().then(() => {

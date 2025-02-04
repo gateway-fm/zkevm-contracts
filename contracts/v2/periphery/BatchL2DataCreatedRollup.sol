@@ -3,6 +3,9 @@ pragma solidity ^0.8.20;
 
 import "../lib/PolygonRollupBaseEtrog.sol";
 
+
+// This contract is only used for a specific tool: zkevm-contracts/tools/batchL2DataCreatedRollup.
+// This contract is part of the zkevm-contracts/contracts/v2/lib/PolygonRollupBaseEtrog.sol contract.
 contract BatchL2DataCreatedRollup {
 
     uint8 public constant INITIALIZE_TX_BRIDGE_LIST_LEN_LEN = 0xf9;
@@ -70,9 +73,6 @@ contract BatchL2DataCreatedRollup {
                 initializeBrigeData
             );
         } else {
-
-           
-
             bytesToSign = abi.encodePacked(
                 INITIALIZE_TX_BRIDGE_LIST_LEN_LEN,
                 initializeBrigeDataLen +
