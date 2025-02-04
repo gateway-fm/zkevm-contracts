@@ -9,10 +9,7 @@ import {
 
 async function main() {
   const output = input;
-  const outputPath = "info.json"
-  if(hre.network.name = "zkevmDevnet") {
-    hre.config.networks.zkevmDevnet.url = input.rpc;
-  }
+  const outputPath = "info.json";
   const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
   const polygonZkEVMBridgeContract = bridgeFactory.attach(input.bridgeAddress) as PolygonZkEVMBridgeV2;
   const gasTokenMetadata = await polygonZkEVMBridgeContract.getTokenMetadata(input.gasTokenAddress);
