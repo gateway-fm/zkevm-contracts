@@ -100,14 +100,6 @@ async function main() {
         polygonRollupManagerAddress
     ) as PolygonRollupManager;
 
-    // Check role
-    const UPDATE_ROLLUP_ROLE = ethers.id("UPDATE_ROLLUP_ROLE");
-
-    if ((await rollupManagerContract.hasRole(UPDATE_ROLLUP_ROLE, deployer.address)) == false) {
-        // log that address ha sno role
-        throw new Error(`Address ${deployer.address} does not have the UPDATE_ROLLUP_ROLE role`);
-    }
-
     const outputsJson = [];
 
     for(let i = 0; i < updateRollupsParameters.rollups.length; i++) {
@@ -139,10 +131,16 @@ async function main() {
         outputJson.upgradeData = upgradeData;
 
         if(updateRollupsParameters.type === transactionTypes.EOA) {
-            console.log("Updating rollup...")
+            // Check role
+            const UPDATE_ROLLUP_ROLE = ethers.id("UPDATE_ROLLUP_ROLE");
+            if ((await rollupManagerContract.hasRole(UPDATE_ROLLUP_ROLE, deployer.address)) == false) {
+                // log that address has no role
+                throw new Error(`Address ${deployer.address} does not have the UPDATE_ROLLUP_ROLE role`);
+            }
+            console.log(`Updating rollup ${rollupAddress}...`)
             console.log(await (await rollupManagerContract.updateRollup(rollupAddress, newRollupTypeID, upgradeData)).wait());
         } else if(updateRollupsParameters.type === transactionTypes.TIMELOCK) {
-            console.log("Creating timelock txs for update rollup...")
+            console.log(`Creating timelock txs for update rollup ${rollupAddress}...`)
             const salt = updateRollupsParameters.timelockSalt || ethers.ZeroHash;
             const { timelockDelay } = updateRollupsParameters;
             // load timelock
@@ -181,7 +179,6 @@ async function main() {
             console.log({scheduleData});
             console.log({executeData});
         
-            outputJson.networkName = network.name;
             outputJson.scheduleData = scheduleData;
             outputJson.executeData = executeData;
         
@@ -212,7 +209,7 @@ async function main() {
         
             outputJson.decodedScheduleData = objectDecoded;
         } else {
-            console.log("Creating calldata for update rollup from multisig...");
+            console.log(`Creating calldata for update rollup from multisig ${rollupAddress}...`);
             const txUpdateRollup = PolgonRollupManagerFactory.interface.encodeFunctionData("updateRollup", [
                 rollupAddress,
                 newRollupTypeID,
@@ -225,7 +222,7 @@ async function main() {
 
     console.log("Finished script, output saved at: ", pathOutputJson)
     // add time to output path
-    await fs.writeFileSync(pathOutputJson, JSON.stringify(outputsJson, null, 1));
+    fs.writeFileSync(pathOutputJson, JSON.stringify(outputsJson, null, 1));
 }
 
 main().catch((e) => {
