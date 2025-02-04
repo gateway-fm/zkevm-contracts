@@ -29,7 +29,7 @@ import {ProxyAdmin} from "../../typechain-types";
 import {Addressable} from "ethers";
 import "../../deployment/helpers/utils";
 
-const genesisParameters = require("./genesis_parameters.json");
+const genesisParameters = require("./upgrade_pre_etrog_genesis.json");
 const genesisBase = require("./genesis_base.json");
 
 const pathOutputJson = path.join(__dirname, argv.out);
