@@ -22,15 +22,21 @@ async function main() {
     const polygonZkEVMBridgeAddress = await rollupManager.bridgeAddress();
     const polygonZkEVMGlobalExitRootAddress = await rollupManager.globalExitRootManager();
     const polTokenAddress = await rollupManager.pol();
-    // FIlter first rollup ID ( the one on migration)
+    // Filter first rollup ID ( the one on migration)
     const filterInit = rollupManager.filters.Initialized(undefined);
     const eventsInit = await rollupManager.queryFilter(filterInit, 0, "latest");
     const deploymentRollupManagerBlockNumber = eventsInit[0].blockNumber;
-
+    
     // Filter first initialization (deployment)
     const filter = rollupManager.filters.AddExistingRollup(1);
     const eventsAddRollup = await rollupManager.queryFilter(filter, 0, "latest");
-    const upgradeToULxLyBlockNumber = eventsAddRollup[0].blockNumber;
+    let upgradeToULxLyBlockNumber;
+    if (eventsAddRollup.length > 0) {
+        upgradeToULxLyBlockNumber = eventsAddRollup[0].blockNumber;
+    } else {
+        console.log("No event AddExistingRollup");
+        upgradeToULxLyBlockNumber = eventsInit[0].blockNumber;
+    }
     
     const deployOutput = {
         polygonRollupManagerAddress: rollupManager.target,
