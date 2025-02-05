@@ -1,6 +1,20 @@
 const { Scalar } = require('ffjavascript');
 
 /**
+ * Check if all params are present in the expectedParams
+ * @param {Object} objParams - object with parameters
+ * @param {Array} expectedParams - array of expected parameters in string
+ */
+function checkParams(objParams, expectedParams) {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const parameterName of expectedParams) {
+        if (objParams[parameterName] === undefined || objParams[parameterName] === '') {
+            throw new Error(`Missing parameter: ${parameterName}`);
+        }
+    }
+}
+
+/**
  * Convert a value into in its hexadecimal string representation
  * @param {Number | BigInt} _value - value to encode
  * @param {Boolean} prefix - attach '0x' at the beginning of the string
@@ -81,4 +95,5 @@ module.exports = {
     getStorageWrites,
     getStorageReadWrites,
     valueToStorageBytes,
+    checkParams,
 };

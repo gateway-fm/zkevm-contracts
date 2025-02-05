@@ -14,6 +14,7 @@ import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis
 import { PolygonRollupManager, PolygonZkEVMBridgeV2} from "../../typechain-types";
 import "../../deployment/helpers/utils";
 import { initializeTimelockStorage } from "../../src/genesis/genesis-helpers";
+import { checkParams } from '../../src/utils';
 import { logger } from "../../src/logger";
 
 // script utils
@@ -40,19 +41,39 @@ async function main() {
         "sovereignWETHAddressIsNotMintable",
         "globalExitRootUpdater",
         "globalExitRootRemover",
-        "preMintAmount",
-        "preMintAddress",
-        "timelockAdminAddress",
-        "minDelayTimelock"
+        "setPreMintAccount",
+        "setTimelockParameters",
     ];
 
-    for (const parameterName of mandatoryParameters) {
-        if (createGenesisSovereignParams[parameterName] === undefined || createGenesisSovereignParams[parameterName] === "") {
-            logger.error(`Missing parameter: ${parameterName}`);
-            throw new Error(`Missing parameter: ${parameterName}`);
+    checkParams(createGenesisSovereignParams, mandatoryParameters);
+
+    if (createGenesisSovereignParams.setPreMintAccount === true) {
+        if (createGenesisSovereignParams.preMintAccount === undefined || createGenesisSovereignParams.preMintAccount === '') {
+            logger.error('\'setPreMintAccount\' is set to true but missing parameter \'preMintAccount\'');
+            throw new Error('\'setPreMintAccount\' is set to true but missing parameter \'preMintAccount\'');
         }
+
+        const paramsPreMintAccount = [
+            'balance',
+            'address',
+        ];
+
+        checkParams(createGenesisSovereignParams.preMintAccount, paramsPreMintAccount);
     }
 
+    if (createGenesisSovereignParams.setTimelockParameters === true) {
+        if (createGenesisSovereignParams.timelockParameters === undefined || createGenesisSovereignParams.timelockParameters === '') {
+            logger.error('\'setTimelockParameters\' is set to true but missing parameter \'timelockParameters\'');
+            throw new Error('\'setTimelockParameters\' is set to true but missing parameter \'timelockParameters\'');
+        }
+
+        const paramsTimelockParameters = [
+            'adminAddress',
+            'minDelay',
+        ];
+
+        checkParams(createGenesisSovereignParams.timelockParameters, paramsTimelockParameters);
+    }
 
     /////////////////////////////////////////////
     ///    CHECK SC PARAMS & ON-CHAIN DATA    ///
@@ -168,32 +189,36 @@ async function main() {
     }
 
     // check preMintAddress is an address
-    if(ethers.isAddress(createGenesisSovereignParams.preMintAddress) == false){
-        logger.error('preMintAddress: not a valid address');
-        throw new Error('preMintAddress: not a valid address');
+    if (createGenesisSovereignParams.setPreMintAccount === true) {
+        logger.info('Add preMintAccount');
+        if (ethers.isAddress(createGenesisSovereignParams.preMintAccount.address) == false) {
+            logger.error('preMintAccount.address: not a valid address');
+            throw new Error('preMintAccount.address: not a valid address');
+        }
+
+        // add preMintAccount.address & preMintAccount.balance
+        finalGenesis.genesis.push({
+            accountName: 'preMintAccount',
+            balance: BigInt(createGenesisSovereignParams.preMintAccount.balance).toString(),
+            address: createGenesisSovereignParams.preMintAccount.address,
+        });
     }
 
-    // add preMint address & preMint value
-    logger.info('Add preMintAddress and preMintAmount');
-    finalGenesis.genesis.push({
-        accountName: "preMint Account",
-        balance: BigInt(createGenesisSovereignParams.preMintAmount).toString(),
-        address: createGenesisSovereignParams.preMintAddress,
-    });
-
     // set timelock storage
-    logger.info('Add timelock setup');
-    const timelockContractInfo = finalGenesis.genesis.find(function (obj) {
-        return obj.contractName === "PolygonZkEVMTimelock";
-    });
+    if (createGenesisSovereignParams.setTimelockParameters === true) {
+        logger.info('Add timelockParameters');
+        const timelockContractInfo = finalGenesis.genesis.find(function (obj) {
+            return obj.contractName === 'PolygonZkEVMTimelock';
+        });
 
-    const storageTimelock = initializeTimelockStorage(
-        createGenesisSovereignParams.minDelayTimelock,
-        createGenesisSovereignParams.timelockAdminAddress,
-        timelockContractInfo.address
-    );
+        const storageTimelock = initializeTimelockStorage(
+            createGenesisSovereignParams.timelockParameters.minDelay,
+            createGenesisSovereignParams.timelockParameters.adminAddress,
+            timelockContractInfo.address,
+        );
 
-    timelockContractInfo.storage = storageTimelock;
+        timelockContractInfo.storage = storageTimelock;
+    }
 
     // regenerate root with the zkEVM root
     const poseidon = await getPoseidon();

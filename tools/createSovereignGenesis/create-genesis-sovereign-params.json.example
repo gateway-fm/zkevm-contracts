@@ -3,13 +3,19 @@
     "rollupID": 3,
     "chainID": 1001,
     "gasTokenAddress": "0x0000000000000000000000000000000000000000",
-    "preMintAmount": "1000000000000000000",
-    "preMintAddress": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
-    "timelockAdminAddress": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
-    "minDelayTimelock": 3600,
     "bridgeManager": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
     "sovereignWETHAddress": "0x0000000000000000000000000000000000000000",
     "sovereignWETHAddressIsNotMintable": false,
     "globalExitRootUpdater": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
-    "globalExitRootRemover": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66"
+    "globalExitRootRemover": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
+    "setPreMintAccount": true,
+    "preMintAccount": {
+        "balance": "1000000000000000000",
+        "address": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66"
+    },
+    "setTimelockParameters": true,
+    "timelockParameters": {
+        "adminAddress": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
+        "minDelay": 3600,
+    }
 }
