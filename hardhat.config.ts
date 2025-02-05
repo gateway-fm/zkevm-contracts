@@ -2,6 +2,7 @@ import "dotenv/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-dependency-compiler";
+import "hardhat-switch-network";
 
 import {HardhatUserConfig} from "hardhat/config";
 
@@ -234,7 +235,7 @@ const config: HardhatUserConfig = {
             },
         },
         zkevmDevnet: {
-            url: "http://123:123:123:123:123",
+            url: "http://127.0.0.1:32800",
             accounts: {
                 mnemonic: process.env.MNEMONIC || DEFAULT_MNEMONIC,
                 path: "m/44'/60'/0'/0",
