@@ -30,12 +30,8 @@ async function main() {
     // Filter first initialization (deployment)
     const filter = rollupManager.filters.AddExistingRollup(1);
     const eventsAddRollup = await rollupManager.queryFilter(filter, 0, "latest");
-    let upgradeToULxLyBlockNumber;
-    if (eventsAddRollup.length > 0) {
-        upgradeToULxLyBlockNumber = eventsAddRollup[0].blockNumber;
-    } else {
-        console.log("No event AddExistingRollup");
-    }
+    const upgradeToULxLyBlockNumber = eventsAddRollup[0].blockNumber;
+    
     const deployOutput = {
         polygonRollupManagerAddress: rollupManager.target,
         polygonZkEVMBridgeAddress,
@@ -44,7 +40,7 @@ async function main() {
         deploymentRollupManagerBlockNumber,
         upgradeToULxLyBlockNumber,
     };
-    await fs.writeFileSync(pathOutputJson, JSON.stringify(deployOutput, null, 1));
+    fs.writeFileSync(pathOutputJson, JSON.stringify(deployOutput, null, 1));
 
     const filter2 = rollupManager.filters.CreateNewRollup(
         getRollupParams.rollupID,
@@ -82,7 +78,7 @@ async function main() {
 
         await fs.writeFileSync(`${pathCreateRollupOutput}_${rollupID}.json`, JSON.stringify(outputCreateRollup, null, 1));
     } else { 
-        console.log("No event AddNewRollupType");
+        console.log("No event CreateNewRollup");
     }
 }
 
