@@ -19,7 +19,7 @@ function genOperation(target, value, data, predecessor, salt) {
     };
 }
 
-const createNewRollupTypes = {
+const transactionTypes = {
     EOA: 'EOA',
     MULTISIG: 'Multisig',
     TIMELOCK: 'Timelock',
@@ -53,7 +53,7 @@ function convertBigIntsToNumbers(obj) {
 
 module.exports = {
     genOperation,
-    createNewRollupTypes,
+    transactionTypes,
     convertBigIntsToNumbers,
     supportedBridgeContracts,
 };
