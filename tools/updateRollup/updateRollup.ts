@@ -11,7 +11,7 @@ const updateRollupsParameters = require("./updateRollup.json");
 const dateStr = new Date().toISOString();
 const pathOutputJson = path.join(__dirname, `./updateRollupOutput-${dateStr}.json`);
 import {PolygonRollupManager} from "../../typechain-types";
-import { transactionTypes, genOperation, loadProvider, decodeScheduleData } from "../utils";
+import { transactionTypes, genOperation } from "../utils";
 import "../../deployment/helpers/utils";
 
 async function main() {
@@ -43,7 +43,39 @@ async function main() {
     }
     console.log(`Starting script to update rollup from ${updateRollupsParameters.type}`)
 
-    const currentProvider = loadProvider(updateRollupsParameters);
+    // Load provider
+    let currentProvider = ethers.provider;
+    if (updateRollupsParameters.multiplierGas || updateRollupsParameters.maxFeePerGas) {
+        if (process.env.HARDHAT_NETWORK !== "hardhat") {
+            currentProvider = ethers.getDefaultProvider(
+                `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
+            ) as any;
+            if (updateRollupsParameters.maxPriorityFeePerGas && updateRollupsParameters.maxFeePerGas) {
+                console.log(
+                    `Hardcoded gas used: MaxPriority${updateRollupsParameters.maxPriorityFeePerGas} gwei, MaxFee${updateRollupsParameters.maxFeePerGas} gwei`
+                );
+                const FEE_DATA = new ethers.FeeData(
+                    null,
+                    ethers.parseUnits(updateRollupsParameters.maxFeePerGas, "gwei"),
+                    ethers.parseUnits(updateRollupsParameters.maxPriorityFeePerGas, "gwei")
+                );
+
+                currentProvider.getFeeData = async () => FEE_DATA;
+            } else {
+                console.log("Multiplier gas used: ", updateRollupsParameters.multiplierGas);
+                async function overrideFeeData() {
+                    const feedata = await ethers.provider.getFeeData();
+                    return new ethers.FeeData(
+                        null,
+                        ((feedata.maxFeePerGas as bigint) * BigInt(updateRollupsParameters.multiplierGas)) / 1000n,
+                        ((feedata.maxPriorityFeePerGas as bigint) * BigInt(updateRollupsParameters.multiplierGas)) /
+                            1000n
+                    );
+                }
+                currentProvider.getFeeData = overrideFeeData;
+            }
+        }
+    }
 
     // Load deployer
     let deployer;
@@ -122,6 +154,7 @@ async function main() {
                 } catch (e) {
                     outputJson.successUpdate = false;
                     console.log(`Error updating ${rollupAddress}`);
+                    console.log(e);
                 }
                 
             } else if(updateRollupsParameters.type === transactionTypes.TIMELOCK) {
@@ -181,12 +214,45 @@ async function main() {
             console.log({scheduleData});
             console.log({executeData});
 
+            // Decode the scheduleData for better readibility
+            const timelockTx = timelockContractFactory.interface.parseTransaction({data: scheduleData});
+            const paramsArray = timelockTx?.fragment.inputs;
+            const objectDecoded = {};
+
+            for (let i = 0; i < paramsArray?.length; i++) {
+                const currentParam = paramsArray[i];
+                objectDecoded[currentParam.name] = timelockTx?.args[i];
+            
+                if (currentParam.name == "payloads") {
+                    // for each payload
+                    const payloads = timelockTx?.args[i];
+                    for (let j = 0; j < payloads.length; j++) {
+                        const data = payloads[j];
+                        const decodedProxyAdmin = PolgonRollupManagerFactory.interface.parseTransaction({
+                            data,
+                        });
+                    
+                        const resultDecodeProxyAdmin = {};
+                        resultDecodeProxyAdmin.signature = decodedProxyAdmin?.signature;
+                        resultDecodeProxyAdmin.selector = decodedProxyAdmin?.selector;
+                    
+                        const paramsArrayData = decodedProxyAdmin?.fragment.inputs;
+                    
+                        for (let n = 0; n < paramsArrayData?.length; n++) {
+                            const currentParam = paramsArrayData[n];
+                            resultDecodeProxyAdmin[currentParam.name] = decodedProxyAdmin?.args[n];
+                        }
+                        objectDecoded[`decodePayload_${j}`] = resultDecodeProxyAdmin;
+                    }
+                }
+            }
             const outputTimelock = {
                 rollups: outputsJson,
                 scheduleData,
                 executeData,
-                decodeScheduleData: decodeScheduleData(scheduleData, timelockContractFactory)
+                decodeScheduleData: objectDecoded,
             }
+
             fs.writeFileSync(pathOutputJson, JSON.stringify(outputTimelock, null, 1));
         } else {
             fs.writeFileSync(pathOutputJson, JSON.stringify(outputsJson, null, 1));

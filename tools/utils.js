@@ -51,75 +51,9 @@ function convertBigIntsToNumbers(obj) {
     return obj; // Return the value if it's not a BigInt, object, or array
 }
 
-function loadProvider(parameters) {
-    // Load provider
-    let currentProvider = ethers.provider;
-    if (parameters.multiplierGas || parameters.maxFeePerGas) {
-        if (process.env.HARDHAT_NETWORK !== "hardhat") {
-            currentProvider = ethers.getDefaultProvider(
-                `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
-            );
-            if (parameters.maxPriorityFeePerGas && parameters.maxFeePerGas) {
-                console.log(
-                    `Hardcoded gas used: MaxPriority${parameters.maxPriorityFeePerGas} gwei, MaxFee${parameters.maxFeePerGas} gwei`
-                );
-                const FEE_DATA = new ethers.FeeData(
-                    null,
-                    ethers.parseUnits(parameters.maxFeePerGas, "gwei"),
-                    ethers.parseUnits(parameters.maxPriorityFeePerGas, "gwei")
-                );
-
-                currentProvider.getFeeData = async () => FEE_DATA;
-            } else {
-                console.log("Multiplier gas used: ", parameters.multiplierGas);
-                async function overrideFeeData() {
-                    const feedata = await ethers.provider.getFeeData();
-                    return new ethers.FeeData(
-                        null,
-                        ((feedata.maxFeePerGas) * BigInt(parameters.multiplierGas)) / 1000n,
-                        ((feedata.maxPriorityFeePerGas) * BigInt(parameters.multiplierGas)) / 1000n
-                    );
-                }
-                currentProvider.getFeeData = overrideFeeData;
-            }
-        }
-    }
-    return currentProvider;
-}
-
-function decodeScheduleData(scheduleData, timelockContractFactory) {
-    // Decode the scheduleData for better readibility
-    const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
-    const paramsArray = timelockTx?.fragment.inputs;
-    const objectDecoded = {};
-    for (let i = 0; i < paramsArray?.length; i++) {
-
-        const currentParam = paramsArray[i];
-        objectDecoded[currentParam.name] = timelockTx?.args[i];
-
-        if (currentParam.name == "data") {
-            const decodedRollupManagerData = PolgonRollupManagerFactory.interface.parseTransaction({
-                data: timelockTx?.args[i],
-            });
-            const objectDecodedData = {};
-            const paramsArrayData = decodedRollupManagerData?.fragment.inputs;
-
-            for (let j = 0; j < paramsArrayData?.length; j++) {
-                const currentParam = paramsArrayData[j];
-                objectDecodedData[currentParam.name] = decodedRollupManagerData?.args[j];
-            }
-            objectDecoded["decodedData"] = objectDecodedData;
-        }
-    }
-    return objectDecoded;
-}
-
-
 module.exports = {
     genOperation,
     transactionTypes,
     convertBigIntsToNumbers,
     supportedBridgeContracts,
-    loadProvider,
-    decodeScheduleData
 };
