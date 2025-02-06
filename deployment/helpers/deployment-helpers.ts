@@ -78,7 +78,7 @@ export async function deployPolygonZkEVMDeployer(
 }
 
 export async function create2Deployment(
-    polgonZKEVMDeployerContract: PolygonZkEVMDeployer,
+    polygonZKEVMDeployerContract: PolygonZkEVMDeployer,
     salt: string,
     deployTransaction: string,
     dataCall: string | null,
@@ -90,7 +90,7 @@ export async function create2Deployment(
 
     // Precalculate create2 address
     const precalculatedAddressDeployed = ethers.getCreate2Address(
-        polgonZKEVMDeployerContract.target as string,
+        polygonZKEVMDeployerContract.target as string,
         salt,
         hashInitCode
     );
@@ -104,7 +104,7 @@ export async function create2Deployment(
         // Deploy using create2 and call
         if (hardcodedGasLimit) {
             const populatedTransaction =
-                await polgonZKEVMDeployerContract.deployDeterministicAndCall.populateTransaction(
+                await polygonZKEVMDeployerContract.deployDeterministicAndCall.populateTransaction(
                     amount,
                     salt,
                     deployTransaction,
@@ -114,13 +114,13 @@ export async function create2Deployment(
             await (await deployer.sendTransaction(populatedTransaction)).wait();
         } else {
             await (
-                await polgonZKEVMDeployerContract.deployDeterministicAndCall(amount, salt, deployTransaction, dataCall)
+                await polygonZKEVMDeployerContract.deployDeterministicAndCall(amount, salt, deployTransaction, dataCall)
             ).wait();
         }
     } else {
         // Deploy using create2
         if (hardcodedGasLimit) {
-            const populatedTransaction = await polgonZKEVMDeployerContract.deployDeterministic.populateTransaction(
+            const populatedTransaction = await polygonZKEVMDeployerContract.deployDeterministic.populateTransaction(
                 amount,
                 salt,
                 deployTransaction
@@ -128,7 +128,7 @@ export async function create2Deployment(
             populatedTransaction.gasLimit = hardcodedGasLimit;
             await (await deployer.sendTransaction(populatedTransaction)).wait();
         } else {
-            await (await polgonZKEVMDeployerContract.deployDeterministic(amount, salt, deployTransaction)).wait();
+            await (await polygonZKEVMDeployerContract.deployDeterministic(amount, salt, deployTransaction)).wait();
         }
     }
     return [precalculatedAddressDeployed, true];

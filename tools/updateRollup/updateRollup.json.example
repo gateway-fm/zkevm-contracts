@@ -1,11 +1,16 @@
 {
-    "rollupAddress": "0xaddress",
-    "newRollupTypeID": 1,
-    "upgradeData": "0x",
+    "type": "EOA",
     "polygonRollupManagerAddress": "0xaddress",
     "timelockDelay": 0,
     "deployerPvtKey": "",
     "maxFeePerGas": "",
     "maxPriorityFeePerGas": "",
-    "multiplierGas": ""
+    "multiplierGas": "",
+    "rollups": [
+        {
+            "rollupAddress": "0xaddress",
+            "newRollupTypeID": 1,
+            "upgradeData": "0x"
+        }
+    ]
 }

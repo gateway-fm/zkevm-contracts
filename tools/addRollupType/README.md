@@ -8,19 +8,21 @@ npm i
 
 ## Setup
 - Config file
-  - `consensusContract`: select between consensus contract. Supprted: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog"]`
+  - `consensusContract`: select between consensus contract. Supported: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"]`
+  - `consensusContractAddress`: gets this address instead of deploying a new consensus implementation
   - `polygonRollupManagerAddress`: polygonRollupManager smart contract address
   - `verifierAddress`: verifier to be used
   - `description`: string to describe rollup type added. Example: "Type: Validium, Version: etrog, genesis: /ipfs/QmUXnRoPbUmZuEZCGyiHjEsoNcFVu3hLtSvhpnfBS2mAYU"
   - `forkID`: forkID to be used
-  - `rollupCompatibilityID`: rollup compatibility ID
+  - `programVKey`: program key for pessimistic consensus
+  - `genesisRoot`: initial genesis root. Must match the `genesis.json` generated.
   - `timelockDelay`: timelock delay
   - `timelockSalt(optional)`: timelock salt
   - `predecessor(optional)`: timelock predecessor
   - `deployerPvtKey(optional)`: private key deployer
     - First option will load `deployerPvtKey`. Otherwise, `process.env.MNEMONIC` will be loaded from the `.env` file
-  - `maxFeePerGas(optional)`: string, Set `maxFeePerGas`, must define aswell `maxPriorityFeePerGas` to use it
-  - `maxPriorityFeePerGas(optional)`: string, Set `maxPriorityFeePerGas`, must define aswell `maxFeePerGas` to use it
+  - `maxFeePerGas(optional)`: string, Set `maxFeePerGas`, must define as well `maxPriorityFeePerGas` to use it
+  - `maxPriorityFeePerGas(optional)`: string, Set `maxPriorityFeePerGas`, must define as well `maxFeePerGas` to use it
   - `multiplierGas(optional)`: number, Gas multiplier with 3 decimals. If `maxFeePerGas` and `maxPriorityFeePerGas` are set, this will not take effect
 - A network should be selected when running the script
   - examples: `-- sepolia` or `--mainnet`
@@ -64,6 +66,6 @@ npx hardhat run ./tools/addRollupType/addRollupType.ts --network sepolia
   - scheduleData
   - executeData
 > send data to the timelock contract address:
-> - use your favourite browser extension
+> - use your favorite browser extension
 > - send tx to timelock address with hex data as `scheduleData`
 > - wait timelockDelay and then send `executeData` to timelock address
