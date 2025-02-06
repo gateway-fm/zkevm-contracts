@@ -83,7 +83,7 @@ function getStorageWrites(trace) {
 }
 
 /**
- * Get all SSLOAD and SSTORE in a trace
+ * Get all SLOAD and SSTORE in a trace
  * @param {Object} trace
  * @returns {Object} - storage read and writes: {"key": "value"}
  */

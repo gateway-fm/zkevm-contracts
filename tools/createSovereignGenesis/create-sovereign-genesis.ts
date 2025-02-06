@@ -9,7 +9,7 @@ dotenv.config({path: path.resolve(__dirname, "../../.env")});
 import {ethers, hardhatArguments} from "hardhat";
 
 // internal dependencies
-import {MemDB, ZkEVMDB, getPoseidon, smtUtils, processorUtils} from "@0xpolygonhermez/zkevm-commonjs";
+import {MemDB, ZkEVMDB, getPoseidon, smtUtils} from "@0xpolygonhermez/zkevm-commonjs";
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
 import { PolygonRollupManager, PolygonZkEVMBridgeV2} from "../../typechain-types";
 import "../../deployment/helpers/utils";
@@ -59,6 +59,11 @@ async function main() {
         ];
 
         checkParams(createGenesisSovereignParams.preMintAccount, paramsPreMintAccount);
+
+        if (ethers.isAddress(createGenesisSovereignParams.preMintAccount.address) == false) {
+            logger.error('preMintAccount.address: not a valid address');
+            throw new Error('preMintAccount.address: not a valid address');
+        }
     }
 
     if (createGenesisSovereignParams.setTimelockParameters === true) {
@@ -191,10 +196,6 @@ async function main() {
     // check preMintAddress is an address
     if (createGenesisSovereignParams.setPreMintAccount === true) {
         logger.info('Add preMintAccount');
-        if (ethers.isAddress(createGenesisSovereignParams.preMintAccount.address) == false) {
-            logger.error('preMintAccount.address: not a valid address');
-            throw new Error('preMintAccount.address: not a valid address');
-        }
 
         // add preMintAccount.address & preMintAccount.balance
         finalGenesis.genesis.push({
@@ -251,6 +252,14 @@ async function main() {
     outputJson.sovereignWETHAddressIsNotMintable = createGenesisSovereignParams.sovereignWETHAddressIsNotMintable;
     outputJson.globalExitRootUpdater = createGenesisSovereignParams.globalExitRootUpdater;
     outputJson.globalExitRootRemover = createGenesisSovereignParams.globalExitRootRemover;
+
+    if (createGenesisSovereignParams.setPreMintAccount === true) {
+        outputJson.preMintAccount = createGenesisSovereignParams.preMintAccount;
+    }
+
+    if (createGenesisSovereignParams.setTimelockParameters === true) {
+        outputJson.timelockParameters = createGenesisSovereignParams.timelockParameters;
+    }
 
     if (typeof outWETHAddress !== 'undefined') {
         outputJson.WETHAddress = outWETHAddress;
