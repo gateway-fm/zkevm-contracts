@@ -9,7 +9,7 @@ import {ethers, upgrades} from "hardhat";
 import {processorUtils, Constants} from "@0xpolygonhermez/zkevm-commonjs";
 import {VerifierType, ConsensusContracts} from "../../src/pessimistic-utils";
 const createRollupParameters = require("./create_new_rollup.json");
-import {genOperation, createNewRollupTypes, convertBigIntsToNumbers} from "../utils";
+import {genOperation, transactionTypes, convertBigIntsToNumbers} from "../utils";
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
 
 import {
@@ -46,10 +46,10 @@ async function main() {
     ];
     // check create rollup type
     switch (createRollupParameters.type) {
-        case createNewRollupTypes.EOA:
-        case createNewRollupTypes.MULTISIG:
+        case transactionTypes.EOA:
+        case transactionTypes.MULTISIG:
             break;
-        case createNewRollupTypes.TIMELOCK:
+        case transactionTypes.TIMELOCK:
             mandatoryDeploymentParameters.push("timelockDelay");
             break;
         default:
@@ -269,7 +269,7 @@ async function main() {
     outputJson.genesis = rollupType.genesis;
     outputJson.gasTokenAddress = createRollupParameters.gasTokenAddress;
     outputJson.rollupManagerAddress = createRollupParameters.rollupManagerAddress;
-    if (createRollupParameters.type === createNewRollupTypes.TIMELOCK) {
+    if (createRollupParameters.type === transactionTypes.TIMELOCK) {
         console.log("Creating timelock txs for rollup creation...");
         const salt = createRollupParameters.timelockSalt || ethers.ZeroHash;
         const predecessor = ethers.ZeroHash;
@@ -338,7 +338,7 @@ async function main() {
         fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
         console.log("Finished script, output saved at: ", destPath);
         process.exit(0);
-    } else if (createRollupParameters.type === createNewRollupTypes.MULTISIG) {
+    } else if (createRollupParameters.type === transactionTypes.MULTISIG) {
         console.log("Creating calldata for rollup creation from multisig...");
         const txDeployRollupCalldata = PolygonRollupManagerFactory.interface.encodeFunctionData("createNewRollup", [
             createRollupParameters.rollupTypeId,

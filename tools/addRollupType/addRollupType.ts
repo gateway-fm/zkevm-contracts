@@ -110,8 +110,8 @@ async function main() {
     console.log("Using with: ", deployer.address);
 
     // Load Rollup manager
-    const PolgonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager", deployer);
-    const rollupManagerContract = PolgonRollupManagerFactory.attach(
+    const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager", deployer);
+    const rollupManagerContract = PolygonRollupManagerFactory.attach(
         polygonRollupManagerAddress
     ) as PolygonRollupManager;
 
@@ -247,6 +247,8 @@ async function main() {
     outputJson.verifierAddress = verifierAddress;
     outputJson.consensusContract = consensusContract;
     outputJson.rollupTypeID = newRollupTypeID;
+    outputJson.programVKey = programVKeyFinal;
+    outputJson.consensusContractAddress = consensusContractAddress;
 
     // add time to output path
     fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 1));
