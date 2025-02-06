@@ -29,7 +29,7 @@ import {ProxyAdmin} from "../../typechain-types";
 import {Addressable} from "ethers";
 import "../../deployment/helpers/utils";
 
-const deployParameters = require("./deploy_parameters.json");
+const genesisParameters = require("./upgrade_pre_etrog_genesis.json");
 const genesisBase = require("./genesis_base.json");
 
 const pathOutputJson = path.join(__dirname, argv.out);
@@ -72,9 +72,9 @@ const keylessDeployerMainnet = baseGenesisInfo.find(
 
 const deployerMainnet = baseGenesisInfo.find((account: any) => account.accountName === "deployer").address;
 
-const mainnetMultisig = deployParameters.timelockAddress;
-const mainnetInitialZkEVMDeployerOwner = deployParameters.initialZkEVMDeployerOwner;
-const mainnetMinDelayTimelock = deployParameters.minDelayTimelock;
+const mainnetMultisig = genesisParameters.timelockAddress;
+const mainnetInitialZkEVMDeployerOwner = genesisParameters.initialZkEVMDeployerOwner;
+const mainnetMinDelayTimelock = genesisParameters.minDelayTimelock;
 
 const globalExitRootL2Address = "0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa";
 const zkevmAddressL2 = ethers.ZeroAddress;
@@ -383,7 +383,7 @@ async function main() {
         address: finalDeployer,
     });
 
-    if (deployParameters.test) {
+    if (genesisParameters.test) {
         // Add tester account with ether
         genesis[genesis.length - 1].balance = "100000000000000000000000";
     }

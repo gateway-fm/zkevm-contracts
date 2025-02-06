@@ -7,7 +7,6 @@ npm i
 ```
 
 ## Setup
-
 ### updateRollup
 - Config file
   - `type`: Specify the type of rollup creation, only available:
@@ -43,7 +42,7 @@ cp ./tools/updateRollup/updateRollup.json.example ./tools/updateRollup/updateRol
 - Set your parameters
 - Run tool:
 ```
-npx hardhat run ./tools/updateRollup/updateRollup.ts --network sepolia
+npx hardhat run ./tools/updateRollup/updateRollup.ts --network <network>
 ```
 
 ### 'updateRollup'  from an EOA
@@ -55,7 +54,11 @@ Running the tool, the updateRollup transaction will be sent directly
 - Output: Transaction to update the rollup
 
 ### Generate 'updateRollup' data to the Timelock SC
-
+- Set your parameters
+- Run tool:
+```
+npx hardhat run ./tools/updateRollup/updateRollupTimelock.ts --network <network>
+```
 - Output:
   - scheduleData
   - executeData

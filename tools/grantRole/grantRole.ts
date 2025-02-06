@@ -54,59 +54,11 @@ async function main() {
     }
     const roleID = ethers.id(roleName);
 
-    // Load provider
-    let currentProvider = ethers.provider;
-    if (addRollupParameters.multiplierGas || addRollupParameters.maxFeePerGas) {
-        if (process.env.HARDHAT_NETWORK !== "hardhat") {
-            currentProvider = ethers.getDefaultProvider(
-                `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
-            ) as any;
-            if (addRollupParameters.maxPriorityFeePerGas && addRollupParameters.maxFeePerGas) {
-                console.log(
-                    `Hardcoded gas used: MaxPriority${addRollupParameters.maxPriorityFeePerGas} gwei, MaxFee${addRollupParameters.maxFeePerGas} gwei`
-                );
-                const FEE_DATA = new ethers.FeeData(
-                    null,
-                    ethers.parseUnits(addRollupParameters.maxFeePerGas, "gwei"),
-                    ethers.parseUnits(addRollupParameters.maxPriorityFeePerGas, "gwei")
-                );
-
-                currentProvider.getFeeData = async () => FEE_DATA;
-            } else {
-                console.log("Multiplier gas used: ", addRollupParameters.multiplierGas);
-                async function overrideFeeData() {
-                    const feedata = await ethers.provider.getFeeData();
-                    return new ethers.FeeData(
-                        null,
-                        ((feedata.maxFeePerGas as bigint) * BigInt(addRollupParameters.multiplierGas)) / 1000n,
-                        ((feedata.maxPriorityFeePerGas as bigint) * BigInt(addRollupParameters.multiplierGas)) / 1000n
-                    );
-                }
-                currentProvider.getFeeData = overrideFeeData;
-            }
-        }
-    }
-
-    // Load deployer
-    let deployer;
-    if (addRollupParameters.deployerPvtKey) {
-        deployer = new ethers.Wallet(addRollupParameters.deployerPvtKey, currentProvider);
-    } else if (process.env.MNEMONIC) {
-        deployer = ethers.HDNodeWallet.fromMnemonic(
-            ethers.Mnemonic.fromPhrase(process.env.MNEMONIC),
-            "m/44'/60'/0'/0/0"
-        ).connect(currentProvider);
-    } else {
-        [deployer] = await ethers.getSigners();
-    }
-
-    console.log("Using with: ", deployer.address);
-
     // load timelock
-    const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
+    const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock");
 
     // Load Rollup manager
-    const PolgonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager", deployer);
+    const PolgonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager");
 
     const operation = genOperation(
         polygonRollupManagerAddress,
@@ -142,8 +94,8 @@ async function main() {
 
     // Decode the scheduleData for better readibility
     const timelockTx = timelockContractFactory.interface.parseTransaction({data: scheduleData});
-    const paramsArray = timelockTx?.fragment.inputs;
-    const objectDecoded = {};
+    const paramsArray = timelockTx?.fragment.inputs as any;
+    const objectDecoded = {} as any;
 
     for (let i = 0; i < paramsArray?.length; i++) {
         const currentParam = paramsArray[i];
@@ -153,8 +105,8 @@ async function main() {
             const decodedRollupManagerData = PolgonRollupManagerFactory.interface.parseTransaction({
                 data: timelockTx?.args[i],
             });
-            const objectDecodedData = {};
-            const paramsArrayData = decodedRollupManagerData?.fragment.inputs;
+            const objectDecodedData = {} as any;
+            const paramsArrayData = decodedRollupManagerData?.fragment.inputs as any;
 
             for (let j = 0; j < paramsArrayData?.length; j++) {
                 const currentParam = paramsArrayData[j];
