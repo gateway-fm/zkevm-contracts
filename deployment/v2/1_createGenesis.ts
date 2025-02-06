@@ -310,7 +310,7 @@ async function main() {
     genesis.push({
         contractName: `${bridgeContractName} proxy`,
         balance: balanceBridge,
-    nonce: bridgeProxyInfo.nonce.toString(),
+        nonce: bridgeProxyInfo.nonce.toString(),
         address: finalBridgeProxyAddress,
         bytecode: bridgeProxyInfo.bytecode,
         storage: bridgeProxyInfo.storage,
