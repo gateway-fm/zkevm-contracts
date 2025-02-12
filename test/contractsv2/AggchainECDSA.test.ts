@@ -244,6 +244,26 @@ describe("AggchainECDSA", () => {
 
         // getAggchainVKey useDefaultGateway === false
         expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey2);
+
+        // transferVKeyManagerRole
+        await expect(aggchainECDSAcontract.transferVKeyManagerRole(admin.address)).to.be.revertedWithCustomError(
+            aggchainECDSAcontract,
+            "OnlyVKeyManager"
+        );
+
+        await expect(aggchainECDSAcontract.connect(vKeyManager).transferVKeyManagerRole(admin.address))
+            .to.emit(aggchainECDSAcontract, "TransferVKeyManagerRole")
+            .withArgs(admin.address);
+
+        // acceptVKeyManagerRole
+        await expect(aggchainECDSAcontract.connect(vKeyManager).acceptVKeyManagerRole()).to.be.revertedWithCustomError(
+            aggchainECDSAcontract,
+            "OnlyPendingVKeyManager"
+        );
+
+        await expect(aggchainECDSAcontract.connect(admin).acceptVKeyManagerRole())
+            .to.emit(aggchainECDSAcontract, "AcceptVKeyManagerRole")
+            .withArgs(admin.address);
     });
 
     it("should check getAggchainHash", async () => {
