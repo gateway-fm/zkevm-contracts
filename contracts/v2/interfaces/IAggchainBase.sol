@@ -15,6 +15,15 @@ interface IAggchainBaseEvents {
      * @dev Emitted when the admin switches the use of the default gateway to manage the aggchain keys
      */
     event UpdateUseDefaultGatewayFlag(bool useDefaultGateway);
+    /**
+     * @dev Emitted when the vKeyManager starts the two-step transfer role setting a new pending vKeyManager
+     * @param newVKeyManager The new vKeyManager
+     */
+    event TransferVKeyManagerRole(address newVKeyManager);
+    /**
+     * @dev Emitted when the pending vKeyManager accepts the vKeyManager role
+     */
+    event AcceptVKeyManagerRole(address newVKeyManager);
 }
 
 interface IAggchainBaseErrors {
@@ -30,6 +39,10 @@ interface IAggchainBaseErrors {
     error UseDefaultGatewayAlreadySet();
     // Thrown when trying to initialize the wrong initialize function
     error InvalidInitializer();
+    // Thrown when trying to call a function that only the VKeyManager can call
+    error OnlyVKeyManager();
+    // Thrown when trying to call a function that only the pending VKeyManager can call
+    error OnlyPendingVKeyManager();
 }
 
 interface IAggchainBase is IAggchainBaseErrors, IAggchainBaseEvents {}

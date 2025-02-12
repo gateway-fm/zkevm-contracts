@@ -97,7 +97,8 @@ contract AggchainFEP is AggchainBase, IAggchain {
                 bytes32 _rangeVkeyCommitment,
                 bytes32 initStateRoot,
                 uint128 initTimestamp,
-                uint128 initL2BlockNumber
+                uint128 initL2BlockNumber,
+                address _vKeyManager
             ) = abi.decode(
                     initializeBytesCustomChain,
                     (
@@ -111,7 +112,8 @@ contract AggchainFEP is AggchainBase, IAggchain {
                         bytes32,
                         bytes32,
                         uint128,
-                        uint128
+                        uint128,
+                        address
                     )
                 );
 
@@ -124,6 +126,8 @@ contract AggchainFEP is AggchainBase, IAggchain {
             aggregationVkey = _aggregationVkey;
             chainConfigHash = _chainConfigHash;
             rangeVkeyCommitment = _rangeVkeyCommitment;
+            // Set aggchainBase variables
+            vKeyManager = _vKeyManager;
             // storage first chainData struct
             chainData.push(
                 ChainData(initStateRoot, initTimestamp, initL2BlockNumber)

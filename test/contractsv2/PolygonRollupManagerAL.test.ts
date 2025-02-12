@@ -22,6 +22,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     let emergencyCouncil: any;
     let aggLayerAdmin: any;
     let tester: any;
+    let vKeyManager: any;
 
     // CONTRACTS
     let polygonZkEVMBridgeContract: PolygonZkEVMBridgeV2;
@@ -52,8 +53,17 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     upgrades.silenceWarnings();
     beforeEach("Deploy contract", async () => {
         // load signers
-        [deployer, trustedSequencer, trustedAggregator, admin, timelock, emergencyCouncil, aggLayerAdmin, tester] =
-            await ethers.getSigners();
+        [
+            deployer,
+            trustedSequencer,
+            trustedAggregator,
+            admin,
+            timelock,
+            emergencyCouncil,
+            aggLayerAdmin,
+            tester,
+            vKeyManager,
+        ] = await ethers.getSigners();
 
         // Deploy L1 contracts
         // deploy pol token contract
@@ -205,8 +215,36 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
         const aggchainECDSAContract = aggchainECDSAFactory.attach(rollupAddress as string);
         expect(await aggchainECDSAContract.aggLayerGateway()).to.be.equal(aggLayerGatewayContract.target);
+        // Check overrode initialize function from aggchainBase
+        await expect(
+            aggchainECDSAContract.initialize(ethers.ZeroAddress, ethers.ZeroAddress, 0, ethers.ZeroAddress, "", "")
+        ).to.be.revertedWithCustomError(aggchainECDSAContract, "InvalidInitializeFunction");
     });
 
+    it("should perform a transfer of the vKeyManager role", async () => {
+        // Create ecdsa rollup type and rollup
+        const rollupTypeIdECDSA = await createECDSARollupType();
+        const [, rollupAddress] = await createECDSARollup(rollupTypeIdECDSA);
+        const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+        const aggchainECDSAContract = aggchainECDSAFactory.attach(rollupAddress as string);
+        // Transfer vKeyManager role
+        expect(await aggchainECDSAContract.vKeyManager()).to.equal(vKeyManager.address);
+        // Trigger onlyVKeyManager
+        await expect(
+            aggchainECDSAContract.connect(admin).transferVKeyManagerRole(admin.address)
+        ).to.be.revertedWithCustomError(aggchainECDSAContract, "OnlyVKeyManager");
+        await expect(aggchainECDSAContract.connect(vKeyManager).transferVKeyManagerRole(admin.address))
+            .to.emit(aggchainECDSAContract, "TransferVKeyManagerRole")
+            .withArgs(admin.address);
+        //Accept vKeyManager role
+        // Trigger onlyPendingVKeyManager
+        await expect(
+            aggchainECDSAContract.connect(vKeyManager).acceptVKeyManagerRole()
+        ).to.be.revertedWithCustomError(aggchainECDSAContract, "OnlyPendingVKeyManager");
+        await expect(aggchainECDSAContract.connect(admin).acceptVKeyManagerRole())
+            .to.emit(aggchainECDSAContract, "AcceptVKeyManagerRole")
+            .withArgs(admin.address);
+    });
     it("should getAggchainHash using default gateway", async () => {
         // Add default aggchain verification key
         // Generate random aggchain verification key
@@ -612,13 +650,14 @@ describe("Polygon rollup manager aggregation layer v3", () => {
 
     async function createECDSARollup(rollupTypeIdECDSA: number) {
         const initializeBytesCustomChain = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["address", "address", "address", "string", "string"],
+            ["address", "address", "address", "string", "string", "address"],
             [
                 admin.address,
                 trustedSequencer.address,
                 ethers.ZeroAddress, // gas token address
                 "", // trusted sequencer url
                 "", // network name
+                vKeyManager.address,
             ]
         );
         const rollupManagerNonce = await ethers.provider.getTransactionCount(rollupManagerContract.target);
