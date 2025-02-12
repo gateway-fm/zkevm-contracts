@@ -13,7 +13,7 @@ import "../AggLayerGateway.sol";
 contract AggchainFEP is AggchainBase, IAggchain {
 
     // Aggchain type selector, hardcoded value used to force the first 2 byes of aggchain selector to retrieve  the aggchain verification key
-    bytes2 constant AGGCHAIN_TYPE_SELECTOR = 0;
+    bytes2 public constant AGGCHAIN_TYPE_SELECTOR = 0;
 
     // fep-stack parameters
     bytes32 public aggregationVkey;

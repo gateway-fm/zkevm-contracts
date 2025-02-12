@@ -32,8 +32,8 @@
     "devDependencies": {
         "@0xpolygonhermez/zkevm-commonjs": "github:0xPolygonHermez/zkevm-commonjs#v8.0.0-fork.12",
         "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+        "@nomiclabs/hardhat-solhint": "^4.0.1",
         "@openzeppelin/contracts": "4.8.2",
-        "shelljs": "^0.8.5",
         "@openzeppelin/contracts-upgradeable": "4.8.2",
         "@openzeppelin/contracts5": "npm:@openzeppelin/contracts@5.2.0",
         "@openzeppelin/hardhat-upgrades": "^3.9.0",
@@ -51,6 +51,7 @@
         "lodash": "^4.17.21",
         "prettier": "^2.8.8",
         "prettier-plugin-solidity": "^1.4.1",
+        "shelljs": "^0.8.5",
         "solc-0.8": "npm:solc@0.8.20",
         "solidity-docgen": "^0.5.17",
         "winston": "^3.17.0"

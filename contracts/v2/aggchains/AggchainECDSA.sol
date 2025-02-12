@@ -14,7 +14,7 @@ import "../interfaces/IAggchain.sol";
  */
 contract AggchainECDSA is AggchainBase, IAggchain {
     // Aggchain type selector, hardcoded value used to force the first 2 byes of aggchain selector to retrieve  the aggchain verification key
-    bytes2 constant AGGCHAIN_TYPE_SELECTOR = 0;
+    bytes2 public constant AGGCHAIN_TYPE_SELECTOR = 0;
     /**
      * @dev Emitted when Pessimistic proof is verified.
      */

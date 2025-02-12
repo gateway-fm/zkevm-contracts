@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
-
-import {ISP1Verifier} from "./ISP1Verifier.sol";
-
 // based on: https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
 
 /// @dev A struct containing the address of a verifier and whether the verifier is frozen. A
