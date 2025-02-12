@@ -3,6 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-dependency-compiler";
 import "hardhat-switch-network";
+import "@nomiclabs/hardhat-solhint";
 
 import {HardhatUserConfig} from "hardhat/config";
 

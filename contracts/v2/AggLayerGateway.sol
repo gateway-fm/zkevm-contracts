@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 // TODO: check to upgrade version (bugs in solidity?) Check optimism supports cancun
-import {ISP1Verifier, ISP1VerifierWithHash} from "./interfaces/ISP1Verifier.sol";
+import {ISP1Verifier} from "./interfaces/ISP1Verifier.sol";
 import {IAggLayerGateway} from "./interfaces/IAggLayerGateway.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts5/access/AccessControl.sol";
-import "hardhat/console.sol";
 // Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/SP1VerifierGateway.sol
 
 /// @title AggLayerGateway
