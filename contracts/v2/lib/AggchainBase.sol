@@ -21,6 +21,10 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     // AggLayerGateway address, used in case the flag `useDefaultGateway` is set to true, the aggchains keys are managed by the gateway
     IAggLayerGateway public immutable aggLayerGateway;
 
+    // Address that will be able to manage the aggchain verification keys and swap the useDefaultGateway flag.
+    address public vKeyManager;
+    // This account will be able to accept the vKeyManager role
+    address public pendingVKeyManager;
     // Flag to enable/disable the use of the custom chain gateway to handle the aggchain keys. In case  of true (default), the keys are managed by the aggregation layer gateway
     bool public useDefaultGateway;
 
@@ -58,14 +62,60 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         aggLayerGateway = _aggLayerGateway;
     }
 
+    /**
+     * @notice Override the function to prevent the contract from being initialized with the initializer implemented at PolygonConsensusBase.
+     */
+    function initialize(
+        address, // _admin
+        address, // sequencer
+        uint32, //networkID,
+        address, // _gasTokenAddress,
+        string memory, // sequencerURL,
+        string memory // _networkName
+    ) external pure override(PolygonConsensusBase) {
+        // Set initialize variables
+        revert InvalidInitializeFunction();
+    }
+
+    //////////////////
+    // modifiers
+    //////////////////
+    modifier onlyVKeyManager() {
+        if (vKeyManager != msg.sender) {
+            revert OnlyVKeyManager();
+        }
+        _;
+    }
+
     //////////////////
     // admin functions
     //////////////////
 
     /**
+     * @notice Starts the vKeyManager role transfer
+     * This is a two step process, the pending vKeyManager must accepted to finalize the process
+     * @param newVKeyManager Address of the new pending admin
+     */
+    function transferVKeyManagerRole(
+        address newVKeyManager
+    ) external onlyVKeyManager {
+        pendingVKeyManager = newVKeyManager;
+        emit TransferVKeyManagerRole(newVKeyManager);
+    }
+    /**
+     * @notice Allow the current pending vKeyManager to accept the vKeyManager role
+     */
+    function acceptVKeyManagerRole() external {
+        if (pendingVKeyManager != msg.sender) {
+            revert OnlyPendingVKeyManager();
+        }
+        vKeyManager = pendingVKeyManager;
+        emit AcceptVKeyManagerRole(pendingVKeyManager);
+    }
+    /**
      * @notice Enable the use of the default gateway to manage the aggchain keys.
      */
-    function enableUseDefaultGatewayFlag() external onlyAdmin {
+    function enableUseDefaultGatewayFlag() external onlyVKeyManager {
         if (useDefaultGateway) {
             revert UseDefaultGatewayAlreadySet();
         }
@@ -77,7 +127,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     /**
      * @notice Disable the use of the default gateway to manage the aggchain keys. After disable, the keys are handled by the aggchain contract.
      */
-    function disableUseDefaultGatewayFlag() external onlyAdmin {
+    function disableUseDefaultGatewayFlag() external onlyVKeyManager {
         if (!useDefaultGateway) {
             revert UseDefaultGatewayAlreadySet();
         }
@@ -94,7 +144,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     function addOwnedAggchainVKey(
         bytes4 aggchainSelector,
         bytes32 newAggchainVKey
-    ) external onlyAdmin {
+    ) external onlyVKeyManager {
         if (newAggchainVKey == bytes32(0)) {
             revert InvalidAggchainVKey();
         }
@@ -115,7 +165,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     function updateOwnedAggchainVKey(
         bytes4 aggchainSelector,
         bytes32 updatedAggchainVKey
-    ) external onlyAdmin {
+    ) external onlyVKeyManager {
         // Check already added
         if (ownedAggchainVKeys[aggchainSelector] == bytes32(0)) {
             revert OwnedAggchainVKeyNotFound();

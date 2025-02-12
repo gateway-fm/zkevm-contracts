@@ -119,7 +119,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         // Upgrade rollup manager to v3
         const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManagerMock");
         rollupManagerContract = await upgrades.upgradeProxy(rollupManagerContract.target, PolygonRollupManagerFactory, {
-            unsafeAllow: ["constructor", "state-variable-immutable", "enum-definition", "struct-definition"],
+            unsafeAllow: ["constructor", "state-variable-immutable", "enum-definition", "struct-definition", "missing-initializer", "missing-initializer-call"],
             constructorArgs: [
                 polygonZkEVMGlobalExitRoot.target,
                 polTokenContract.target,

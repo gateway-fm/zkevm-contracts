@@ -53,10 +53,11 @@ contract AggchainECDSA is AggchainBase, IAggchain {
             address _trustedSequencer,
             address _gasTokenAddress,
             string memory _trustedSequencerURL,
-            string memory _networkName
+            string memory _networkName,
+            address _vKeyManager
         ) = abi.decode(
                 initializeBytesCustomChain,
-                (address, address, address, string, string)
+                (address, address, address, string, string, address)
             );
         // set chain variables
         admin = _admin;
@@ -64,6 +65,8 @@ contract AggchainECDSA is AggchainBase, IAggchain {
         trustedSequencer = _trustedSequencer;
         trustedSequencerURL = _trustedSequencerURL;
         networkName = _networkName;
+        // Set aggchainBase variables
+        vKeyManager = _vKeyManager;
         // By default, the gateway is used to manage the aggchain keys
         useDefaultGateway = true;
     }
