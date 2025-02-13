@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-// original: pragma solidity 0.8.20;
-pragma solidity 0.8.28;
+pragma solidity ^0.8.20;
 
 interface IPolygonRollupManagerPrevious {
     /**

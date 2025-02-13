@@ -1,22 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0
 
-// original: pragma solidity 0.8.20;
-pragma solidity 0.8.28;
+pragma solidity 0.8.20;
 
-import "../interfaces/IPolygonZkEVMGlobalExitRootV2.sol";
-import "../../interfaces/IPolygonZkEVMBridge.sol";
-import "../interfaces/IPolygonRollupBase.sol";
-import "../../interfaces/IVerifierRollup.sol";
-import "../../lib/EmergencyManager.sol";
+import "../../interfaces/IPolygonZkEVMGlobalExitRootV2.sol";
+import "../../../interfaces/IPolygonZkEVMBridge.sol";
+import "../../interfaces/IPolygonRollupBase.sol";
+import "../../../interfaces/IVerifierRollup.sol";
+import "../../../lib/EmergencyManager.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "../lib/PolygonTransparentProxy.sol";
-import "../lib/PolygonAccessControlUpgradeable.sol";
-import "../lib/LegacyZKEVMStateVariables.sol";
-import "../consensus/zkEVM/PolygonZkEVMExistentEtrog.sol";
-import "../lib/PolygonConstantsBase.sol";
-import "../interfaces/IPolygonPessimisticConsensus.sol";
-import "../interfaces/ISP1Verifier.sol";
-import "./IPolygonRollupManagerPreviousPessimistic.sol";
+import "../../lib/PolygonTransparentProxy.sol";
+import "../../lib/PolygonAccessControlUpgradeable.sol";
+import "../../lib/LegacyZKEVMStateVariables.sol";
+import "../../lib/PolygonConstantsBase.sol";
+import "../../interfaces/IPolygonPessimisticConsensus.sol";
+import "../../interfaces/ISP1Verifier.sol";
+import "./IPolygonRollupManagerPessimistic.sol";
 
 /**
  * Contract responsible for managing rollups and the verification of their batches.
@@ -24,12 +22,12 @@ import "./IPolygonRollupManagerPreviousPessimistic.sol";
  * The logic for sequence batches is moved to the `consensus` contracts, while the verification of all of
  * them will be done in this one. In this way, the proof aggregation of the rollups will be easier on a close future.
  */
-contract PolygonRollupManagerPreviousPessimistic is
+contract PolygonRollupManagerPessimistic is
     PolygonAccessControlUpgradeable,
     EmergencyManager,
     LegacyZKEVMStateVariables,
     PolygonConstantsBase,
-    IPolygonRollupManagerPreviousPessimistic
+    IPolygonRollupManagerPessimistic
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 

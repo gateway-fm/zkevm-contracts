@@ -2,16 +2,15 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "../interfaces/IPolygonZkEVMGlobalExitRootV2.sol";
+import "../../interfaces/IPolygonZkEVMGlobalExitRootV2.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "../../interfaces/IPolygonZkEVMErrors.sol";
-import "../interfaces/IPolygonZkEVMEtrogErrors.sol";
-import "../interfaces/IPolygonConsensusBase.sol";
-import "../interfaces/IPolygonRollupBase.sol";
-import "../interfaces/IPolygonZkEVMBridgeV2.sol";
+import "../../../interfaces/IPolygonZkEVMErrors.sol";
+import "../../interfaces/IPolygonZkEVMEtrogErrors.sol";
+import "../../interfaces/IPolygonConsensusBase.sol";
+import "../../interfaces/IPolygonRollupBase.sol";
+import "../../interfaces/IPolygonZkEVMBridgeV2.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
-import "./PolygonConstantsBase.sol";
-import "../PolygonRollupManager.sol";
+import "./PolygonRollupManagerPessimistic.sol";
 
 /**
  * Contract responsible for managing the states and the updates of L2 network.
@@ -21,7 +20,7 @@ import "../PolygonRollupManager.sol";
  * The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
  * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
  */
-abstract contract PolygonConsensusBase is
+abstract contract PolygonConsensusBasePessimistic is
     Initializable,
     IPolygonConsensusBase,
     IPolygonZkEVMEtrogErrors
@@ -36,7 +35,7 @@ abstract contract PolygonConsensusBase is
     IPolygonZkEVMBridgeV2 public immutable bridgeAddress;
 
     // Rollup manager
-    PolygonRollupManager public immutable rollupManager;
+    PolygonRollupManagerPessimistic public immutable rollupManager;
 
     // Address that will be able to adjust contract parameters
     address public admin;
@@ -119,7 +118,7 @@ abstract contract PolygonConsensusBase is
         IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
         IERC20Upgradeable _pol,
         IPolygonZkEVMBridgeV2 _bridgeAddress,
-        PolygonRollupManager _rollupManager
+        PolygonRollupManagerPessimistic _rollupManager
     ) {
         globalExitRootManager = _globalExitRootManager;
         pol = _pol;

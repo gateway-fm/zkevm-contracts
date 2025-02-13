@@ -99,7 +99,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
 
         // deploy PolygonRollupManager previous (pessimistic)
         const PolygonRollupManagerPreviousFactory = await ethers.getContractFactory(
-            "PolygonRollupManagerPreviousPessimistic"
+            "PolygonRollupManagerPessimistic"
         );
         rollupManagerContract = (await upgrades.deployProxy(PolygonRollupManagerPreviousFactory, [], {
             initializer: false,
