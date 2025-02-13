@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0
-// original: pragma solidity 0.8.20;
-pragma solidity ^0.8.28;
 
-import "../../interfaces/IVerifierRollup.sol";
-import "../interfaces/IPolygonRollupBase.sol";
+pragma solidity ^0.8.20;
+
+import "../../../interfaces/IVerifierRollup.sol";
+import "../../interfaces/IPolygonRollupBase.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts5/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-interface IPolygonRollupManagerPreviousPessimistic {
+interface IPolygonRollupManagerPessimistic {
     /**
      * @dev Thrown when sender is not the PolygonZkEVM address
      */
