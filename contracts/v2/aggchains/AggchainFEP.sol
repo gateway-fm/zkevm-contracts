@@ -33,7 +33,6 @@ contract AggchainFEP is AggchainBase, IAggchain {
     // Array of stored chain data
     ChainData[] public chainData;
 
-
     //////////
     // Events
     /////////
@@ -157,7 +156,15 @@ contract AggchainFEP is AggchainBase, IAggchain {
                 address _vKeyManager
             ) = abi.decode(
                     initializeBytesCustomChain,
-                    (bytes32, bytes32, bytes32, bytes32, uint128, uint128, address)
+                    (
+                        bytes32,
+                        bytes32,
+                        bytes32,
+                        bytes32,
+                        uint128,
+                        uint128,
+                        address
+                    )
                 );
             aggregationVkey = _aggregationVkey;
             chainConfigHash = _chainConfigHash;
