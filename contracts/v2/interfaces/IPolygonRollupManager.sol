@@ -293,7 +293,9 @@ interface IPolygonRollupManager {
     error PendingStateNumExist();
 
     /**
-     * @dev State transition chains not allowed
+     * @dev Thrown when a function is executed for a State transition chains when it is not allowed
+     * @dev This function was previously called `OnlyChainsWithPessimisticProofs`but with the new ALGateway verifier Type
+     *      state transitions must be excluded
      */
     error StateTransitionChainsNotAllowed();
 
@@ -412,7 +414,7 @@ interface IPolygonRollupManager {
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot,
         bytes memory customChainData
-    ) external returns (bytes memory);
+    ) external view returns (bytes memory);
 
     function getInputSnarkBytes(
         uint32 rollupID,

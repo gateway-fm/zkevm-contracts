@@ -18,6 +18,10 @@ contract GlobalExitRootManagerL2SovereignChain is
     // In case of initializing a chain with Full execution proofs, this address should be set to zero, otherwise, some malicious sequencer could insert invalid global exit roots, claim, go back and the execution would be correctly proved.
     address public globalExitRootRemover;
 
+    // Inserted GER counter
+    /// @custom:oz-renamed-from insertedGERCount
+    uint256 public _legacyInsertedGERCount;
+
     // Value of the global exit roots hash chain after last insertion
     bytes32 public insertedGERHashChain;
 
@@ -27,7 +31,12 @@ contract GlobalExitRootManagerL2SovereignChain is
     /**
      * @dev Emitted when a new global exit root is inserted and added to the hash chain
      */
-    event InsertGlobalExitRoot(
+    event InsertGlobalExitRoot(bytes32 indexed newGlobalExitRoot);
+
+    /**
+     * @dev Emitted when a new global exit root is inserted and added to the hash chain
+     */
+    event UpdateHashChainValue(
         bytes32 indexed newGlobalExitRoot,
         bytes32 indexed newHashChainValue
     );
@@ -35,7 +44,12 @@ contract GlobalExitRootManagerL2SovereignChain is
     /**
      * @dev Emitted when the global exit root is removed and added to the removal hash chain
      */
-    event RemoveGlobalExitRoot(
+    event RemoveLastGlobalExitRoot(bytes32 indexed removedGlobalExitRoot);
+
+    /**
+     * @dev Emitted when the global exit root is removed and added to the removal hash chain
+     */
+    event UpdateRemovalHashChainValue(
         bytes32 indexed removedGlobalExitRoot,
         bytes32 indexed newRemovalHashChainValue
     );
@@ -111,14 +125,27 @@ contract GlobalExitRootManagerL2SovereignChain is
             insertedGERHashChain = keccak256(
                 abi.encodePacked(insertedGERHashChain, _newRoot)
             );
-            emit InsertGlobalExitRoot(_newRoot, insertedGERHashChain);
+            // @dev we are emitting to events for backwards compatibility, should deprecate InsertGlobalExitRoot event in the future
+            emit InsertGlobalExitRoot(_newRoot);
+            emit UpdateHashChainValue(_newRoot, insertedGERHashChain);
         } else {
             revert GlobalExitRootAlreadySet();
         }
     }
 
     /**
-     * @notice Remove last global exit roots
+     * @notice Legacy function to remove Last global exit roots
+     * @dev Now this function logic is moved to _removeGlobalExitRoots, in the past only last inserted GERs were allowed to remove, that is the reason for the name of the function.
+     * @param gersToRemove Array of gers to remove
+     */
+    function removeLastGlobalExitRoots(
+        bytes32[] calldata gersToRemove
+    ) external onlyGlobalExitRootRemover {
+        _removeGlobalExitRoots(gersToRemove);
+    }
+
+    /**
+     * @notice Remove global exit roots
      * @dev After removing a global exit root, the removal hash chain value is updated.
      *      A hash chain is being used to make optimized proof generations of removed GERs.
      * @param gersToRemove Array of gers to remove
@@ -126,6 +153,15 @@ contract GlobalExitRootManagerL2SovereignChain is
     function removeGlobalExitRoots(
         bytes32[] calldata gersToRemove
     ) external onlyGlobalExitRootRemover {
+        _removeGlobalExitRoots(gersToRemove);
+    }
+
+    /**
+     * @notice Remove global exit roots private function
+     * @dev This function should only be called by functions with the onlyGlobalExitRootRemover modifier
+     * @param gersToRemove Array of gers to remove
+     */
+    function _removeGlobalExitRoots(bytes32[] calldata gersToRemove) private {
         // @dev A memory variable is used to reduce sload/sstore operations while the loop
         bytes32 nextRemovalHashChainValue = removedGERHashChain;
         for (uint256 i = 0; i < gersToRemove.length; i++) {
@@ -143,7 +179,9 @@ contract GlobalExitRootManagerL2SovereignChain is
             delete globalExitRootMap[gerToRemove];
 
             // Emit the removal event
-            emit RemoveGlobalExitRoot(
+            // @dev we are emitting to events for backwards compatibility, should deprecate RemoveLastGlobalExitRoot event in the future
+            emit RemoveLastGlobalExitRoot(gerToRemove);
+            emit UpdateRemovalHashChainValue(
                 gerToRemove,
                 nextRemovalHashChainValue
             );

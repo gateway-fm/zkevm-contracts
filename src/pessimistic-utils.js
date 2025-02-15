@@ -20,11 +20,6 @@ const AggchainSelector = {
     ECDSA: '0000',
     FEP: '0001',
 };
-
-const AggchainType = {
-    LEGACY: 0,
-    GENERIC: 1,
-};
 /**
  * Compute input for SNARK circuit: sha256(
  * initStateRoot, initBlobStateRoot, initBlobAccInputHash, initNumBlob, chainId, forkID
@@ -82,6 +77,5 @@ module.exports = {
     computeConsensusHashEcdsa,
     ConsensusContracts,
     AggchainSelector,
-    AggchainType,
     computeRandomBytes,
 };

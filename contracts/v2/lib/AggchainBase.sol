@@ -16,16 +16,21 @@ import "../interfaces/IAggchainBase.sol";
  * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
  */
 abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
+
+    // private transient variable to store the initializer version
+    uint8 internal transient _initializerVersion;
+
     // Aggchain type that support generic aggchain hash
     uint32 public constant AGGCHAIN_TYPE = 1;
     // AggLayerGateway address, used in case the flag `useDefaultGateway` is set to true, the aggchains keys are managed by the gateway
     IAggLayerGateway public immutable aggLayerGateway;
 
+
     // Address that will be able to manage the aggchain verification keys and swap the useDefaultGateway flag.
     address public vKeyManager;
     // This account will be able to accept the vKeyManager role
     address public pendingVKeyManager;
-    // Flag to enable/disable the use of the custom chain gateway to handle the aggchain keys. In case  of true (default), the keys are managed by the aggregation layer gateway
+    // Flag to enable/disable the use of the custom chain gateway to handle the aggchain keys. In case  of true, the keys are managed by the aggregation layer gateway
     bool public useDefaultGateway;
 
     // AggchainVKeys mapping
@@ -80,10 +85,18 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     //////////////////
     // modifiers
     //////////////////
+    // Modifier to check if the caller is the vKeyManager
     modifier onlyVKeyManager() {
         if (vKeyManager != msg.sender) {
             revert OnlyVKeyManager();
         }
+        _;
+    }
+
+    // @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
+    modifier retrieveInitializerVersion() {
+        // Get initializer version from OZ initializer smart contract
+        _initializerVersion = _getInitializedVersion();
         _;
     }
 
@@ -181,8 +194,11 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     function getAggchainVKey(
         bytes4 aggchainSelector
     ) public view returns (bytes32 aggchainVKey) {
-        if (!useDefaultGateway) {
+        if (useDefaultGateway == false) {
             aggchainVKey = ownedAggchainVKeys[aggchainSelector];
+            if (aggchainVKey == bytes32(0)) {
+                revert AggchainVKeyNotFound();
+            }
         } else {
             // Retrieve aggchain key from AggLayerGateway
             aggchainVKey = aggLayerGateway.getDefaultAggchainVKey(
@@ -192,15 +208,15 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     }
 
     /**
-     * @notice Computes the selector for the aggchain verification key from the aggchain type and the aggchain selector.
+     * @notice Computes the selector for the aggchain verification key from the aggchain type and the aggchainVKeySelector.
      * @dev It joins two bytes2 values into a bytes4 value.
      * @param aggchainType The aggchain type, hardcoded in the aggchain contract.
-     * @param aggchainSelector The aggchain selector, used to identify the aggchain key.
+     * @param aggchainVKeySelector The aggchain verification key selector, used to identify the aggchain verification key.
      */
     function _getAggchainSelectorFromType(
         bytes2 aggchainType,
-        bytes2 aggchainSelector
+        bytes2 aggchainVKeySelector
     ) internal pure returns (bytes4) {
-        return bytes4(aggchainType) | (bytes4(aggchainSelector) >> 16);
+        return bytes4(aggchainType) | (bytes4(aggchainVKeySelector) >> 16);
     }
 }
