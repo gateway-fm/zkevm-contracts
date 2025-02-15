@@ -212,8 +212,10 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot, hashChainValue);
+        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
+        .withArgs(computedGlobalExitRoot)
+        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+        .withArgs(computedGlobalExitRoot, hashChainValue);
 
         // Check GER has value in mapping
         expect(await sovereignChainGlobalExitRootContract.globalExitRootMap(computedGlobalExitRoot)).to.not.be.eq(0);
@@ -731,8 +733,10 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot, hashChainValue);
+        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
+        .withArgs(computedGlobalExitRoot)
+        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+        .withArgs(computedGlobalExitRoot, hashChainValue);
 
         // check merkle proof
         // Merkle proof local
@@ -879,6 +883,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
             .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
+            .withArgs(computedGlobalExitRoot)
+            .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
         // check merkle proof
 
@@ -1275,6 +1281,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
             .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
+            .withArgs(computedGlobalExitRoot)
+            .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
         // check merkle proof
@@ -1428,8 +1436,10 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot, hashChainValue);
+        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
+        .withArgs(computedGlobalExitRoot)
+        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+        .withArgs(computedGlobalExitRoot, hashChainValue);
 
         // check merkle proof
         const index = 0;
@@ -1537,8 +1547,10 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot, hashChainValue);
+        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
+        .withArgs(computedGlobalExitRoot)
+        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+        .withArgs(computedGlobalExitRoot, hashChainValue);
         // check merkle proof
         const index = 0;
         const proofLocal = merkleTree.getProofTreeByIndex(0);

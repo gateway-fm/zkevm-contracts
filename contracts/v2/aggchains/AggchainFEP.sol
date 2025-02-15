@@ -12,6 +12,13 @@ import "../AggLayerGateway.sol";
  */
 contract AggchainFEP is AggchainBase, IAggchain {
 
+    // Struct to store the chain data every time pessimistic proof is verified
+    struct ChainData {
+        bytes32 lastStateRoot;
+        uint128 timestamp;
+        uint128 l2BlockNumber;
+    }
+
     // Aggchain type selector, hardcoded value used to force the first 2 byes of aggchain selector to retrieve  the aggchain verification key
     bytes2 public constant AGGCHAIN_TYPE_SELECTOR = 0x0001;
 
@@ -20,16 +27,9 @@ contract AggchainFEP is AggchainBase, IAggchain {
     bytes32 public chainConfigHash;
     bytes32 public rangeVkeyCommitment;
 
-    // Struct to store the chain data every time pessimistic proof is verified
-    struct ChainData {
-        bytes32 lastStateRoot;
-        uint128 timestamp;
-        uint128 l2BlockNumber;
-    }
     // Array of stored chain data
     ChainData[] public chainData;
 
-    uint8 private transient _initializerVersion;
 
     //////////
     // Events
@@ -85,7 +85,7 @@ contract AggchainFEP is AggchainBase, IAggchain {
         // If initializer version is 0, it means that the chain is being initialized for the first time, so the contract has just been deployed, is not an upgrade
         if (_initializerVersion == 0) {
             // custom parsing of the initializeBytesCustomChain
-            // todo: question: gasTokenNetwork?? gastoken metadata?
+            // todo: question: gasTokenNetwork?? gasToken metadata?
             (
                 address _admin,
                 address _trustedSequencer,
@@ -140,14 +140,17 @@ contract AggchainFEP is AggchainBase, IAggchain {
                 bytes32 _rangeVkeyCommitment,
                 bytes32 initStateRoot,
                 uint128 initTimestamp,
-                uint128 initL2BlockNumber
+                uint128 initL2BlockNumber,
+                address _vKeyManager
             ) = abi.decode(
                     initializeBytesCustomChain,
-                    (bytes32, bytes32, bytes32, bytes32, uint128, uint128)
+                    (bytes32, bytes32, bytes32, bytes32, uint128, uint128, address)
                 );
             aggregationVkey = _aggregationVkey;
             chainConfigHash = _chainConfigHash;
             rangeVkeyCommitment = _rangeVkeyCommitment;
+            // Set aggchainBase variables
+            vKeyManager = _vKeyManager;
             // storage first chainData struct
             chainData.push(
                 ChainData(initStateRoot, initTimestamp, initL2BlockNumber)
@@ -158,17 +161,6 @@ contract AggchainFEP is AggchainBase, IAggchain {
         }
         // By default, the gateway is used to manage the aggchain keys
         useDefaultGateway = true;
-    }
-
-    //////////////////
-    // Modifiers
-    //////////////////
-
-    // @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
-    modifier retrieveInitializerVersion() {
-        // Get initializer version from OZ initializer smart contract
-        _initializerVersion = _getInitializedVersion();
-        _;
     }
 
     /**
@@ -183,7 +175,7 @@ contract AggchainFEP is AggchainBase, IAggchain {
         bytes memory customChainData
     ) external view returns (bytes32) {
         (
-            bytes2 aggchainSelector,
+            bytes2 aggchainVKeySelector,
             bytes32 l1Head,
             bytes32 l2PreRoot,
             bytes32 claimRoot,
@@ -203,15 +195,15 @@ contract AggchainFEP is AggchainBase, IAggchain {
                 aggregationVkey
             )
         );
-        bytes4 finalAggchainSelector = _getAggchainSelectorFromType(
+        bytes4 aggchainSelector = _getAggchainSelectorFromType(
             AGGCHAIN_TYPE_SELECTOR,
-            aggchainSelector
+            aggchainVKeySelector
         );
         return
             keccak256(
                 abi.encodePacked(
                     AGGCHAIN_TYPE,
-                    getAggchainVKey(finalAggchainSelector),
+                    getAggchainVKey(aggchainSelector),
                     aggchainConfig
                 )
             );

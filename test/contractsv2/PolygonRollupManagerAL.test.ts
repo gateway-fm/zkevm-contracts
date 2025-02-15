@@ -10,7 +10,8 @@ import {
     VerifierRollupHelperMock,
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
-const {VerifierType, AggchainSelector, AggchainType, computeRandomBytes} = require("../../src/pessimistic-utils");
+const {VerifierType, AggchainSelector, computeRandomBytes} = require("../../src/pessimistic-utils");
+const {AggchainType, aggchainHashECDSAData, initializeECDSADataAfterUpgrade, initializeECDSADataAfterDeploy} = require("../../src/agglayer-utils");
 
 describe("Polygon rollup manager aggregation layer v3", () => {
     // SIGNERS
@@ -46,10 +47,8 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     // AGGCHAIN CONSTANTS
     const ECDSA_SELECTOR = "0x0001";
     const randomNewStateRoot = computeRandomBytes(32);
-    const CUSTOM_DATA_ECDSA = ethers.AbiCoder.defaultAbiCoder().encode(
-        ["bytes2", "bytes32"],
-        [ECDSA_SELECTOR, randomNewStateRoot]
-    );
+    const CUSTOM_DATA_ECDSA = aggchainHashECDSAData(ECDSA_SELECTOR, randomNewStateRoot);
+
     upgrades.silenceWarnings();
     beforeEach("Deploy contract", async () => {
         // load signers
@@ -238,9 +237,10 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             .withArgs(admin.address);
         //Accept vKeyManager role
         // Trigger onlyPendingVKeyManager
-        await expect(
-            aggchainECDSAContract.connect(vKeyManager).acceptVKeyManagerRole()
-        ).to.be.revertedWithCustomError(aggchainECDSAContract, "OnlyPendingVKeyManager");
+        await expect(aggchainECDSAContract.connect(vKeyManager).acceptVKeyManagerRole()).to.be.revertedWithCustomError(
+            aggchainECDSAContract,
+            "OnlyPendingVKeyManager"
+        );
         await expect(aggchainECDSAContract.connect(admin).acceptVKeyManagerRole())
             .to.emit(aggchainECDSAContract, "AcceptVKeyManagerRole")
             .withArgs(admin.address);
@@ -437,15 +437,27 @@ describe("Polygon rollup manager aggregation layer v3", () => {
 
         // Create rollup type ECDSA
         const rollupTypeECDSAId = await createECDSARollupType();
-        // Update the rollup to ECDSA
+        // Update the rollup to ECDSA and initialize the new rollup type
+        // Compute initialize upgrade data
+        const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+        const initializeBytesCustomChain = initializeECDSADataAfterUpgrade(
+            true, //useDefaultGateway
+            [], //ownedAggchainVKeys
+            [], // aggchainVkeySelector
+            vKeyManager.address
+        );
+        const upgradeData = aggchainECDSAFactory.interface.encodeFunctionData("initialize(bytes)", [
+            initializeBytesCustomChain,
+        ]);
+
         await expect(
             rollupManagerContract
                 .connect(timelock)
-                .updateRollup(pessimisticRollupContract.target, rollupTypeECDSAId, "0x" /* upgradeData */)
+                .updateRollup(pessimisticRollupContract.target, rollupTypeECDSAId, upgradeData)
         )
             .to.emit(rollupManagerContract, "UpdateRollup")
             .withArgs(pessimisticRollupID, rollupTypeECDSAId, 0 /*lastVerifiedBatch*/);
-
+        const ECDSARollupContract = aggchainECDSAFactory.attach(pessimisticRollupContract.target);
         // Try update rollup by rollupAdmin but trigger UpdateToOldRollupTypeID
         // Create a new pessimistic rollup type
         await createPessimisticRollupType();
@@ -453,7 +465,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         // Check new rollup data
         const resRollupData = await rollupManagerContract.rollupIDToRollupDataDeserialized(pessimisticRollupID);
         const expectedRollupData = [
-            pessimisticRollupContract.target,
+            ECDSARollupContract.target,
             chainID,
             ethers.ZeroAddress, // newVerifier address, for ECDSA is zero because it is internally replaced by aggLayerGateway address
             0, // newForkID
@@ -485,8 +497,28 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         const randomProof = computeRandomBytes(128);
         // append first 4 bytes to the proof to select the pessimistic vkey
         const proofWithSelector = `${PESSIMISTIC_SELECTOR}${randomProof.slice(2)}`;
-        expect(
-            await rollupManagerContract.connect(trustedAggregator).verifyPessimisticTrustedAggregator(
+        // Should revert with AggchainVKeyNotFound
+        await expect(
+            rollupManagerContract.connect(trustedAggregator).verifyPessimisticTrustedAggregator(
+                pessimisticRollupID, // rollupID
+                lastL1InfoTreeLeafCount, // l1InfoTreeCount
+                randomNewLocalExitRoot,
+                randomNewPessimisticRoot,
+                proofWithSelector,
+                CUSTOM_DATA_ECDSA
+            )
+        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
+        // Add default AggchainVKey
+        const aggchainVKey = computeRandomBytes(32);
+        const defaultAggchainSelector = `0x${AggchainSelector.ECDSA}0001`;
+        await expect(
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+        )
+            .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
+            .withArgs(defaultAggchainSelector, aggchainVKey);
+        // verify pessimist proof with the new ECDSA rollup
+        await expect(
+            rollupManagerContract.connect(trustedAggregator).verifyPessimisticTrustedAggregator(
                 pessimisticRollupID, // rollupID
                 lastL1InfoTreeLeafCount, // l1InfoTreeCount
                 randomNewLocalExitRoot,
@@ -496,7 +528,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             )
         )
             .to.emit(rollupManagerContract, "VerifyBatchesTrustedAggregator")
-            .to.emit(aggchainECDSAImplementationContract, "OnVerifyPessimistic")
+            .to.emit(ECDSARollupContract, "OnVerifyPessimistic")
             .withArgs(randomNewStateRoot);
     });
 
@@ -649,16 +681,16 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     }
 
     async function createECDSARollup(rollupTypeIdECDSA: number) {
-        const initializeBytesCustomChain = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["address", "address", "address", "string", "string", "address"],
-            [
-                admin.address,
-                trustedSequencer.address,
-                ethers.ZeroAddress, // gas token address
-                "", // trusted sequencer url
-                "", // network name
-                vKeyManager.address,
-            ]
+        const initializeBytesCustomChain = initializeECDSADataAfterDeploy(
+            true, // useDefaultGateway
+            [], // ownedAggchainVKeys
+            [], //aggchainVKeysSelectors
+            vKeyManager.address,
+            admin.address,
+            trustedSequencer.address,
+            ethers.ZeroAddress, // gas token address
+            "", // trusted sequencer url
+            "" // network name
         );
         const rollupManagerNonce = await ethers.provider.getTransactionCount(rollupManagerContract.target);
         const rollupsCount = await rollupManagerContract.rollupCount();

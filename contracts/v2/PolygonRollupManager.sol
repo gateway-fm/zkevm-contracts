@@ -1099,6 +1099,7 @@ contract PolygonRollupManager is
      * @param proof SP1 proof (Plonk)
      * @param customChainData Specific custom data to verify Aggregation layer chains
      * @dev A reentrancy measure has been applied because this function calls `getAggchainHash`, is an open function implemented by the aggchains
+     * @dev the function can not be a view because the nonReentrant uses a transient storage variable
      */
     function verifyPessimisticTrustedAggregator(
         uint32 rollupID,

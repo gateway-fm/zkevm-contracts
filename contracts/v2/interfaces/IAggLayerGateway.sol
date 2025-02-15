@@ -2,13 +2,11 @@
 pragma solidity 0.8.28;
 // based on: https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
 
-/// @dev A struct containing the address of a verifier and whether the verifier is frozen. A
-/// frozen verifier cannot be routed to.
-
 interface IAggLayerGatewayEvents {
     /// @notice Emitted when a verifier route is added.
     /// @param selector The verifier selector that was added.
     /// @param verifier The address of the verifier contract.
+    /// @param pessimisticVKey The verification key
     event RouteAdded(
         bytes4 selector,
         address verifier,
@@ -65,9 +63,8 @@ interface IAggLayerGatewayErrors {
     error AggchainVKeyNotFound();
 }
 
-/// @title SP1 Verifier Gateway Interface
-/// @author Succinct Labs
-/// @notice This contract is the interface for the SP1 Verifier Gateway.
+/// @title IAggLayerGateway
+/// @notice This contract is the interface for the AggLayerGateway.
 /// @notice Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
 interface IAggLayerGateway is IAggLayerGatewayEvents, IAggLayerGatewayErrors {
     struct AggLayerVerifierRoute {
@@ -77,9 +74,9 @@ interface IAggLayerGateway is IAggLayerGatewayEvents, IAggLayerGatewayErrors {
     }
 
     /**
-     * @notice returns the current aggchain verification key, used to verify chain's FEP
+     * @notice returns the current aggchain verification key, used to verify chain's FEP.
      * @dev This function is necessary to query the map from an external function. In solidity maps are not
-     * directly accessible from external functions like other state variables
+     * directly accessible from external functions like other state variables.
      */
     function getDefaultAggchainVKey(
         bytes4 defaultAggchainSelector

@@ -7,8 +7,17 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts52/access/AccessControl.sol";
 // Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/SP1VerifierGateway.sol
 
-/// @title AggLayerGateway
+/**
+ * @title AggLayerGateway
+ * @notice Contract to handle the verification keys for the pessimistic proof. 
+ * It supports adding and freezing PP verification keys and verifying the PP.
+ * Also maintains the default verification keys of aggchains when the flag of using default 
+ * keys is enabled (check aggchainBase contract)
+ */
 contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
+    ////////////////////////////////////////////////////////////
+    //                  Constants & Immutables                //
+    ////////////////////////////////////////////////////////////
     // Roles
     // Default admin role, can grant roles to addresses
     bytes32 internal constant AGGCHAIN_ADMIN_ROLE =
@@ -20,6 +29,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     bytes32 internal constant AGGLAYER_FREEZE_ROUTE_ROLE =
         keccak256("AGGLAYER_FREEZE_ROUTE_ROLE");
 
+    ////////////////////////////////////////////////////////////
+    //                       Mappings                         //
+    ////////////////////////////////////////////////////////////
     // Mapping with the default aggchain verification keys
     mapping(bytes4 defaultAggchainSelector => bytes32 defaultAggchainVKey)
         public defaultAggchainVKeys;
@@ -33,6 +45,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
      */
     uint256[50] private _gap;
 
+    ////////////////////////////////////////////////////////////
+    //                       Events                           //
+    ////////////////////////////////////////////////////////////
     /**
      * @dev Emitted when the admin starts the two-step transfer role setting a new pending admin
      */
@@ -43,6 +58,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
      */
     event AcceptAggLayerAdminRole(address newAggLayerAdmin);
 
+    ////////////////////////////////////////////////////////////
+    //                       Constructor                      //
+    ////////////////////////////////////////////////////////////
     /**
      * @dev Disable initializers on the implementation following the best practices.
      */
@@ -51,6 +69,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         _disableInitializers();
     }
 
+    ////////////////////////////////////////////////////////////
+    //                  Initialization                        //
+    ////////////////////////////////////////////////////////////
     /**
      * @notice  Initializer function to set new rollup manager version.
      * @param admin The address of the default admin. Can grant role to addresses.
@@ -60,6 +81,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
+    ////////////////////////////////////////////////////////////
+    //                    Functions: views                    //
+    ////////////////////////////////////////////////////////////
     /**
      * @notice Function to verify the pessimistic proof.
      * @param publicValues Public values of the proof.
@@ -87,9 +111,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         );
     }
 
-    //////////////////
-    // AggLayer functions
-    //////////////////
+    ////////////////////////////////////////////////////////////
+    //               Functions: AggLayerGateway               //
+    ////////////////////////////////////////////////////////////
     /**
      * @notice Function to add a pessimistic verification key route
      * @param pessimisticVKeySelector The 4 bytes selector to add to the pessimistic verification keys.
@@ -139,9 +163,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         emit RouteFrozen(pessimisticVKeySelector, route.verifier);
     }
 
-    //////////////////
-    // defaultAggChainVkey functions
-    //////////////////
+    ////////////////////////////////////////////////////////////
+    //            Functions: defaultAggChainVkey              //
+    ////////////////////////////////////////////////////////////
     /**
      * @notice Function to add an aggchain verification key
      * @param defaultAggchainSelector The 4 bytes selector to add to the default aggchain verification keys.
