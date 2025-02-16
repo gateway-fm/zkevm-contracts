@@ -36,7 +36,7 @@ function aggchainConfig(trustedSequencer) {
 }
 
 function getFinalAggchainSelector(aggchainSelector) {
-    return AGGCHAIN_TYPE_SELECTOR_ECDSA + Scalar.e(aggchainSelector).toString(16).padStart(4, '0');
+    return AGGCHAIN_TYPE_SELECTOR_ECDSA.concat(Scalar.e(aggchainSelector).toString(16).padStart(4, '0'));
 }
 
 function getAggchainHash(aggchainVKey, aggchainConfig) {

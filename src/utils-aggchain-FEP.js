@@ -69,7 +69,7 @@ function aggchainConfig(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfig
 }
 
 function getFinalAggchainSelector(aggchainSelector) {
-    return AGGCHAIN_TYPE_SELECTOR_FEP + Scalar.e(aggchainSelector).toString(16).padStart(4, '0');
+    return AGGCHAIN_TYPE_SELECTOR_FEP.concat(Scalar.e(aggchainSelector).toString(16).padStart(4, '0'));
 }
 
 function getAggchainHash(aggchainVKey, aggchainConfig) {

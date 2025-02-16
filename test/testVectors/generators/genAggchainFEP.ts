@@ -102,42 +102,6 @@ async function main() {
                 data.initL2BlockNumber
             );
 
-            // // reinitialize using rollup manager & initializeBytesCustomChainV1
-            // aggchainFEPContract = await upgrades.upgradeProxy(aggchainFEPContract.target, aggchainFEPFactory, {
-            //     constructorArgs: [
-            //         gerManagerAddress,
-            //         polTokenAddress,
-            //         bridgeAddress,
-            //         rollupManagerAddress,
-            //         aggLayerGatewayAddress,
-            //     ],
-            //     unsafeAllow: [
-            //         "constructor",
-            //         "state-variable-immutable",
-            //         "enum-definition",
-            //         "struct-definition",
-            //         "missing-initializer",
-            //         "missing-initializer-call",
-            //     ],
-            // });
-            // await aggchainFEPContract
-            //     .connect(rollupManagerSigner)
-            //     .initialize(initializeBytesCustomChainV1, {gasPrice: 0});
-
-            // // check initializeBytesCustomChain
-            // expect(await aggchainFEPContract.admin()).to.be.equal(data.admin);
-            // expect(await aggchainFEPContract.vKeyManager()).to.be.equal(vKeyManager.address);
-            // expect(await aggchainFEPContract.trustedSequencer()).to.be.equal(data.trustedSequencer);
-            // expect(await aggchainFEPContract.trustedSequencerURL()).to.be.equal(data.trustedSequencerURL);
-            // expect(await aggchainFEPContract.networkName()).to.be.equal(data.networkName);
-            // expect(await aggchainFEPContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
-            // expect(await aggchainFEPContract.aggregationVkey()).to.be.equal(data.aggregationVkey);
-            // expect(await aggchainFEPContract.chainConfigHash()).to.be.equal(data.chainConfigHash);
-            // expect(await aggchainFEPContract.rangeVkeyCommitment()).to.be.equal(data.rangeVkeyCommitment);
-            // expect(chainData[0]).to.be.equal(data.initStateRoot);
-            // expect(chainData[1]).to.be.equal(data.initTimestamp);
-            // expect(chainData[2]).to.be.equal(data.initL2BlockNumber);
-
             // get customInitlizeData
             const customInitlizeData = await utilsFEP.encodeCustomInitializeData(
                 data.aggregationVkey,
@@ -198,6 +162,70 @@ async function main() {
             // check aggchainHash === aggchainHash from contract
             // with this check we can be sure that the aggchainConfig & aggchainHash works correctly
             expect(aggchainHash).to.be.equal(aggchainHashContract);
+
+            // reinitialize using rollup manager & initializeBytesCustomChainV1
+
+            // deploy polygonPessimisticConsensus
+            // create polygonPessimisticConsensus implementation
+            const ppConsensusFactory = await ethers.getContractFactory("PolygonPessimisticConsensus");
+            let ppConsensusContract = await upgrades.deployProxy(ppConsensusFactory, [], {
+                initializer: false,
+                constructorArgs: [gerManagerAddress, polTokenAddress, bridgeAddress, rollupManagerAddress],
+                unsafeAllow: ["constructor", "state-variable-immutable"],
+            });
+
+            await ppConsensusContract.waitForDeployment();
+
+            await ppConsensusContract
+                .connect(rollupManagerSigner)
+                .initialize(
+                    admin.address,
+                    data.trustedSequencer,
+                    0,
+                    data.gasTokenAddress,
+                    data.trustedSequencerURL,
+                    data.networkName,
+                    {
+                        gasPrice: 0,
+                    }
+                );
+
+            // upgrade to aggchainFEP (reinitialize)
+            ppConsensusContract = await upgrades.upgradeProxy(ppConsensusContract.target, aggchainFEPFactory, {
+                constructorArgs: [
+                    gerManagerAddress,
+                    polTokenAddress,
+                    bridgeAddress,
+                    rollupManagerAddress,
+                    aggLayerGatewayAddress,
+                ],
+                unsafeAllow: [
+                    "constructor",
+                    "state-variable-immutable",
+                    "enum-definition",
+                    "struct-definition",
+                    "missing-initializer",
+                    "missing-initializer-call",
+                ],
+            });
+
+            await ppConsensusContract
+                .connect(rollupManagerSigner)
+                .initialize(initializeBytesCustomChainV1, {gasPrice: 0});
+
+            // check initializeBytesCustomChain
+            expect(await aggchainFEPContract.admin()).to.be.equal(admin.address);
+            expect(await aggchainFEPContract.vKeyManager()).to.be.equal(vKeyManager.address);
+            expect(await aggchainFEPContract.trustedSequencer()).to.be.equal(data.trustedSequencer);
+            expect(await aggchainFEPContract.trustedSequencerURL()).to.be.equal(data.trustedSequencerURL);
+            expect(await aggchainFEPContract.networkName()).to.be.equal(data.networkName);
+            expect(await aggchainFEPContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
+            expect(await aggchainFEPContract.aggregationVkey()).to.be.equal(data.aggregationVkey);
+            expect(await aggchainFEPContract.chainConfigHash()).to.be.equal(data.chainConfigHash);
+            expect(await aggchainFEPContract.rangeVkeyCommitment()).to.be.equal(data.rangeVkeyCommitment);
+            expect(chainData[0]).to.be.equal(data.initStateRoot);
+            expect(chainData[1]).to.be.equal(data.initTimestamp);
+            expect(chainData[2]).to.be.equal(data.initL2BlockNumber);
 
             // add data to test-vector
             data.vKeyManager = vKeyManager.address;
