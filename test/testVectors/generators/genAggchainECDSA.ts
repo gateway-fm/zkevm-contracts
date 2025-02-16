@@ -49,7 +49,7 @@ async function main() {
             await aggchainECDSAContract.waitForDeployment();
 
             // encode initializeBytesCustomChain
-            initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesCustomChain(
+            initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesCustomChainECDSA(
                 admin.address,
                 data.trustedSequencer,
                 data.gasTokenAddress,
@@ -74,13 +74,13 @@ async function main() {
             expect(await aggchainECDSAContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
 
             // encode customChainData
-            customChainData = utilsECDSA.encodeCustomChainData(data.aggchainSelector, data.newStateRoot);
+            customChainData = utilsECDSA.encodeCustomChainDataECDSA(data.aggchainSelector, data.newStateRoot);
 
             // encode aggchainConfig
-            aggchainConfig = utilsECDSA.aggchainConfig(data.trustedSequencer);
+            aggchainConfig = utilsECDSA.aggchainConfigECDSA(data.trustedSequencer);
 
             // get aggchainVKeySelector
-            aggchainVKeySelector = utilsECDSA.getFinalAggchainSelector(data.aggchainSelector);
+            aggchainVKeySelector = utilsECDSA.getFinalAggchainSelectorECDSA(data.aggchainSelector);
 
             // check aggchainVKeySelector
             expect(aggchainVKeySelector).to.be.equal(
@@ -88,7 +88,7 @@ async function main() {
             );
 
             // get aggchainHash
-            aggchainHash = utilsECDSA.getAggchainHash(data.aggchainVkey, aggchainConfig);
+            aggchainHash = utilsECDSA.getAggchainHashECDSA(data.aggchainVkey, aggchainConfig);
 
             // add aggchainVKey to check aggchainHash
             await expect(aggchainECDSAContract.connect(vKeyManager).disableUseDefaultGatewayFlag())
