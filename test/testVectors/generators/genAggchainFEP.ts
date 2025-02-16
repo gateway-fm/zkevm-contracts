@@ -55,7 +55,7 @@ async function main() {
             await aggchainFEPContract.waitForDeployment();
 
             // encode initializeBytesCustomChain version 0
-            initializeBytesCustomChainV0 = utilsFEP.encodeInitializeBytesCustomChainv0(
+            initializeBytesCustomChainV0 = utilsFEP.encodeInitializeBytesCustomChainFEPv0(
                 admin.address,
                 data.trustedSequencer,
                 data.gasTokenAddress,
@@ -93,7 +93,7 @@ async function main() {
             expect(chainData[2]).to.be.equal(data.initL2BlockNumber);
 
             // encode initializeBytesCustomChain version 1
-            initializeBytesCustomChainV1 = utilsFEP.encodeInitializeBytesCustomChainv1(
+            initializeBytesCustomChainV1 = utilsFEP.encodeInitializeBytesCustomChainFEPv1(
                 data.aggregationVkey,
                 data.chainConfigHash,
                 data.rangeVkeyCommitment,
@@ -103,7 +103,7 @@ async function main() {
             );
 
             // get customInitlizeData
-            const customInitlizeData = await utilsFEP.encodeCustomInitializeData(
+            const customInitlizeData = await utilsFEP.encodeCustomInitializeDataFEP(
                 data.aggregationVkey,
                 data.chainConfigHash,
                 data.rangeVkeyCommitment
@@ -116,7 +116,7 @@ async function main() {
             expect(await aggchainFEPContract.rangeVkeyCommitment()).to.be.equal(data.rangeVkeyCommitment);
 
             // encode customChainData
-            customChainData = utilsFEP.encodeCustomChainData(
+            customChainData = utilsFEP.encodeCustomChainDataFEP(
                 data.aggchainSelector,
                 data.l1Head,
                 data.l2PreRoot,
@@ -125,7 +125,7 @@ async function main() {
             );
 
             // encode aggchainConfig
-            aggchainConfig = utilsFEP.aggchainConfig(
+            aggchainConfig = utilsFEP.aggchainConfigFEP(
                 data.l1Head,
                 data.l2PreRoot,
                 data.claimRoot,
@@ -136,7 +136,7 @@ async function main() {
             );
 
             // get aggchainVKeySelector
-            aggchainVKeySelector = utilsFEP.getFinalAggchainSelector(data.aggchainSelector);
+            aggchainVKeySelector = utilsFEP.getFinalAggchainSelectorFEP(data.aggchainSelector);
 
             // check aggchainVKeySelector
             expect(aggchainVKeySelector).to.be.equal(
@@ -144,7 +144,7 @@ async function main() {
             );
 
             // get aggchainHash
-            aggchainHash = utilsFEP.getAggchainHash(data.aggchainVkey, aggchainConfig);
+            aggchainHash = utilsFEP.getAggchainHashFEP(data.aggchainVkey, aggchainConfig);
 
             // add aggchainVKey to check aggchainHash
             await expect(aggchainFEPContract.connect(vKeyManager).disableUseDefaultGatewayFlag())

@@ -4,9 +4,20 @@ const ethers = require('ethers');
 const { Scalar } = require('ffjavascript');
 
 const AGGCHAIN_TYPE = 1;
+// aggchain type selector for ECDSA
 const AGGCHAIN_TYPE_SELECTOR_ECDSA = "0x0000";
 
-function encodeInitializeBytesCustomChain(
+/**
+ * Function to encode the initialize bytes for the custom chain
+ * @param {String} admin Admin address
+ * @param {String} trustedSequencer Trusted sequencer address
+ * @param {String} gasTokenAddress Indicates the token address in mainnet that will be used as a gas token
+ * @param {String} trustedSequencerURL Trusted sequencer URL
+ * @param {String} networkName L2 network name
+ * @param {String} vKeyManager vkey manager address
+ * @returns {String} encoded value in hexadecimal string
+ */
+function encodeInitializeBytesCustomChainECDSA(
     admin,
     trustedSequencer,
     gasTokenAddress,
@@ -27,19 +38,41 @@ function encodeInitializeBytesCustomChain(
     );
 }
 
-function encodeCustomChainData(aggchainSelector, newStateRoot) {
+/**
+ * Function to encode the custom chain data
+ * @param {String} aggchainSelector aggchain selector
+ * @param {String} newStateRoot new state root
+ * @returns {String} encoded value in hexadecimal string
+ */
+function encodeCustomChainDataECDSA(aggchainSelector, newStateRoot) {
     return ethers.AbiCoder.defaultAbiCoder().encode(['bytes2', 'bytes32'], [aggchainSelector, newStateRoot]);
 }
 
-function aggchainConfig(trustedSequencer) {
+/**
+ *  Function to encode the aggchain config for ECDSA
+ * @param {String} trustedSequencer Trusted sequencer address
+ * @returns {String} hash of encoded value in hexadecimal string (32 bytes)
+ */
+function aggchainConfigECDSA(trustedSequencer) {
     return  ethers.solidityPackedKeccak256(['address'], [trustedSequencer]);
 }
 
-function getFinalAggchainSelector(aggchainSelector) {
+/**
+ * Function to get the final aggchain selector for ECDSA
+ * @param {String} aggchainSelector aggchain selector
+ * @returns {String} encoded value in hexadecimal string (4 bytes) AGGCHAIN_TYPE_SELECTOR_ECDSA (2 bytes) | aggchainSelector (2 bytes)
+ */
+function getFinalAggchainSelectorECDSA(aggchainSelector) {
     return AGGCHAIN_TYPE_SELECTOR_ECDSA.concat(Scalar.e(aggchainSelector).toString(16).padStart(4, '0'));
 }
 
-function getAggchainHash(aggchainVKey, aggchainConfig) {
+/**
+ * Function to get the aggchain hash
+ * @param {String} aggchainVKey aggchain vkey
+ * @param {String} aggchainConfig aggchain config ECDSA
+ * @returns {String} hash of encoded value in hexadecimal string (32 bytes)
+ */
+function getAggchainHashECDSA(aggchainVKey, aggchainConfig) {
     return ethers.solidityPackedKeccak256(['uint32', 'bytes32', 'bytes32'], [AGGCHAIN_TYPE, aggchainVKey, aggchainConfig]);
 }
 
@@ -47,10 +80,10 @@ function getAggchainHash(aggchainVKey, aggchainConfig) {
 module.exports = {
     AGGCHAIN_TYPE,
     AGGCHAIN_TYPE_SELECTOR_ECDSA,
-    encodeInitializeBytesCustomChain,
-    encodeCustomChainData,
-    aggchainConfig,
-    getFinalAggchainSelector,
-    getAggchainHash
+    encodeInitializeBytesCustomChainECDSA,
+    encodeCustomChainDataECDSA,
+    aggchainConfigECDSA,
+    getFinalAggchainSelectorECDSA,
+    getAggchainHashECDSA
 
 };
