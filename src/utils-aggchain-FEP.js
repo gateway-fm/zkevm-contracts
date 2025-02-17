@@ -64,6 +64,7 @@ function encodeInitializeBytesCustomChainFEPv0(
  * @param {String} initStateRoot initial state root
  * @param {Number} initTimestamp initial timestamp
  * @param {Number} initL2BlockNumber initial L2 block number
+ * @param {String} vKeyManager vkey manager address
  * @returns {String} encoded value in hexadecimal string
  */
 function encodeInitializeBytesCustomChainFEPv1(
@@ -72,17 +73,19 @@ function encodeInitializeBytesCustomChainFEPv1(
     rangeVkeyCommitment,
     initStateRoot,
     initTimestamp,
-    initL2BlockNumber
+    initL2BlockNumber,
+    vkeyManager
 ){
     return ethers.AbiCoder.defaultAbiCoder().encode(
-        ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'uint128', 'uint128'],
+        ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'uint128', 'uint128', 'address'],
         [
             aggregationVkey,
             chainConfigHash,
             rangeVkeyCommitment,
             initStateRoot,
             initTimestamp,
-            initL2BlockNumber
+            initL2BlockNumber,
+            vkeyManager
         ],
     );
 }

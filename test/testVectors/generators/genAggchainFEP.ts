@@ -23,7 +23,7 @@ async function main() {
     let initializeBytesCustomChainV1: string;
     let customChainData: string;
     let aggchainConfig: string;
-    let aggchainVKeySelector: string;
+    let aggchainSelector: string;
     let aggchainHash: string;
 
     for (let i = 0; i < dataFEP.length; i++) {
@@ -92,16 +92,6 @@ async function main() {
             expect(chainData[1]).to.be.equal(data.initTimestamp);
             expect(chainData[2]).to.be.equal(data.initL2BlockNumber);
 
-            // encode initializeBytesCustomChain version 1
-            initializeBytesCustomChainV1 = utilsFEP.encodeInitializeBytesCustomChainFEPv1(
-                data.aggregationVkey,
-                data.chainConfigHash,
-                data.rangeVkeyCommitment,
-                data.initStateRoot,
-                data.initTimestamp,
-                data.initL2BlockNumber
-            );
-
             // get customInitlizeData
             const customInitlizeData = await utilsFEP.encodeCustomInitializeDataFEP(
                 data.aggregationVkey,
@@ -117,7 +107,7 @@ async function main() {
 
             // encode customChainData
             customChainData = utilsFEP.encodeCustomChainDataFEP(
-                data.aggchainSelector,
+                data.aggchainVKeySelector,
                 data.l1Head,
                 data.l2PreRoot,
                 data.claimRoot,
@@ -136,11 +126,11 @@ async function main() {
             );
 
             // get aggchainVKeySelector
-            aggchainVKeySelector = utilsFEP.getFinalAggchainSelectorFEP(data.aggchainSelector);
+            aggchainSelector = utilsFEP.getFinalAggchainSelectorFEP(data.aggchainVKeySelector);
 
             // check aggchainVKeySelector
-            expect(aggchainVKeySelector).to.be.equal(
-                utilsFEP.AGGCHAIN_TYPE_SELECTOR_FEP + data.aggchainSelector.slice(2)
+            expect(aggchainSelector).to.be.equal(
+                utilsFEP.AGGCHAIN_TYPE_SELECTOR_FEP + data.aggchainVKeySelector.slice(2)
             );
 
             // get aggchainHash
@@ -152,10 +142,10 @@ async function main() {
                 .withArgs(false);
 
             await expect(
-                aggchainFEPContract.connect(vKeyManager).addOwnedAggchainVKey(aggchainVKeySelector, data.aggchainVkey)
+                aggchainFEPContract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, data.aggchainVkey)
             )
                 .to.emit(aggchainFEPContract, "AddAggchainVKey")
-                .withArgs(aggchainVKeySelector, data.aggchainVkey);
+                .withArgs(aggchainSelector, data.aggchainVkey);
 
             // get aggchainHash from contract
             const aggchainHashContract = await aggchainFEPContract.getAggchainHash(customChainData, {gasPrice: 0});
@@ -209,6 +199,17 @@ async function main() {
                 ],
             });
 
+            // encode initializeBytesCustomChain version 1
+            initializeBytesCustomChainV1 = utilsFEP.encodeInitializeBytesCustomChainFEPv1(
+                data.aggregationVkey,
+                data.chainConfigHash,
+                data.rangeVkeyCommitment,
+                data.initStateRoot,
+                data.initTimestamp,
+                data.initL2BlockNumber,
+                vKeyManager.address
+            );
+
             await ppConsensusContract
                 .connect(rollupManagerSigner)
                 .initialize(initializeBytesCustomChainV1, {gasPrice: 0});
@@ -234,7 +235,7 @@ async function main() {
             data.initializeBytesCustomChainV1 = initializeBytesCustomChainV1;
             data.customChainData = customChainData;
             data.customInitilizeData = customInitlizeData;
-            data.aggchainVKeySelector = aggchainVKeySelector;
+            data.aggchainSelector = aggchainSelector;
             data.aggchainHash = aggchainHash;
 
             console.log(`Writing data to test-vector: ${i}. Path: ${pathTestVector}`);
