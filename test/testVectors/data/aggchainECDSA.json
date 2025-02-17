@@ -1,12 +1,13 @@
 [
   {
     "id": "0",
+    "useDefaultGateway": false,
     "trustedSequencer": "0x2222222222222222222222222222222222222222",
     "gasTokenAddress": "0x0000000000000000000000000000000000000000",
     "trustedSequencerURL": "trustedSequencerURL.com",
     "networkName": "namename",
     "newStateRoot": "0x5555555555555555555555555555555555555555555555555555555555555555",
-    "aggchainSelector": "0x1234",
-    "aggchainVkey": "0x6666666666666666666666666666666666666666666666666666666666666666"
+    "aggchainVKeySelectors": ["0x1234"],
+    "ownedAggchainVkeys": ["0x6666666666666666666666666666666666666666666666666666666666666666"]
   }
 ]
