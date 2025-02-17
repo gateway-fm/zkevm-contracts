@@ -16,12 +16,10 @@ import "../interfaces/IAggchainBase.sol";
  * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
  */
 abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
-
     // Aggchain type that support generic aggchain hash
     uint32 public constant AGGCHAIN_TYPE = 1;
     // AggLayerGateway address, used in case the flag `useDefaultGateway` is set to true, the aggchains keys are managed by the gateway
     IAggLayerGateway public immutable aggLayerGateway;
-
 
     // Address that will be able to manage the aggchain verification keys and swap the useDefaultGateway flag.
     address public vKeyManager;

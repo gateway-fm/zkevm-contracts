@@ -1,5 +1,5 @@
 const { Scalar } = require('ffjavascript');
-
+const { ethers } = require('ethers');
 /**
  * Check if all params are present in the expectedParams
  * @param {Object} objParams - object with parameters
@@ -10,6 +10,10 @@ function checkParams(objParams, expectedParams) {
     for (const parameterName of expectedParams) {
         if (objParams[parameterName] === undefined || objParams[parameterName] === '') {
             throw new Error(`Missing parameter: ${parameterName}`);
+        }
+        // Check addresses
+        if (parameterName.includes('Address') && !ethers.isAddress(objParams[parameterName])) {
+            throw new Error(`Invalid parameter address: ${parameterName}`);
         }
     }
 }

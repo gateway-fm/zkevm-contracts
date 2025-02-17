@@ -5,7 +5,7 @@ const { Scalar } = require('ffjavascript');
 
 const AGGCHAIN_TYPE = 1;
 // aggchain type selector for FEP
-const AGGCHAIN_TYPE_SELECTOR_FEP = "0x0001";
+const AGGCHAIN_TYPE_SELECTOR_FEP = '0x0001';
 
 /**
  * Function to encode the initialize bytes for the custom chain (version 0 --> initializerVersion = 0)
@@ -35,8 +35,8 @@ function encodeInitializeBytesCustomChainFEPv0(
     initStateRoot,
     initTimestamp,
     initL2BlockNumber,
-    vKeyManager
-){
+    vKeyManager,
+) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
         ['address', 'address', 'address', 'string', 'string', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'uint128', 'uint128', 'address'],
         [
@@ -51,7 +51,7 @@ function encodeInitializeBytesCustomChainFEPv0(
             initStateRoot,
             initTimestamp,
             initL2BlockNumber,
-            vKeyManager
+            vKeyManager,
         ],
     );
 }
@@ -74,8 +74,8 @@ function encodeInitializeBytesCustomChainFEPv1(
     initStateRoot,
     initTimestamp,
     initL2BlockNumber,
-    vkeyManager
-){
+    vkeyManager,
+) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
         ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'uint128', 'uint128', 'address'],
         [
@@ -85,7 +85,7 @@ function encodeInitializeBytesCustomChainFEPv1(
             initStateRoot,
             initTimestamp,
             initL2BlockNumber,
-            vkeyManager
+            vkeyManager,
         ],
     );
 }
@@ -112,7 +112,7 @@ function encodeCustomChainDataFEP(aggchainSelector, l1Head, l2PreRoot, claimRoot
  * @returns {String} hash of encoded value in hexadecimal string (32 bytes)
  */
 function aggchainConfigFEP(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey) {
-    return ethers.solidityPackedKeccak256(['bytes32', 'bytes32', 'bytes32', 'uint256', 'bytes32', 'bytes32', 'bytes32'], [l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey])
+    return ethers.solidityPackedKeccak256(['bytes32', 'bytes32', 'bytes32', 'uint256', 'bytes32', 'bytes32', 'bytes32'], [l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey]);
 }
 
 /**
@@ -148,7 +148,7 @@ function encodeCustomInitializeDataFEP(aggregationVkey, chainConfigHash, rangeVk
             aggregationVkey,
             chainConfigHash,
             rangeVkeyCommitment,
-        ]
+        ],
     );
 }
 
@@ -161,5 +161,5 @@ module.exports = {
     aggchainConfigFEP,
     getFinalAggchainSelectorFEP,
     getAggchainHashFEP,
-    encodeCustomInitializeDataFEP
+    encodeCustomInitializeDataFEP,
 };

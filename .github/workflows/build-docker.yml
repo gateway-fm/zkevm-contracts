@@ -5,9 +5,9 @@ name: Build-Docker image
 
 on:
     push:
-        branches: [main, develop, feature/ongoingPP]
+        branches: [main, develop, feature/ongoing-v0.3.0]
     pull_request:
-        branches: [main, develop, feature/ongoingPP]
+        branches: [main, develop, feature/ongoing-v0.3.0]
 jobs:
     build:
         runs-on: ubuntu-latest
