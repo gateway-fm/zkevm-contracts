@@ -204,6 +204,11 @@ async function main() {
         });
 
         if (typeof preMintAccountExist !== 'undefined') {
+            if (preMintAccountExist.bytecode !== undefined) {
+                logger.error('preMintAccount code is not empty');
+                throw new Error('preMintAccount code is not empty');
+
+            }
             preMintAccountExist.balance = BigInt(createGenesisSovereignParams.preMintAccount.balance).toString();
         } else {
             // add preMintAccount.address & preMintAccount.balance
