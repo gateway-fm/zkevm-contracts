@@ -11,7 +11,12 @@ import {
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
 const {VerifierType, AggchainSelector, computeRandomBytes} = require("../../src/pessimistic-utils");
-const {AggchainType, aggchainHashECDSAData, initializeECDSADataAfterUpgrade, initializeECDSADataAfterDeploy} = require("../../src/agglayer-utils");
+const {
+    encodeCustomChainDataECDSA,
+    encodeInitializeBytesCustomChainECDSAv1,
+    encodeInitializeBytesCustomChainECDSAv0,
+} = require("../../src/utils-aggchain-ECDSA");
+const {AggchainType} = require("../../src/utils");
 
 describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     // SIGNERS
@@ -47,12 +52,21 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     // AGGCHAIN CONSTANTS
     const ECDSA_SELECTOR = "0x0001";
     const randomNewStateRoot = computeRandomBytes(32);
-    const CUSTOM_DATA_ECDSA = aggchainHashECDSAData(ECDSA_SELECTOR, randomNewStateRoot);
+    const CUSTOM_DATA_ECDSA = encodeCustomChainDataECDSA(ECDSA_SELECTOR, randomNewStateRoot);
     upgrades.silenceWarnings();
     beforeEach("Deploy contract", async () => {
         // load signers
-        [deployer, trustedSequencer, trustedAggregator, admin, timelock, emergencyCouncil, aggLayerAdmin, tester, vKeyManager] =
-            await ethers.getSigners();
+        [
+            deployer,
+            trustedSequencer,
+            trustedAggregator,
+            admin,
+            timelock,
+            emergencyCouncil,
+            aggLayerAdmin,
+            tester,
+            vKeyManager,
+        ] = await ethers.getSigners();
 
         // Deploy L1 contracts
         // deploy pol token contract
@@ -425,7 +439,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         // Update the rollup to ECDSA and initialize the new rollup type
         // Compute initialize upgrade data
         const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
-        const initializeBytesCustomChain = initializeECDSADataAfterUpgrade(
+        const initializeBytesCustomChain = encodeInitializeBytesCustomChainECDSAv1(
             true, //useDefaultGateway
             [], //ownedAggchainVKeys
             [], // aggchainVkeySelector
@@ -666,7 +680,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     }
 
     async function createECDSARollup(rollupTypeIdECDSA: number) {
-        const initializeBytesCustomChain = initializeECDSADataAfterDeploy(
+        const initializeBytesCustomChain = encodeInitializeBytesCustomChainECDSAv0(
             true, // useDefaultGateway
             [], // ownedAggchainVKeys
             [], //aggchainVKeysSelectors
