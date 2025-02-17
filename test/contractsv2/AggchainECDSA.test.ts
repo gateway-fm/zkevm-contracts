@@ -2,6 +2,7 @@
 import {expect} from "chai";
 import {ethers, upgrades} from "hardhat";
 import {Address, AggchainECDSA, AggLayerGateway} from "../../typechain-types";
+import utilsECDSA from "../../src/utils-aggchain-ECDSA";
 
 describe("AggchainECDSA", () => {
     let deployer: any;
@@ -50,19 +51,16 @@ describe("AggchainECDSA", () => {
         // load signers
         [deployer, trustedSequencer, admin, defaultAdminAgglayer, vKeyManager] = await ethers.getSigners();
 
-        initializeBytesCustomChain = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["bool", "bytes32[]", "bytes4[]", "address", "address", "address", "address", "string", "string"],
-            [
-                useDefaultGateway,
-                ownedAggchainVKeys,
-                aggchainSelectors,
-                vKeyManager.address,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-            ]
+        initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesCustomChainECDSAv0(
+            useDefaultGateway,
+            ownedAggchainVKeys,
+            aggchainSelectors,
+            vKeyManager.address,
+            admin.address,
+            trustedSequencer.address,
+            gasTokenAddress,
+            urlSequencer,
+            networkName
         );
 
         // deploy AggLayerGateway
@@ -289,10 +287,7 @@ describe("AggchainECDSA", () => {
         await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesCustomChain, {gasPrice: 0});
 
         // calculate aggchainHash
-        const customChainData = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["bytes2", "bytes32"],
-            [aggchainVkeySelector, newStateRoot]
-        );
+        const customChainData = utilsECDSA.encodeCustomChainDataECDSA(aggchainVkeySelector, newStateRoot);
         const finalAggchainSelector = ethers.concat([
             ethers.zeroPadBytes(AGGCHAIN_TYPE_SELECTOR, 2),
             aggchainVkeySelector,
@@ -325,10 +320,7 @@ describe("AggchainECDSA", () => {
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
         await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesCustomChain, {gasPrice: 0});
 
-        const customChainData = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["bytes2", "bytes32"],
-            [aggchainVkeySelector, newStateRoot]
-        );
+        const customChainData = utilsECDSA.encodeCustomChainDataECDSA(aggchainVkeySelector, newStateRoot);
 
         // check onlyRollupManager
         await expect(aggchainECDSAcontract.onVerifyPessimistic(customChainData)).to.be.revertedWithCustomError(
@@ -382,24 +374,18 @@ describe("AggchainECDSA", () => {
             ],
         });
 
-        initializeBytesCustomChain = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["bool", "bytes32[]", "bytes4[]", "address"],
-            [useDefaultGateway, ownedAggchainVKeys, aggchainSelectors, vKeyManager.address]
+        initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesCustomChainECDSAv1(
+            useDefaultGateway,
+            ownedAggchainVKeys,
+            aggchainSelectors,
+            vKeyManager.address
         );
 
-        initializeBytesCustomChainError = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["bool", "bytes32[]", "bytes4[]", "address", "address", "address", "address", "string", "string"],
-            [
-                useDefaultGateway,
-                ownedAggchainVKeys,
-                [],
-                vKeyManager.address,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-            ]
+        initializeBytesCustomChainError = utilsECDSA.encodeInitializeBytesCustomChainECDSAv1(
+            useDefaultGateway,
+            ownedAggchainVKeys,
+            [],
+            vKeyManager.address
         );
 
         await expect(
