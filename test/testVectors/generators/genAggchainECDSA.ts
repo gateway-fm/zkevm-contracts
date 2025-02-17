@@ -2,10 +2,11 @@ import {ethers, upgrades} from "hardhat";
 import {Address, AggchainECDSA} from "../../../typechain-types";
 import {expect} from "chai";
 import fs = require("fs");
+import path = require("path");
 
 const dataECDSA = require("../data/aggchainECDSA.json");
 const utilsECDSA = require("../../../src/utils-aggchain-ECDSA");
-const pathTestVector = "../finalData/aggchainECDSA.json";
+const pathTestVector = path.join(__dirname, "../finalData/aggchainECDSA.json");
 
 // SIGNERS
 let admin: any;
@@ -206,6 +207,7 @@ async function main() {
             data.customChainData = customChainData;
             data.aggchainSelectors = aggchainSelectors;
             data.aggchainHashes = aggchainHash;
+            data.aggchainConfig = aggchainConfig;
 
             console.log(`Writing data to test-vector: ${i}. Path: ${pathTestVector}`);
             await fs.writeFileSync(pathTestVector, JSON.stringify(dataECDSA, null, 2));
