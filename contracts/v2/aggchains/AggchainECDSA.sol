@@ -13,6 +13,11 @@ import "../interfaces/IAggchain.sol";
  */
 contract AggchainECDSA is AggchainBase, IAggchain {
     ////////////////////////////////////////////////////////////
+    //                  Transient Storage                     //
+    ////////////////////////////////////////////////////////////
+    uint8 private transient _initializerVersion;
+
+    ////////////////////////////////////////////////////////////
     //                  Constants & Immutables                //
     ////////////////////////////////////////////////////////////
     // Aggchain type selector, hardcoded value used to force the first 2 byes of aggchain selector to retrieve  the aggchain verification key
@@ -25,6 +30,16 @@ contract AggchainECDSA is AggchainBase, IAggchain {
      * @dev Emitted when Pessimistic proof is verified.
      */
     event OnVerifyPessimistic(bytes32 newStateRoot);
+
+    ////////////////////////////////////////////////////////////
+    //                        Modifiers                       //
+    ////////////////////////////////////////////////////////////
+    // @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
+    modifier retrieveInitializerVersion() {
+        // Get initializer version from OZ initializer smart contract
+        _initializerVersion = _getInitializedVersion();
+        _;
+    }
 
     ////////////////////////////////////////////////////////////
     //                       Constructor                      //

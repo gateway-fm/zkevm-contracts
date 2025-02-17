@@ -17,9 +17,6 @@ import "../interfaces/IAggchainBase.sol";
  */
 abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
 
-    // private transient variable to store the initializer version
-    uint8 internal transient _initializerVersion;
-
     // Aggchain type that support generic aggchain hash
     uint32 public constant AGGCHAIN_TYPE = 1;
     // AggLayerGateway address, used in case the flag `useDefaultGateway` is set to true, the aggchains keys are managed by the gateway
@@ -90,13 +87,6 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         if (vKeyManager != msg.sender) {
             revert OnlyVKeyManager();
         }
-        _;
-    }
-
-    // @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
-    modifier retrieveInitializerVersion() {
-        // Get initializer version from OZ initializer smart contract
-        _initializerVersion = _getInitializedVersion();
         _;
     }
 
