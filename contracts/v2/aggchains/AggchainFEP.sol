@@ -11,7 +11,10 @@ import "../AggLayerGateway.sol";
  * This proof, along with bridge checks, constitutes the final FEP proof.
  */
 contract AggchainFEP is AggchainBase, IAggchain {
-
+    ////////////////////////////////////////////////////////////
+    //                  Transient Storage                     //
+    ////////////////////////////////////////////////////////////
+    uint8 private transient _initializerVersion;
     // Struct to store the chain data every time pessimistic proof is verified
     struct ChainData {
         bytes32 lastStateRoot;
@@ -46,6 +49,16 @@ contract AggchainFEP is AggchainBase, IAggchain {
         uint128 initTimestamp,
         uint128 initL2BlockNumber
     );
+
+    ////////////////////////////////////////////////////////////
+    //                        Modifiers                       //
+    ////////////////////////////////////////////////////////////
+    // @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
+    modifier retrieveInitializerVersion() {
+        // Get initializer version from OZ initializer smart contract
+        _initializerVersion = _getInitializedVersion();
+        _;
+    }
 
     /**
      * @param _rollupManager Rollup manager address.
