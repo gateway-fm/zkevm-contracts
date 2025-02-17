@@ -2,10 +2,11 @@ import {ethers, upgrades} from "hardhat";
 import {Address, AggchainFEP} from "../../../typechain-types";
 import {expect} from "chai";
 import fs = require("fs");
+import path = require("path");
 
 const dataFEP = require("../data/aggchainFEP.json");
 const utilsFEP = require("../../../src/utils-aggchain-FEP");
-const pathTestVector = "../finalData/aggchainFEP.json";
+const pathTestVector = path.join(__dirname, "../finalData/aggchainFEP.json");
 
 // SIGNERS
 let admin: any;
@@ -237,6 +238,7 @@ async function main() {
             data.customInitilizeData = customInitlizeData;
             data.aggchainSelector = aggchainSelector;
             data.aggchainHash = aggchainHash;
+            data.aggchainConfig = aggchainConfig;
 
             console.log(`Writing data to test-vector: ${i}. Path: ${pathTestVector}`);
             await fs.writeFileSync(pathTestVector, JSON.stringify(dataFEP, null, 2));
