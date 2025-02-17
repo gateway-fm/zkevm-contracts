@@ -16,6 +16,7 @@ import "../../deployment/helpers/utils";
 import { initializeTimelockStorage } from "../../src/genesis/genesis-helpers";
 import { checkParams } from '../../src/utils';
 import { logger } from "../../src/logger";
+import { formatGenesis, getGitInfo } from "./helpers";
 
 // script utils
 const dateStr = new Date().toISOString();
@@ -197,12 +198,21 @@ async function main() {
     if (createGenesisSovereignParams.setPreMintAccount === true) {
         logger.info('Add preMintAccount');
 
-        // add preMintAccount.address & preMintAccount.balance
-        finalGenesis.genesis.push({
-            accountName: 'preMintAccount',
-            balance: BigInt(createGenesisSovereignParams.preMintAccount.balance).toString(),
-            address: createGenesisSovereignParams.preMintAccount.address,
+        // check preMintAddress is in the current genesis
+        const preMintAccountExist = finalGenesis.genesis.find(function (obj) {
+            return obj.address === createGenesisSovereignParams.preMintAccount.address;
         });
+
+        if (typeof preMintAccountExist !== 'undefined') {
+            preMintAccountExist.balance = BigInt(createGenesisSovereignParams.preMintAccount.balance).toString();
+        } else {
+            // add preMintAccount.address & preMintAccount.balance
+            finalGenesis.genesis.push({
+                accountName: 'preMintAccount',
+                balance: BigInt(createGenesisSovereignParams.preMintAccount.balance).toString(),
+                address: createGenesisSovereignParams.preMintAccount.address,
+            });
+        }
     }
 
     // set timelock storage
@@ -239,7 +249,15 @@ async function main() {
     // update genesis root
     finalGenesis.root = smtUtils.h4toString(zkEVMDB.getCurrentStateRoot());
 
+    // format genesis
+    if (createGenesisSovereignParams.formatGenesis !== undefined) {
+        logger.info(`Formatting genesis output to: ${createGenesisSovereignParams.formatGenesis}`);
+        finalGenesis = formatGenesis(finalGenesis, createGenesisSovereignParams.formatGenesis);
+    }
+
     // Populate final output
+    const gitInfo = getGitInfo();
+    outputJson.gitInfo = gitInfo;
     outputJson.network = hardhatArguments.network;
     outputJson.rollupID = createGenesisSovereignParams.rollupID;
     outputJson.gasTokenAddress = gasTokenAddress;
@@ -264,6 +282,11 @@ async function main() {
     if (typeof outWETHAddress !== 'undefined') {
         outputJson.WETHAddress = outWETHAddress;
     }
+
+    if (createGenesisSovereignParams.formatGenesis !== undefined) {
+        outputJson.formatGenesis = createGenesisSovereignParams.formatGenesis;
+    }
+
 
     ///////////////////////////////////
     ///      WRITE FINAL FILES      ///
