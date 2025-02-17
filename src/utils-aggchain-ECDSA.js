@@ -5,7 +5,7 @@ const { Scalar } = require('ffjavascript');
 
 const AGGCHAIN_TYPE = 1;
 // aggchain type selector for ECDSA
-const AGGCHAIN_TYPE_SELECTOR_ECDSA = "0x0000";
+const AGGCHAIN_TYPE_SELECTOR_ECDSA = '0x0000';
 
 /**
  * Function to encode the initialize bytes for the custom chain (version 0 --> initializerVersion = 0)
@@ -42,7 +42,7 @@ function encodeInitializeBytesCustomChainECDSAv0(
             trustedSequencer,
             gasTokenAddress,
             trustedSequencerURL,
-            networkName
+            networkName,
         ],
     );
 }
@@ -59,7 +59,7 @@ function encodeInitializeBytesCustomChainECDSAv1(
     useDefaultGateway,
     ownedAggchainVKey,
     aggchainVKeySelectors,
-    vKeyManager
+    vKeyManager,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
         ['bool', 'bytes32[]', 'bytes4[]', 'address'],
@@ -67,7 +67,7 @@ function encodeInitializeBytesCustomChainECDSAv1(
             useDefaultGateway,
             ownedAggchainVKey,
             aggchainVKeySelectors,
-            vKeyManager
+            vKeyManager,
         ],
     );
 }
@@ -88,7 +88,7 @@ function encodeCustomChainDataECDSA(aggchainSelector, newStateRoot) {
  * @returns {String} hash of encoded value in hexadecimal string (32 bytes)
  */
 function aggchainConfigECDSA(trustedSequencer) {
-    return  ethers.solidityPackedKeccak256(['address'], [trustedSequencer]);
+    return ethers.solidityPackedKeccak256(['address'], [trustedSequencer]);
 }
 
 /**
@@ -110,7 +110,6 @@ function getAggchainHashECDSA(aggchainVKey, aggchainConfig) {
     return ethers.solidityPackedKeccak256(['uint32', 'bytes32', 'bytes32'], [AGGCHAIN_TYPE, aggchainVKey, aggchainConfig]);
 }
 
-
 module.exports = {
     AGGCHAIN_TYPE,
     AGGCHAIN_TYPE_SELECTOR_ECDSA,
@@ -119,6 +118,6 @@ module.exports = {
     encodeCustomChainDataECDSA,
     aggchainConfigECDSA,
     getFinalAggchainSelectorECDSA,
-    getAggchainHashECDSA
+    getAggchainHashECDSA,
 
 };
