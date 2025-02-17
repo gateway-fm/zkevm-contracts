@@ -91,9 +91,15 @@ function getStorageReadWrites(trace) {
     return trace.structLogs[trace.structLogs.length - 1].storage;
 }
 
+const AggchainType = {
+    LEGACY: 0,
+    GENERIC: 1,
+};
+
 module.exports = {
     getStorageWrites,
     getStorageReadWrites,
     valueToStorageBytes,
     checkParams,
+    AggchainType,
 };
