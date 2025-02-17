@@ -30,14 +30,19 @@ describe("AggchainECDSA", () => {
 
     // aggchain variables
     let initializeBytesCustomChain: string;
+    let initializeBytesCustomChainError: string;
     const AGGCHAIN_TYPE_SELECTOR = "0x00";
     const AGGCHAIN_TYPE = 1;
-    const aggchainSelector = "0x12345678";
-    const newAggChainVKey = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    const aggchainSelector = "0x22222222";
+    const newAggChainVKey = "0x2222222222222222222222222222222222222222222222222222222222222222";
     const aggchainSelector2 = "0x11111111";
     const newAggChainVKey2 = "0x1111111111111111111111111111111111111111111111111111111111111111";
-    const aggchainSelectorBytes2 = "0x1234";
+    const aggchainVkeySelector = "0x1234";
     const newStateRoot = "0x1122334455667788990011223344556677889900112233445566778899001122";
+
+    const useDefaultGateway = true;
+    const aggchainSelectors = ["0x12345678"];
+    const ownedAggchainVKeys = ["0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"];
 
     beforeEach("Deploy contract", async () => {
         upgrades.silenceWarnings();
@@ -46,8 +51,18 @@ describe("AggchainECDSA", () => {
         [deployer, trustedSequencer, admin, defaultAdminAgglayer, vKeyManager] = await ethers.getSigners();
 
         initializeBytesCustomChain = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["address", "address", "address", "string", "string", "address"],
-            [admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName, vKeyManager.address]
+            ["bool", "bytes32[]", "bytes4[]", "address", "address", "address", "address", "string", "string"],
+            [
+                useDefaultGateway,
+                ownedAggchainVKeys,
+                aggchainSelectors,
+                vKeyManager.address,
+                admin.address,
+                trustedSequencer.address,
+                gasTokenAddress,
+                urlSequencer,
+                networkName,
+            ]
         );
 
         // deploy AggLayerGateway
@@ -117,6 +132,7 @@ describe("AggchainECDSA", () => {
         expect(await aggchainECDSAcontract.trustedSequencerURL()).to.be.equal(urlSequencer);
         expect(await aggchainECDSAcontract.networkName()).to.be.equal(networkName);
         expect(await aggchainECDSAcontract.gasTokenAddress()).to.be.equal(gasTokenAddress);
+        expect(await aggchainECDSAcontract.ownedAggchainVKeys(aggchainSelectors[0])).to.be.equal(ownedAggchainVKeys[0]);
 
         // initialize again
         await expect(
@@ -275,11 +291,11 @@ describe("AggchainECDSA", () => {
         // calculate aggchainHash
         const customChainData = ethers.AbiCoder.defaultAbiCoder().encode(
             ["bytes2", "bytes32"],
-            [aggchainSelectorBytes2, newStateRoot]
+            [aggchainVkeySelector, newStateRoot]
         );
         const finalAggchainSelector = ethers.concat([
             ethers.zeroPadBytes(AGGCHAIN_TYPE_SELECTOR, 2),
-            aggchainSelectorBytes2,
+            aggchainVkeySelector,
         ]);
         const aggChainConfig = ethers.solidityPackedKeccak256(["address"], [trustedSequencer.address]);
         const aggchainHash = ethers.solidityPackedKeccak256(
@@ -311,7 +327,7 @@ describe("AggchainECDSA", () => {
 
         const customChainData = ethers.AbiCoder.defaultAbiCoder().encode(
             ["bytes2", "bytes32"],
-            [aggchainSelectorBytes2, newStateRoot]
+            [aggchainVkeySelector, newStateRoot]
         );
 
         // check onlyRollupManager
@@ -326,5 +342,79 @@ describe("AggchainECDSA", () => {
         )
             .to.emit(aggchainECDSAcontract, "OnVerifyPessimistic")
             .withArgs(newStateRoot);
+    });
+
+    it("should check reinitialize", async () => {
+        const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
+        // deploy polygonPessimisticConsensus
+        // create polygonPessimisticConsensus implementation
+        const ppConsensusFactory = await ethers.getContractFactory("PolygonPessimisticConsensus");
+        let ppConsensusContract = await upgrades.deployProxy(ppConsensusFactory, [], {
+            initializer: false,
+            constructorArgs: [gerManagerAddress, polTokenAddress, bridgeAddress, rollupManagerAddress],
+            unsafeAllow: ["constructor", "state-variable-immutable"],
+        });
+        await ppConsensusContract.waitForDeployment();
+
+        await ppConsensusContract
+            .connect(rollupManagerSigner)
+            .initialize(admin.address, trustedSequencer.address, 0, gasTokenAddress, urlSequencer, networkName, {
+                gasPrice: 0,
+            });
+
+        // upgrade to aggchainECDSA (reinitialize)
+        const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+        ppConsensusContract = await upgrades.upgradeProxy(ppConsensusContract.target, aggchainECDSAFactory, {
+            constructorArgs: [
+                gerManagerAddress,
+                polTokenAddress,
+                bridgeAddress,
+                rollupManagerAddress,
+                aggLayerGatewayContract.target,
+            ],
+            unsafeAllow: [
+                "constructor",
+                "state-variable-immutable",
+                "enum-definition",
+                "struct-definition",
+                "missing-initializer",
+                "missing-initializer-call",
+            ],
+        });
+
+        initializeBytesCustomChain = ethers.AbiCoder.defaultAbiCoder().encode(
+            ["bool", "bytes32[]", "bytes4[]", "address"],
+            [useDefaultGateway, ownedAggchainVKeys, aggchainSelectors, vKeyManager.address]
+        );
+
+        initializeBytesCustomChainError = ethers.AbiCoder.defaultAbiCoder().encode(
+            ["bool", "bytes32[]", "bytes4[]", "address", "address", "address", "address", "string", "string"],
+            [
+                useDefaultGateway,
+                ownedAggchainVKeys,
+                [],
+                vKeyManager.address,
+                admin.address,
+                trustedSequencer.address,
+                gasTokenAddress,
+                urlSequencer,
+                networkName,
+            ]
+        );
+
+        await expect(
+            ppConsensusContract.connect(rollupManagerSigner).initialize(initializeBytesCustomChainError, {gasPrice: 0})
+        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "OwnedAggchainVKeyLengthMismatch");
+
+        await ppConsensusContract.connect(rollupManagerSigner).initialize(initializeBytesCustomChain, {gasPrice: 0});
+
+        // check initializeBytesCustomChain
+        expect(await ppConsensusContract.admin()).to.be.equal(admin.address);
+        expect(await ppConsensusContract.vKeyManager()).to.be.equal(vKeyManager.address);
+        expect(await ppConsensusContract.trustedSequencer()).to.be.equal(trustedSequencer.address);
+        expect(await ppConsensusContract.trustedSequencerURL()).to.be.equal(urlSequencer);
+        expect(await ppConsensusContract.networkName()).to.be.equal(networkName);
+        expect(await ppConsensusContract.gasTokenAddress()).to.be.equal(gasTokenAddress);
+        expect(await ppConsensusContract.ownedAggchainVKeys(aggchainSelectors[0])).to.be.equal(ownedAggchainVKeys[0]);
     });
 });
