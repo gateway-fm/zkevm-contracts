@@ -1,5 +1,3 @@
-const formatOutputs = ["geth"];
-
 /**
  * Format genesis file to a specific format
  * @param genesis original legacy genesis file
@@ -22,12 +20,24 @@ function formatGenesis(genesis: { genesis: any[]; }, format: any){
  */
 function _formatGeth(genesis: { genesis: any[]; }) {
     return genesis.genesis.reduce((acc, contract) => {
-        acc[contract.address] = {
-            "code": contract.bytecode,
-            "storage": contract.storage,
-            "balance": `0x${BigInt(contract.balance).toString(16)}`,
-            "nonce": `0x${BigInt(contract.nonce).toString(16)}`
-        };
+        acc[contract.address] = {};
+
+        if (contract.bytecode !== undefined) {
+            acc[contract.address].code = contract.bytecode;
+        }
+
+        if (contract.storage !== undefined) {
+            acc[contract.address].storage = contract.storage;
+        }
+
+        if (contract.balance !== undefined) {
+            acc[contract.address].balance = `0x${BigInt(contract.balance).toString(16)}`;
+        }
+
+        if (contract.nonce !== undefined) {
+            acc[contract.address].nonce = `0x${BigInt(contract.nonce).toString(16)}`;
+        }
+
         return acc;
     }, {});
 }
