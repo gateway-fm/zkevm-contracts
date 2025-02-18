@@ -186,9 +186,9 @@ contract AggchainFEP is AggchainBase, IAggchain {
     /**
      * Note Return the necessary aggchain information for the proof hashed
      * AggchainHash:
-     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainConfig |
+     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainParams |
      * length (bits):   |    32         |       256      | 256           |
-     * uint256 aggchainConfig = keccak256(abi.encodePacked(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey))
+     * uint256 aggchainParams = keccak256(abi.encodePacked(l1Head, l2PreRoot, claimRoot, claimBlockNum, chainConfigHash, rangeVkeyCommitment, aggregationVkey))
      */
     /// @inheritdoc IAggchain
     function getAggchainHash(
@@ -204,7 +204,7 @@ contract AggchainFEP is AggchainBase, IAggchain {
                 customChainData,
                 (bytes2, bytes32, bytes32, bytes32, uint256)
             );
-        bytes32 aggchainConfig = keccak256(
+        bytes32 aggchainParams = keccak256(
             abi.encodePacked(
                 l1Head,
                 l2PreRoot,
@@ -215,16 +215,16 @@ contract AggchainFEP is AggchainBase, IAggchain {
                 aggregationVkey
             )
         );
-        bytes4 aggchainSelector = _getAggchainSelectorFromType(
-            AGGCHAIN_TYPE_SELECTOR,
-            aggchainVKeySelector
-        );
+        bytes4 finalAggchainVKeySelector = _getFinalAggchainVKeySelectorFromType(
+                aggchainVKeySelector,
+                AGGCHAIN_TYPE_SELECTOR
+            );
         return
             keccak256(
                 abi.encodePacked(
                     AGGCHAIN_TYPE,
-                    getAggchainVKey(aggchainSelector),
-                    aggchainConfig
+                    getAggchainVKey(finalAggchainVKeySelector),
+                    aggchainParams
                 )
             );
     }
