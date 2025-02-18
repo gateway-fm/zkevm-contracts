@@ -1,0 +1,12 @@
+[
+  {
+    "input": {
+      "aggchainType": 1,
+      "aggchainVKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
+      "hashAggchainParams": "0x2ab0a4443bbea3fbe4d0e1503d11ff1367842fb0c8b28a5c8550f27599a40751"
+    },
+    "output": {
+      "aggchainHash": "0xa691f94fbadcedd6e27c79fc0e8ad216eef44da10297552d9890e77d284f1a85"
+    }
+  }
+]

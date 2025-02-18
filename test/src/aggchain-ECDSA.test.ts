@@ -1,12 +1,13 @@
 import {ethers, upgrades} from "hardhat";
-import {Address, AggchainECDSA} from "../../../typechain-types";
+import {Address, AggchainECDSA} from "../../typechain-types";
 import {expect} from "chai";
 import fs = require("fs");
 import path = require("path");
 
-const dataECDSA = require("../data/aggchainECDSA.json");
-const utilsECDSA = require("../../../src/utils-aggchain-ECDSA");
-const pathTestVector = path.join(__dirname, "../finalData/aggchainECDSA.json");
+const dataECDSA = require("../test-vectors/aggchainECDSA/aggchainECDSA.json");
+const pathTestVector = path.join(__dirname, "../test-vectors/aggchainECDSA/aggchainECDSA.json");
+const utilsECDSA = require("../../src/utils-aggchain-ECDSA");
+const utilsCommon = require("../../src/utils-common-aggchain");
 
 // SIGNERS
 let admin: any;
@@ -20,15 +21,17 @@ const bridgeAddress = "0xD00000000000000000000000000000000000000D" as unknown as
 const aggLayerGatewayAddress = "0xE00000000000000000000000000000000000000E" as unknown as Address;
 
 async function main() {
-    let initializeBytesCustomChainV0: string;
-    let initializeBytesCustomChainV1: string;
-    let aggchainConfig: string;
-    let aggchainSelectors: string[] = [];
-    let customChainData: string[] = [];
-    let aggchainHash: string[] = [];
+    const update = process.env.UPDATE === "true";
 
     for (let i = 0; i < dataECDSA.length; i++) {
-        const data = dataECDSA[i];
+        let initializeBytesAggchainV0: string;
+        let initializeBytesAggchainV1: string;
+        let aggchainParams: string;
+        let aggchainSelectors: string[] = [];
+        let aggchainData: string[] = [];
+        let aggchainHash: string[] = [];
+
+        const data = dataECDSA[i].input;
 
         it(`generate id: ${i}`, async function () {
             // load signers
@@ -41,7 +44,12 @@ async function main() {
             if (data.aggchainVKeySelectors.length !== 0) {
                 for (let j = 0; j < data.aggchainVKeySelectors.length; j++) {
                     // get final aggchainSelector
-                    aggchainSelectors.push(utilsECDSA.getFinalAggchainSelectorECDSA(data?.aggchainVKeySelectors[j]));
+                    aggchainSelectors.push(
+                        utilsCommon.getFinalAggchainVKeySelectorFromType(
+                            data?.aggchainVKeySelectors[j],
+                            utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA
+                        )
+                    );
 
                     // check final aggchainSelector
                     expect(aggchainSelectors[j]).to.be.equal(
@@ -66,8 +74,8 @@ async function main() {
             });
             await aggchainECDSAContract.waitForDeployment();
 
-            // encode initializeBytesCustomChain
-            initializeBytesCustomChainV0 = utilsECDSA.encodeInitializeBytesCustomChainECDSAv0(
+            // encode initializeBytesAggchain
+            initializeBytesAggchainV0 = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 data.useDefaultGateway,
                 data.ownedAggchainVkeys,
                 aggchainSelectors,
@@ -79,14 +87,14 @@ async function main() {
                 data.networkName
             );
 
-            // initialize using rollup manager & initializeBytesCustomChain
+            // initialize using rollup manager & initializeBytesAggchain
             await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
             const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
             await aggchainECDSAContract
                 .connect(rollupManagerSigner)
-                .initialize(initializeBytesCustomChainV0, {gasPrice: 0});
+                .initialize(initializeBytesAggchainV0, {gasPrice: 0});
 
-            // check initializeBytesCustomChain
+            // check initializeBytesAggchain
             expect(await aggchainECDSAContract.admin()).to.be.equal(admin.address);
             expect(await aggchainECDSAContract.vKeyManager()).to.be.equal(vKeyManager.address);
             expect(await aggchainECDSAContract.trustedSequencer()).to.be.equal(data.trustedSequencer);
@@ -102,8 +110,8 @@ async function main() {
                 );
             }
 
-            // encode aggchainConfig
-            aggchainConfig = utilsECDSA.aggchainConfigECDSA(data.trustedSequencer);
+            // encode aggchainParams
+            aggchainParams = utilsECDSA.computeHashAggchainParamsECDSA(data.trustedSequencer);
 
             // if useDefaultGateway is true, disable it
             if (data.useDefaultGateway) {
@@ -113,22 +121,27 @@ async function main() {
             }
 
             for (let j = 0; j < aggchainSelectors.length; j++) {
-                // encode customChainData
-                customChainData.push(
-                    utilsECDSA.encodeCustomChainDataECDSA(data.aggchainVKeySelectors[j], data.newStateRoot)
-                );
+                // encode aggchainData
+                aggchainData.push(utilsECDSA.encodeAggchainDataECDSA(data.aggchainVKeySelectors[j], data.newStateRoot));
                 // get aggchainHash
-                aggchainHash.push(utilsECDSA.getAggchainHashECDSA(data.ownedAggchainVkeys[j], aggchainConfig));
+                aggchainHash.push(
+                    utilsCommon.computeAggchainHash(
+                        utilsCommon.AGGCHAIN_TYPE,
+                        data.ownedAggchainVkeys[j],
+                        aggchainParams
+                    )
+                );
+                console.log(aggchainData[j]);
                 // get aggchainHash from contract
-                const aggchainHashContract = await aggchainECDSAContract.getAggchainHash(customChainData[j], {
+                const aggchainHashContract = await aggchainECDSAContract.getAggchainHash(aggchainData[j], {
                     gasPrice: 0,
                 });
                 // check aggchainHash === aggchainHash from contract
-                // with this check we can be sure that the aggchainConfig & aggchainHash works correctly
+                // with this check we can be sure that the aggchainParams & aggchainHash works correctly
                 expect(aggchainHash[j]).to.be.equal(aggchainHashContract);
             }
 
-            // reinitialize using rollup manager & initializeBytesCustomChainECDSAv1
+            // reinitialize using rollup manager & initializeBytesAggchainECDSAv1
 
             // deploy polygonPessimisticConsensus
             // create polygonPessimisticConsensus implementation
@@ -173,19 +186,17 @@ async function main() {
                 ],
             });
 
-            // encode initializeBytesCustomChain version 1
-            initializeBytesCustomChainV1 = utilsECDSA.encodeInitializeBytesCustomChainECDSAv1(
+            // encode initializeBytesAggchain version 1
+            initializeBytesAggchainV1 = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
                 data.useDefaultGateway,
                 data.ownedAggchainVkeys,
                 aggchainSelectors,
                 vKeyManager.address
             );
 
-            await ppConsensusContract
-                .connect(rollupManagerSigner)
-                .initialize(initializeBytesCustomChainV1, {gasPrice: 0});
+            await ppConsensusContract.connect(rollupManagerSigner).initialize(initializeBytesAggchainV1, {gasPrice: 0});
 
-            // check initializeBytesCustomChain
+            // check initializeBytesAggchain
             expect(await aggchainECDSAContract.admin()).to.be.equal(admin.address);
             expect(await aggchainECDSAContract.vKeyManager()).to.be.equal(vKeyManager.address);
             expect(await aggchainECDSAContract.trustedSequencer()).to.be.equal(data.trustedSequencer);
@@ -200,14 +211,27 @@ async function main() {
             }
 
             // add data to test-vector
-            data.vKeyManager = vKeyManager.address;
-            data.admin = admin.address;
-            data.initializeBytesCustomChainV0 = initializeBytesCustomChainV0;
-            data.initializeBytesCustomChainV1 = initializeBytesCustomChainV1;
-            data.customChainData = customChainData;
-            data.aggchainSelectors = aggchainSelectors;
-            data.aggchainHashes = aggchainHash;
-            data.aggchainConfig = aggchainConfig;
+            if (update) {
+                dataECDSA[i].id = i;
+                dataECDSA[i].output = {};
+                dataECDSA[i].output.vKeyManager = vKeyManager.address;
+                dataECDSA[i].output.admin = admin.address;
+                dataECDSA[i].output.initializeBytesAggchainV0 = initializeBytesAggchainV0;
+                dataECDSA[i].output.initializeBytesAggchainV1 = initializeBytesAggchainV1;
+                dataECDSA[i].output.aggchainData = aggchainData;
+                dataECDSA[i].output.aggchainSelectors = aggchainSelectors;
+                dataECDSA[i].output.aggchainHashes = aggchainHash;
+                dataECDSA[i].output.aggchainParams = aggchainParams;
+            } else {
+                expect(dataECDSA[i].output.vKeyManager).to.be.equal(vKeyManager.address);
+                expect(dataECDSA[i].output.admin).to.be.equal(admin.address);
+                expect(dataECDSA[i].output.initializeBytesAggchainV0).to.be.equal(initializeBytesAggchainV0);
+                expect(dataECDSA[i].output.initializeBytesAggchainV1).to.be.equal(initializeBytesAggchainV1);
+                expect(dataECDSA[i].output.aggchainData).to.be.deep.equal(aggchainData);
+                expect(dataECDSA[i].output.aggchainSelectors).to.be.deep.equal(aggchainSelectors);
+                expect(dataECDSA[i].output.aggchainHashes).to.be.deep.equal(aggchainHash);
+                expect(dataECDSA[i].output.aggchainParams).to.be.equal(aggchainParams);
+            }
 
             console.log(`Writing data to test-vector: ${i}. Path: ${pathTestVector}`);
             await fs.writeFileSync(pathTestVector, JSON.stringify(dataECDSA, null, 2));

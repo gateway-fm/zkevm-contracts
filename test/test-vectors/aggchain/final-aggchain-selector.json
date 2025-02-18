@@ -1,0 +1,11 @@
+[
+  {
+    "input": {
+      "aggChainTypeSelector": "0x0001",
+      "aggchainSelector": "0x1234"
+    },
+    "output": {
+      "finalAggchainVKeySelector": "0x00011234"
+    }
+  }
+]
