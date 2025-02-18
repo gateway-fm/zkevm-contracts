@@ -185,29 +185,29 @@ contract AggchainECDSA is AggchainBase, IAggchain {
     /**
      * @dev Return the necessary aggchain information for the proof hashed
      * AggchainHash:
-     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainConfig |
+     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainParams |
      * length (bits):   |    32         |       256      |     256       |
-     * aggchainConfig = keccak256(abi.encodePacked(trusted_sequencer))
+     * aggchainParams = keccak256(abi.encodePacked(trusted_sequencer))
      */
     /// @inheritdoc IAggchain
     function getAggchainHash(
-        bytes memory customChainData
+        bytes memory aggchainData
     ) external view returns (bytes32) {
         // The second param is the new state root used at onVerifyPessimistic callback but now only aggchainVKeySelector is required
         (bytes2 aggchainVKeySelector, ) = abi.decode(
-            customChainData,
+            aggchainData,
             (bytes2, bytes32)
         );
-        bytes4 aggchainSelector = _getAggchainSelectorFromType(
-            AGGCHAIN_TYPE_SELECTOR,
-            aggchainVKeySelector
-        );
+        bytes4 finalAggchainVKeySelector = _getFinalAggchainVKeySelectorFromType(
+                aggchainVKeySelector,
+                AGGCHAIN_TYPE_SELECTOR
+            );
 
         return
             keccak256(
                 abi.encodePacked(
                     AGGCHAIN_TYPE,
-                    getAggchainVKey(aggchainSelector),
+                    getAggchainVKey(finalAggchainVKeySelector),
                     keccak256(abi.encodePacked(trustedSequencer))
                 )
             );
@@ -219,12 +219,9 @@ contract AggchainECDSA is AggchainBase, IAggchain {
 
     /// @inheritdoc IAggchain
     function onVerifyPessimistic(
-        bytes calldata customChainData
+        bytes calldata aggchainData
     ) external onlyRollupManager {
-        (, bytes32 newStateRoot) = abi.decode(
-            customChainData,
-            (bytes2, bytes32)
-        );
+        (, bytes32 newStateRoot) = abi.decode(aggchainData, (bytes2, bytes32));
         // Emit event
         emit OnVerifyPessimistic(newStateRoot);
     }
