@@ -102,6 +102,5 @@ module.exports = {
     encodeInitializeBytesAggchainECDSAv0,
     encodeInitializeBytesAggchainECDSAv1,
     encodeAggchainDataECDSA,
-    computeHashAggchainParamsECDSA,
-
+    computeHashAggchainParamsECDSA
 };
