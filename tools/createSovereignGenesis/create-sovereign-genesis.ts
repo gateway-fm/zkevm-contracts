@@ -212,7 +212,7 @@ async function main() {
 
             // check if preMintAccount is in the current genesis
             const preMintAccountExist = finalGenesis.genesis.find(function (obj) {
-                return obj.address === preMintAccount.address;
+                return obj.address.toLowerCase() === preMintAccount.address.toLowerCase();
             });
 
             if (typeof preMintAccountExist !== 'undefined') {
