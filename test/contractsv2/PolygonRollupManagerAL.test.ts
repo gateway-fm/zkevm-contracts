@@ -12,7 +12,12 @@ import {
 } from "../../typechain-types";
 const {VerifierType, AggchainSelector, computeRandomBytes} = require("../../src/pessimistic-utils");
 const {AggchainType} = require("../../src/utils");
-const {encodeCustomChainDataECDSA, encodeInitializeBytesCustomChainECDSAv1, encodeInitializeBytesCustomChainECDSAv0, getFinalAggchainSelectorECDSA} = require("../../src/utils-aggchain-ECDSA");
+const {
+    encodeCustomChainDataECDSA,
+    encodeInitializeBytesCustomChainECDSAv1,
+    encodeInitializeBytesCustomChainECDSAv0,
+    getFinalAggchainSelectorECDSA,
+} = require("../../src/utils-aggchain-ECDSA");
 
 describe("Polygon rollup manager aggregation layer v3", () => {
     // SIGNERS
@@ -25,6 +30,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     let aggLayerAdmin: any;
     let tester: any;
     let vKeyManager: any;
+    let aggChainVKey: any;
+    let addPPRoute: any;
+    let freezePPRoute: any;
 
     // CONTRACTS
     let polygonZkEVMBridgeContract: PolygonZkEVMBridgeV2;
@@ -42,7 +50,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     // BRIDGE CONSTANTS
     const NETWORK_ID_MAINNET = 0;
     // AGGLAYER CONSTANTS
-    const AGGCHAIN_ADMIN_ROLE = ethers.id("AGGCHAIN_ADMIN_ROLE");
+    const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
     const AGGLAYER_ADD_ROUTE_ROLE = ethers.id("AGGLAYER_ADD_ROUTE_ROLE");
     const PESSIMISTIC_SELECTOR = "0x00000001";
     // AGGCHAIN CONSTANTS
@@ -63,6 +71,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             aggLayerAdmin,
             tester,
             vKeyManager,
+            aggChainVKey,
+            addPPRoute,
+            freezePPRoute,
         ] = await ethers.getSigners();
 
         // Deploy L1 contracts
@@ -88,12 +99,17 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             initializer: false,
             unsafeAllow: ["constructor", "missing-initializer"],
         });
-        await aggLayerGatewayContract.initialize(admin.address);
+        await aggLayerGatewayContract.initialize(
+            admin.address,
+            aggChainVKey.address,
+            addPPRoute.address,
+            freezePPRoute.address
+        );
         // Grant role to agglayer admin
         await aggLayerGatewayContract.connect(admin).grantRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address);
         // Add permission to add default aggchain verification key
-        await aggLayerGatewayContract.connect(admin).grantRole(AGGCHAIN_ADMIN_ROLE, aggLayerAdmin.address);
-        expect(await aggLayerGatewayContract.hasRole(AGGCHAIN_ADMIN_ROLE, aggLayerAdmin.address)).to.be.true;
+        await aggLayerGatewayContract.connect(admin).grantRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggLayerAdmin.address);
+        expect(await aggLayerGatewayContract.hasRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggLayerAdmin.address)).to.be.true;
         // The rollupManager address need to be precalculated because it's used in the globalExitRoot constructor
         const currentDeployerNonce = await ethers.provider.getTransactionCount(deployer.address);
         const precalculateRollupManagerAddress = ethers.getCreateAddress({
@@ -170,9 +186,14 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     });
 
     it("should check initializers and deploy parameters", async () => {
-        await expect(aggLayerGatewayContract.initialize(timelock.address)).to.be.revertedWith(
-            "Initializable: contract is already initialized"
-        );
+        await expect(
+            aggLayerGatewayContract.initialize(
+                timelock.address,
+                aggChainVKey.address,
+                addPPRoute.address,
+                freezePPRoute.address
+            )
+        ).to.be.revertedWith("Initializable: contract is already initialized");
     });
 
     it("should create a ECDSA rollup type", async () => {
@@ -252,7 +273,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         const aggchainVKey = computeRandomBytes(32);
 
         // Compose selector for generated aggchain verification key
-        const defaultAggchainSelector = getFinalAggchainSelectorECDSA('0x0001');
+        const defaultAggchainSelector = getFinalAggchainSelectorECDSA("0x0001");
         await expect(
             aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
         )
@@ -336,7 +357,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getFinalAggchainSelectorECDSA('0x0001');
+        const defaultAggchainSelector = getFinalAggchainSelectorECDSA("0x0001");
         await expect(
             aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
         )
@@ -511,7 +532,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getFinalAggchainSelectorECDSA('0x0001');
+        const defaultAggchainSelector = getFinalAggchainSelectorECDSA("0x0001");
         await expect(
             aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
         )

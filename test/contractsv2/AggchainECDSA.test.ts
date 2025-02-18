@@ -10,6 +10,9 @@ describe("AggchainECDSA", () => {
     let admin: any;
     let defaultAdminAgglayer: any;
     let vKeyManager: any;
+    let aggChainVKey: any;
+    let addPPRoute: any;
+    let freezePPRoute: any;
 
     let aggchainECDSAcontract: AggchainECDSA;
     let aggLayerGatewayContract: AggLayerGateway;
@@ -27,7 +30,7 @@ describe("AggchainECDSA", () => {
 
     // aggLayerGateway variables
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
-    const AGGCHAIN_ADMIN_ROLE = ethers.id("AGGCHAIN_ADMIN_ROLE");
+    const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
 
     // aggchain variables
     let initializeBytesCustomChain: string;
@@ -49,7 +52,16 @@ describe("AggchainECDSA", () => {
         upgrades.silenceWarnings();
 
         // load signers
-        [deployer, trustedSequencer, admin, defaultAdminAgglayer, vKeyManager] = await ethers.getSigners();
+        [
+            deployer,
+            trustedSequencer,
+            admin,
+            defaultAdminAgglayer,
+            vKeyManager,
+            aggChainVKey,
+            addPPRoute,
+            freezePPRoute,
+        ] = await ethers.getSigners();
 
         initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesCustomChainECDSAv0(
             useDefaultGateway,
@@ -71,19 +83,27 @@ describe("AggchainECDSA", () => {
         })) as unknown as AggLayerGateway;
 
         // initialize AggLayerGateway
-        await expect(aggLayerGatewayContract.initialize(defaultAdminAgglayer.address))
+        await expect(
+            aggLayerGatewayContract.initialize(
+                defaultAdminAgglayer.address,
+                aggChainVKey.address,
+                addPPRoute.address,
+                freezePPRoute.address
+            )
+        )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
             .withArgs(DEFAULT_ADMIN_ROLE, defaultAdminAgglayer.address, deployer.address);
 
-        // grantRole AGGCHAIN_ADMIN_ROLE --> defaultAdminAgglayer
+        // grantRole AGGCHAIN_DEFAULT_VKEY_ROLE --> defaultAdminAgglayer
         await expect(
             aggLayerGatewayContract
                 .connect(defaultAdminAgglayer)
-                .grantRole(AGGCHAIN_ADMIN_ROLE, defaultAdminAgglayer.address)
+                .grantRole(AGGCHAIN_DEFAULT_VKEY_ROLE, defaultAdminAgglayer.address)
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(AGGCHAIN_ADMIN_ROLE, defaultAdminAgglayer.address, defaultAdminAgglayer.address);
-        expect(await aggLayerGatewayContract.hasRole(AGGCHAIN_ADMIN_ROLE, defaultAdminAgglayer.address)).to.be.true;
+            .withArgs(AGGCHAIN_DEFAULT_VKEY_ROLE, defaultAdminAgglayer.address, defaultAdminAgglayer.address);
+        expect(await aggLayerGatewayContract.hasRole(AGGCHAIN_DEFAULT_VKEY_ROLE, defaultAdminAgglayer.address)).to.be
+            .true;
 
         // AddDefaultAggchainVKey
         await expect(
