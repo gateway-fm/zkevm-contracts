@@ -9,9 +9,9 @@ import "@openzeppelin/contracts52/access/AccessControl.sol";
 
 /**
  * @title AggLayerGateway
- * @notice Contract to handle the verification keys for the pessimistic proof. 
+ * @notice Contract to handle the verification keys for the pessimistic proof.
  * It supports adding and freezing PP verification keys and verifying the PP.
- * Also maintains the default verification keys of aggchains when the flag of using default 
+ * Also maintains the default verification keys of aggchains when the flag of using default
  * keys is enabled (check aggchainBase contract)
  */
 contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
@@ -20,8 +20,8 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     ////////////////////////////////////////////////////////////
     // Roles
     // Default admin role, can grant roles to addresses
-    bytes32 internal constant AGGCHAIN_ADMIN_ROLE =
-        keccak256("AGGCHAIN_ADMIN_ROLE");
+    bytes32 internal constant AGGCHAIN_DEFAULT_VKEY_ROLE =
+        keccak256("AGGCHAIN_DEFAULT_VKEY_ROLE");
     // Can add a route to a pessimistic verification key.
     bytes32 internal constant AGGLAYER_ADD_ROUTE_ROLE =
         keccak256("AGGLAYER_ADD_ROUTE_ROLE");
@@ -74,11 +74,22 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     ////////////////////////////////////////////////////////////
     /**
      * @notice  Initializer function to set new rollup manager version.
-     * @param admin The address of the default admin. Can grant role to addresses.
+     * @param defaultAdmin The address of the default admin. Can grant role to addresses.
+     * @param aggchainDefaultVKeyRole The address that can manage the aggchain verification keys.
+     * @param addRouteRole The address that can add a route to a pessimistic verification key.
+     * @param freezeRouteRole The address that can freeze a route to a pessimistic verification key.
      * @dev This address is the highest privileged address so it's recommended to use a timelock
      */
-    function initialize(address admin) external virtual initializer {
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+    function initialize(
+        address defaultAdmin,
+        address aggchainDefaultVKeyRole,
+        address addRouteRole,
+        address freezeRouteRole
+    ) external virtual initializer {
+        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+        _grantRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggchainDefaultVKeyRole);
+        _grantRole(AGGLAYER_ADD_ROUTE_ROLE, addRouteRole);
+        _grantRole(AGGLAYER_FREEZE_ROUTE_ROLE, freezeRouteRole);
     }
 
     ////////////////////////////////////////////////////////////
@@ -175,7 +186,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     function addDefaultAggchainVKey(
         bytes4 defaultAggchainSelector,
         bytes32 newAggchainVKey
-    ) external onlyRole(AGGCHAIN_ADMIN_ROLE) {
+    ) external onlyRole(AGGCHAIN_DEFAULT_VKEY_ROLE) {
         // Check already exists
         if (defaultAggchainVKeys[defaultAggchainSelector] != bytes32(0)) {
             revert AggchainVKeyAlreadyExists();
@@ -194,7 +205,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     function updateDefaultAggchainVKey(
         bytes4 defaultAggchainSelector,
         bytes32 newDefaultAggchainVKey
-    ) external onlyRole(AGGCHAIN_ADMIN_ROLE) {
+    ) external onlyRole(AGGCHAIN_DEFAULT_VKEY_ROLE) {
         // Check if the key exists
         if (defaultAggchainVKeys[defaultAggchainSelector] == bytes32(0)) {
             revert AggchainVKeyNotFound();
