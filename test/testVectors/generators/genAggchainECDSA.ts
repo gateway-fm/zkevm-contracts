@@ -45,7 +45,7 @@ async function main() {
 
                     // check final aggchainSelector
                     expect(aggchainSelectors[j]).to.be.equal(
-                        utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA + data.aggchainVKeySelectors[j].slice(2)
+                        `${data.aggchainVKeySelectors[j]}${utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA.slice(2)}`
                     );
                 }
             }

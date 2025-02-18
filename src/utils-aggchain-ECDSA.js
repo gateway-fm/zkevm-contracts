@@ -97,7 +97,7 @@ function aggchainConfigECDSA(trustedSequencer) {
  * @returns {String} encoded value in hexadecimal string (4 bytes) AGGCHAIN_TYPE_SELECTOR_ECDSA (2 bytes) | aggchainSelector (2 bytes)
  */
 function getFinalAggchainSelectorECDSA(aggchainSelector) {
-    return AGGCHAIN_TYPE_SELECTOR_ECDSA.concat(Scalar.e(aggchainSelector).toString(16).padStart(4, '0'));
+    return `0x${Scalar.e(aggchainSelector).toString(16).padStart(4, '0')}${AGGCHAIN_TYPE_SELECTOR_ECDSA.slice(2)}`;
 }
 
 /**
