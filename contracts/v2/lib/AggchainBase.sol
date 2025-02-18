@@ -205,6 +205,6 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         bytes2 aggchainType,
         bytes2 aggchainVKeySelector
     ) internal pure returns (bytes4) {
-        return bytes4(aggchainType) | (bytes4(aggchainVKeySelector) >> 16);
+        return bytes4(aggchainVKeySelector) | (bytes4(aggchainType) >> 16);
     }
 }

@@ -289,8 +289,8 @@ describe("AggchainECDSA", () => {
         // calculate aggchainHash
         const customChainData = utilsECDSA.encodeCustomChainDataECDSA(aggchainVkeySelector, newStateRoot);
         const finalAggchainSelector = ethers.concat([
-            ethers.zeroPadBytes(AGGCHAIN_TYPE_SELECTOR, 2),
             aggchainVkeySelector,
+            ethers.zeroPadBytes(AGGCHAIN_TYPE_SELECTOR, 2),
         ]);
         const aggChainConfig = ethers.solidityPackedKeccak256(["address"], [trustedSequencer.address]);
         const aggchainHash = ethers.solidityPackedKeccak256(
