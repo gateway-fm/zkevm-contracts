@@ -32,6 +32,7 @@ async function main() {
     ///   CHECK TOOL PARAMS   ///
     /////////////////////////////
     logger.info('Check initial parameters');
+
     const mandatoryParameters = [
         "rollupManagerAddress",
         "rollupID",
@@ -42,35 +43,41 @@ async function main() {
         "sovereignWETHAddressIsNotMintable",
         "globalExitRootUpdater",
         "globalExitRootRemover",
-        "setPreMintAccount",
+        "setPreMintAccounts",
         "setTimelockParameters",
     ];
 
+    // check global parameters
     checkParams(createGenesisSovereignParams, mandatoryParameters);
 
-    if (createGenesisSovereignParams.setPreMintAccount === true) {
-        if (createGenesisSovereignParams.preMintAccount === undefined || createGenesisSovereignParams.preMintAccount === '') {
-            logger.error('\'setPreMintAccount\' is set to true but missing parameter \'preMintAccount\'');
-            throw new Error('\'setPreMintAccount\' is set to true but missing parameter \'preMintAccount\'');
+    // check preMintedAccounts parameters
+    if (createGenesisSovereignParams.setPreMintAccounts === true) {
+        if (createGenesisSovereignParams.preMintAccounts === undefined || createGenesisSovereignParams.preMintAccounts === '') {
+            logger.error('setPreMintAccounts is set to true but missing parameter preMintAccounts');
+            process.exit(1);
         }
 
-        const paramsPreMintAccount = [
-            'balance',
-            'address',
-        ];
+        // Check all preMintAccounts parameters
+        for (const preMintAccount of createGenesisSovereignParams.preMintAccounts) {
+            const paramsPreMintAccount = [
+                'balance',
+                'address',
+            ];
 
-        checkParams(createGenesisSovereignParams.preMintAccount, paramsPreMintAccount);
+            checkParams(preMintAccount, paramsPreMintAccount);
 
-        if (ethers.isAddress(createGenesisSovereignParams.preMintAccount.address) == false) {
-            logger.error('preMintAccount.address: not a valid address');
-            throw new Error('preMintAccount.address: not a valid address');
+            if (ethers.isAddress(preMintAccount.address) == false) {
+                logger.error(`preMintAccount.address ${preMintAccount.address}: not a valid address`);
+                process.exit(1);
+            }
         }
     }
 
+    // check timelock parameters
     if (createGenesisSovereignParams.setTimelockParameters === true) {
         if (createGenesisSovereignParams.timelockParameters === undefined || createGenesisSovereignParams.timelockParameters === '') {
-            logger.error('\'setTimelockParameters\' is set to true but missing parameter \'timelockParameters\'');
-            throw new Error('\'setTimelockParameters\' is set to true but missing parameter \'timelockParameters\'');
+            logger.error('setTimelockParameters is set to true but missing parameter timelockParameters');
+            process.exit(1);
         }
 
         const paramsTimelockParameters = [
@@ -194,29 +201,37 @@ async function main() {
         outWETHAddress = wethObject.address;
     }
 
-    // check preMintAddress is an address
-    if (createGenesisSovereignParams.setPreMintAccount === true) {
-        logger.info('Add preMintAccount');
+    // set preMintAccounts
+    let totalPreMintedAmount = BigInt(0);
+    if (createGenesisSovereignParams.setPreMintAccounts === true) {
+        logger.info('Add preMintAccounts');
 
-        // check preMintAddress is in the current genesis
-        const preMintAccountExist = finalGenesis.genesis.find(function (obj) {
-            return obj.address === createGenesisSovereignParams.preMintAccount.address;
-        });
+        // iterate over all premintAccounts
+        for (let i = 0; i < createGenesisSovereignParams.preMintAccounts.length; i++) {
+            const preMintAccount = createGenesisSovereignParams.preMintAccounts[i];
 
-        if (typeof preMintAccountExist !== 'undefined') {
-            if (preMintAccountExist.bytecode !== undefined) {
-                logger.error('preMintAccount code is not empty');
-                throw new Error('preMintAccount code is not empty');
-
-            }
-            preMintAccountExist.balance = BigInt(createGenesisSovereignParams.preMintAccount.balance).toString();
-        } else {
-            // add preMintAccount.address & preMintAccount.balance
-            finalGenesis.genesis.push({
-                accountName: 'preMintAccount',
-                balance: BigInt(createGenesisSovereignParams.preMintAccount.balance).toString(),
-                address: createGenesisSovereignParams.preMintAccount.address,
+            // check if preMintAccount is in the current genesis
+            const preMintAccountExist = finalGenesis.genesis.find(function (obj) {
+                return obj.address === preMintAccount.address;
             });
+
+            if (typeof preMintAccountExist !== 'undefined') {
+                // check if preMintAccount has code
+                if (preMintAccountExist.bytecode !== undefined) {
+                    logger.error(`preMintAccount ${preMintAccount.address} code is not empty`);
+                    process.exit(1);
+                }
+                preMintAccountExist.balance = BigInt(preMintAccount.balance).toString();
+            } else {
+                // add preMintAccount.address & preMintAccount.balance
+                finalGenesis.genesis.push({
+                    accountName: `preMintAccount_${i}`,
+                    balance: BigInt(preMintAccount.balance).toString(),
+                    address: preMintAccount.address,
+                });
+            }
+
+            totalPreMintedAmount += BigInt(preMintAccount.balance);
         }
     }
 
@@ -276,8 +291,9 @@ async function main() {
     outputJson.globalExitRootUpdater = createGenesisSovereignParams.globalExitRootUpdater;
     outputJson.globalExitRootRemover = createGenesisSovereignParams.globalExitRootRemover;
 
-    if (createGenesisSovereignParams.setPreMintAccount === true) {
-        outputJson.preMintAccount = createGenesisSovereignParams.preMintAccount;
+    if (createGenesisSovereignParams.setPreMintAccounts === true) {
+        outputJson.preMintAccounts = createGenesisSovereignParams.preMintAccounts;
+        outputJson.totalPreMintedAmount = totalPreMintedAmount.toString();
     }
 
     if (createGenesisSovereignParams.setTimelockParameters === true) {
