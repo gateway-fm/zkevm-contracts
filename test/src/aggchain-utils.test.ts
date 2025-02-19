@@ -21,6 +21,7 @@ describe("Test vectors aggchain common utils", () => {
                 testVector.hashAggchainParams
             );
             if (update) {
+                aggchainHashTestVectors[i].output = {};
                 aggchainHashTestVectors[i].output.aggchainHash = aggchainHash;
                 console.log(`WRITE: ${path.join(pathTestvectors, "aggchain-hash.json")}`);
                 fs.writeFileSync(
@@ -41,6 +42,7 @@ describe("Test vectors aggchain common utils", () => {
                 testVector.aggchainSelector
             );
             if (update) {
+                finalAggchainSelectorTestVectors[i].output = {};
                 finalAggchainSelectorTestVectors[i].output.finalAggchainVKeySelector = finalAggchainSelector;
                 console.log(`WRITE: ${path.join(pathTestvectors, "final-aggchain-selector.json")}`);
                 fs.writeFileSync(
