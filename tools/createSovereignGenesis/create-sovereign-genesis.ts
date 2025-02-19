@@ -269,6 +269,14 @@ async function main() {
     // update genesis root
     finalGenesis.root = smtUtils.h4toString(zkEVMDB.getCurrentStateRoot());
 
+    // extract all namde <--> address from genesis
+    const genesisSCNames = finalGenesis.genesis.reduce((acc: any, obj: any) => {
+        if (obj.bytecode !== undefined) {
+            acc[obj.contractName] = obj.address;
+        }
+        return acc;
+    }, {});
+
     // format genesis
     if (createGenesisSovereignParams.formatGenesis !== undefined) {
         logger.info(`Formatting genesis output to: ${createGenesisSovereignParams.formatGenesis}`);
@@ -290,6 +298,7 @@ async function main() {
     outputJson.sovereignWETHAddressIsNotMintable = createGenesisSovereignParams.sovereignWETHAddressIsNotMintable;
     outputJson.globalExitRootUpdater = createGenesisSovereignParams.globalExitRootUpdater;
     outputJson.globalExitRootRemover = createGenesisSovereignParams.globalExitRootRemover;
+    outputJson.genesisSCNames = genesisSCNames;
 
     if (createGenesisSovereignParams.setPreMintAccounts === true) {
         outputJson.preMintAccounts = createGenesisSovereignParams.preMintAccounts;
