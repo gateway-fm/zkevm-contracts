@@ -22,7 +22,9 @@ describe("Test vectors aggchain common utils", () => {
                 testVector.newStateRoot
             );
             if (update) {
+                aggchainDataTestvectors[i].output = {};
                 aggchainDataTestvectors[i].output.aggchainData = aggchainData;
+                console.log(`WRITE: ${path.join(pathTestvectors, "aggchain-data.json")}`);
                 fs.writeFileSync(
                     path.join(pathTestvectors, "aggchain-data.json"),
                     JSON.stringify(aggchainDataTestvectors, null, 2)
@@ -47,8 +49,11 @@ describe("Test vectors aggchain common utils", () => {
                 testVector.trustedSequencerURL,
                 testVector.networkName
             );
+            console.log("VERSION 0: ", initBytesAggchainECDSAv0);
             if (update) {
+                aggchainInitBytesV0[i].output = {};
                 aggchainInitBytesV0[i].output.initBytesAggchainECDSAv0 = initBytesAggchainECDSAv0;
+                console.log(`WRITE: ${path.join(pathTestvectors, "aggchain-initBytesv0.json")}`);
                 fs.writeFileSync(
                     path.join(pathTestvectors, "aggchain-initBytesv0.json"),
                     JSON.stringify(aggchainInitBytesV0, null, 2)
@@ -68,8 +73,11 @@ describe("Test vectors aggchain common utils", () => {
                 testVector.aggchainVKeySelectors,
                 testVector.vKeyManager
             );
+            console.log("VERSION 1: ", initBytesAggchainECDSAv1);
             if (update) {
+                aggchainInitBytesV1[i].output = {};
                 aggchainInitBytesV1[i].output.initBytesAggchainECDSAv1 = initBytesAggchainECDSAv1;
+                console.log(`WRITE: ${path.join(pathTestvectors, "aggchain-initBytesv1.json")}`);
                 fs.writeFileSync(
                     path.join(pathTestvectors, "aggchain-initBytesv1.json"),
                     JSON.stringify(aggchainInitBytesV1, null, 2)
@@ -85,9 +93,11 @@ describe("Test vectors aggchain common utils", () => {
             const testVector = aggchainHashParams[i].input;
             const hashAggchainParams = utilsECDSA.computeHashAggchainParamsECDSA(testVector.trustedSequencer);
             if (update) {
+                aggchainHashParams[i].output = {};
                 aggchainHashParams[i].output.hashAggchainParams = hashAggchainParams;
+                console.log(`WRITE: ${path.join(pathTestvectors, "hash-aggchain-params.json")}`);
                 fs.writeFileSync(
-                    path.join(pathTestvectors, "aggchain-initBytesv1.json"),
+                    path.join(pathTestvectors, "hash-aggchain-params.json"),
                     JSON.stringify(aggchainHashParams, null, 2)
                 );
             } else {
