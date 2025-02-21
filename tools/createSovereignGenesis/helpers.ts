@@ -1,3 +1,5 @@
+import { execSync } from "child_process";
+
 /**
  * Format genesis file to a specific format
  * @param genesis original legacy genesis file
@@ -42,8 +44,6 @@ function _formatGeth(genesis: { genesis: any[]; }) {
     }, {});
 }
 
-import { execSync } from "child_process";
-
 /**
  * Retrieves the current Git commit hash and repository URL
  * @returns An object containing the commit hash and repository URL, or null if an error occurs
@@ -60,7 +60,7 @@ function getGitInfo(): { commit: string; repo: string } | null {
     } catch (error) {
         throw new Error(`getGitInfo: ${error}`);
     }
-  }
+}
 
 module.exports = {
     formatGenesis,

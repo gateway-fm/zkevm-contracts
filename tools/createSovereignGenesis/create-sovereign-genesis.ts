@@ -17,6 +17,7 @@ import { initializeTimelockStorage } from "../../src/genesis/genesis-helpers";
 import { checkParams } from '../../src/utils';
 import { logger } from "../../src/logger";
 import { formatGenesis, getGitInfo } from "./helpers";
+import { checkBridgeAddress } from "../utils";
 
 // script utils
 const dateStr = new Date().toISOString();
@@ -131,6 +132,10 @@ async function main() {
     const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
     const bridgeContractAddress = await rollupManagerContract.bridgeAddress();
     const rollupBridgeContract = bridgeFactory.attach(bridgeContractAddress) as PolygonZkEVMBridgeV2;
+
+    // check bridge address is the same in genesisBase and on-chain
+    checkBridgeAddress(genesisBase, bridgeContractAddress);
+
     if (
         ethers.isAddress(createGenesisSovereignParams.gasTokenAddress) &&
         createGenesisSovereignParams.gasTokenAddress !== ethers.ZeroAddress
@@ -269,7 +274,7 @@ async function main() {
     // update genesis root
     finalGenesis.root = smtUtils.h4toString(zkEVMDB.getCurrentStateRoot());
 
-    // extract all namde <--> address from genesis
+    // extract all [names <--> address] from genesis
     const genesisSCNames = finalGenesis.genesis.reduce((acc: any, obj: any) => {
         if (obj.bytecode !== undefined) {
             acc[obj.contractName] = obj.address;
@@ -283,15 +288,29 @@ async function main() {
         finalGenesis = formatGenesis(finalGenesis, createGenesisSovereignParams.formatGenesis);
     }
 
+    // get L1 information
+    logger.info(`Getting L1 information`);
+    const RollupManagerInfo = {} as any;
+
+    const rollupData = await rollupManagerContract.rollupIDToRollupData(createGenesisSovereignParams.rollupID);
+
+    RollupManagerInfo.bridgeAddress = await rollupManagerContract.bridgeAddress();
+    RollupManagerInfo.globalExitRootManager = await rollupManagerContract.globalExitRootManager();
+    RollupManagerInfo.pol = await rollupManagerContract.pol();
+    RollupManagerInfo.rollupData = {
+        rollupID: createGenesisSovereignParams.rollupID,
+        rollupAddress: rollupData[0],
+    }
+
     // Populate final output
     const gitInfo = getGitInfo();
     outputJson.gitInfo = gitInfo;
     outputJson.network = hardhatArguments.network;
-    outputJson.rollupID = createGenesisSovereignParams.rollupID;
+    outputJson.rollupManagerAddress = createGenesisSovereignParams.rollupManagerAddress;
+    outputJson.RollupManagerInfo = RollupManagerInfo;
     outputJson.gasTokenAddress = gasTokenAddress;
     outputJson.gasTokenNetwork = gasTokenNetwork;
     outputJson.gasTokenMetadata = gasTokenMetadata;
-    outputJson.rollupManagerAddress = createGenesisSovereignParams.rollupManagerAddress;
     outputJson.chainID = createGenesisSovereignParams.chainID;
     outputJson.bridgeManager = createGenesisSovereignParams.bridgeManager;
     outputJson.sovereignWETHAddress = createGenesisSovereignParams.sovereignWETHAddress;
