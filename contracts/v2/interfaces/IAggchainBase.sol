@@ -44,19 +44,18 @@ interface IAggchainBaseErrors {
     error InvalidInitializeFunction();
     /// @notice Thrown when trying to enable or disable the default gateway when it is already set.
     error UseDefaultGatewayAlreadySet();
-    /// @notice Thrown when trying to initialize the wrong initialize function.
-    error InvalidInitializer();
     /// @notice Thrown when trying to call a function that only the VKeyManager can call.
     error OnlyVKeyManager();
     /// @notice Thrown when trying to call a function that only the pending VKeyManager can call.
     error OnlyPendingVKeyManager();
     /// @notice Thrown when trying to retrieve an aggchain verification key from the mapping that doesn't exists.
     error AggchainVKeyNotFound();
-    /// @notice owned vKeys and selectors length mismatch.
-    error OwnedAggchainVKeyLengthMismatch();
 }
 /**
  * @title IAggchainBase
  * @notice Shared interface for native aggchain implementations.
  */
-interface IAggchainBase is IAggchainBaseErrors, IAggchainBaseEvents {}
+interface IAggchainBase is IAggchainBaseErrors, IAggchainBaseEvents {
+    /// @notice Returns the unique aggchain type selector identifier.
+    function AGGCHAIN_TYPE_SELECTOR() external view returns (bytes2);
+}

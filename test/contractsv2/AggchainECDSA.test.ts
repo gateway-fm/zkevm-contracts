@@ -35,18 +35,18 @@ describe("AggchainECDSA", () => {
     // aggchain variables
     let initializeBytesAggchain: string;
     let initializeBytesAggchainError: string;
-    const AGGCHAIN_TYPE_SELECTOR = "0x00";
+    const AGGCHAIN_TYPE_SELECTOR = "0x0000";
     const AGGCHAIN_TYPE = 1;
     const aggchainSelector = "0x22222222";
     const newAggChainVKey = "0x2222222222222222222222222222222222222222222222222222222222222222";
     const aggchainSelector2 = "0x11111111";
     const newAggChainVKey2 = "0x1111111111111111111111111111111111111111111111111111111111111111";
-    const aggchainVkeySelector = "0x1234";
+    const aggchainVkeySelector = "0x1235";
     const newStateRoot = "0x1122334455667788990011223344556677889900112233445566778899001122";
 
     const useDefaultGateway = true;
-    const aggchainSelectors = ["0x12345678"];
-    const ownedAggchainVKeys = ["0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"];
+    const aggchainSelector3 = "0x1234";
+    const ownedAggchainVKey = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 
     beforeEach("Deploy contract", async () => {
         upgrades.silenceWarnings();
@@ -65,8 +65,8 @@ describe("AggchainECDSA", () => {
 
         initializeBytesAggchain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
             useDefaultGateway,
-            ownedAggchainVKeys,
-            aggchainSelectors,
+            ownedAggchainVKey,
+            aggchainSelector3,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -132,7 +132,7 @@ describe("AggchainECDSA", () => {
         await aggchainECDSAcontract.waitForDeployment();
     });
 
-    it("should check the initalized parameters", async () => {
+    it("should check the initialized parameters", async () => {
         // initialize zkEVM using non admin address
         await expect(aggchainECDSAcontract.initialize(initializeBytesAggchain)).to.be.revertedWithCustomError(
             aggchainECDSAcontract,
@@ -150,7 +150,7 @@ describe("AggchainECDSA", () => {
         expect(await aggchainECDSAcontract.trustedSequencerURL()).to.be.equal(urlSequencer);
         expect(await aggchainECDSAcontract.networkName()).to.be.equal(networkName);
         expect(await aggchainECDSAcontract.gasTokenAddress()).to.be.equal(gasTokenAddress);
-        expect(await aggchainECDSAcontract.ownedAggchainVKeys(aggchainSelectors[0])).to.be.equal(ownedAggchainVKeys[0]);
+        expect(await aggchainECDSAcontract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)).to.be.equal(ownedAggchainVKey);
 
         // initialize again
         await expect(
@@ -396,21 +396,17 @@ describe("AggchainECDSA", () => {
 
         initializeBytesAggchain = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
             useDefaultGateway,
-            ownedAggchainVKeys,
-            aggchainSelectors,
+            ownedAggchainVKey,
+            aggchainSelector3,
             vKeyManager.address
         );
 
         initializeBytesAggchainError = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
             useDefaultGateway,
-            ownedAggchainVKeys,
-            [],
+            ownedAggchainVKey,
+            "0x0000",
             vKeyManager.address
         );
-
-        await expect(
-            ppConsensusContract.connect(rollupManagerSigner).initialize(initializeBytesAggchainError, {gasPrice: 0})
-        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "OwnedAggchainVKeyLengthMismatch");
 
         await ppConsensusContract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
 
@@ -421,6 +417,6 @@ describe("AggchainECDSA", () => {
         expect(await ppConsensusContract.trustedSequencerURL()).to.be.equal(urlSequencer);
         expect(await ppConsensusContract.networkName()).to.be.equal(networkName);
         expect(await ppConsensusContract.gasTokenAddress()).to.be.equal(gasTokenAddress);
-        expect(await ppConsensusContract.ownedAggchainVKeys(aggchainSelectors[0])).to.be.equal(ownedAggchainVKeys[0]);
+        expect(await ppConsensusContract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)).to.be.equal(ownedAggchainVKey);
     });
 });

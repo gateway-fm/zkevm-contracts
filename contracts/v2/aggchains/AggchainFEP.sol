@@ -50,6 +50,12 @@ contract AggchainFEP is AggchainBase, IAggchain {
     );
 
     ////////////////////////////////////////////////////////////
+    //                         Errors                         //
+    ////////////////////////////////////////////////////////////
+    /// @notice Thrown when trying to initialize the wrong initialize function.
+    error InvalidInitializer();
+
+    ////////////////////////////////////////////////////////////
     //                        Modifiers                       //
     ////////////////////////////////////////////////////////////
     // @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.

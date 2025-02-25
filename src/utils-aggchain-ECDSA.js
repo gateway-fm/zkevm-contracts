@@ -29,7 +29,7 @@ const AGGCHAIN_TYPE_SELECTOR_ECDSA = '0x0000';
 function encodeInitializeBytesAggchainECDSAv0(
     useDefaultGateway,
     ownedAggchainVKey,
-    aggchainVKeySelectors,
+    aggchainVKeySelector,
     vKeyManager,
     admin,
     trustedSequencer,
@@ -38,11 +38,11 @@ function encodeInitializeBytesAggchainECDSAv0(
     networkName,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
-        ['bool', 'bytes32[]', 'bytes4[]', 'address', 'address', 'address', 'address', 'string', 'string'],
+        ['bool', 'bytes32', 'bytes2', 'address', 'address', 'address', 'address', 'string', 'string'],
         [
             useDefaultGateway,
             ownedAggchainVKey,
-            aggchainVKeySelectors,
+            aggchainVKeySelector,
             vKeyManager,
             admin,
             trustedSequencer,
@@ -64,15 +64,15 @@ function encodeInitializeBytesAggchainECDSAv0(
 function encodeInitializeBytesAggchainECDSAv1(
     useDefaultGateway,
     ownedAggchainVKey,
-    aggchainVKeySelectors,
+    aggchainVKeySelector,
     vKeyManager,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
-        ['bool', 'bytes32[]', 'bytes4[]', 'address'],
+        ['bool', 'bytes32', 'bytes2', 'address'],
         [
             useDefaultGateway,
             ownedAggchainVKey,
-            aggchainVKeySelectors,
+            aggchainVKeySelector,
             vKeyManager,
         ],
     );

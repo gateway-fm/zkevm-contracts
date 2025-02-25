@@ -465,8 +465,8 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
         const initializeBytesCustomChain = encodeInitializeBytesAggchainECDSAv1(
             true, //useDefaultGateway
-            [], //ownedAggchainVKeys
-            [], // aggchainVkeySelector
+            ethers.ZeroHash, //ownedAggchainVKeys
+            "0x0000", // aggchainVkeySelector
             vKeyManager.address
         );
         const upgradeData = aggchainECDSAFactory.interface.encodeFunctionData("initialize(bytes)", [
@@ -709,8 +709,8 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     async function createECDSARollup(rollupTypeIdECDSA: number) {
         const initializeBytesCustomChain = encodeInitializeBytesAggchainECDSAv0(
             true, // useDefaultGateway
-            [], // ownedAggchainVKeys
-            [], //aggchainVKeysSelectors
+            ethers.ZeroHash, // ownedAggchainVKeys
+            "0x0000", //aggchainVKeysSelectors
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
