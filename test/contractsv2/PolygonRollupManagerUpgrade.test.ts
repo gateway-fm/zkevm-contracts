@@ -57,6 +57,7 @@ describe("Polygon Rollup manager upgraded", () => {
     let polygonZkEVMGlobalExitRoot: PolygonZkEVMGlobalExitRootV2;
     let rollupManagerContract: PolygonRollupManagerMock;
 
+    const latestVersionRollupManager = "pessimistic";
     const polTokenName = "POL Token";
     const polTokenSymbol = "POL";
     const polTokenInitialBalance = ethers.parseEther("20000000");
@@ -174,10 +175,12 @@ describe("Polygon Rollup manager upgraded", () => {
         expect(precalculateBridgeAddress).to.be.equal(polygonZkEVMBridgeContract.target);
         expect(precalculatezkEVM).to.be.equal(polygonZkEVMContract.target);
 
-        const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManagerPrevious");
+        // get previous versions
+        const PolygonRollupManagerFactoryV1toV2 = await ethers.getContractFactory("PolygonRollupManagerPreviousV1toV2");
+        const PolygonRollupManagerFactoryPrevious = await ethers.getContractFactory("PolygonRollupManagerPrevious");
         const PolygonRollupManagerFactoryCurrent = await ethers.getContractFactory("PolygonRollupManagerMock");
-        rollupManagerContract = PolygonRollupManagerFactoryCurrent.attach(polygonZkEVMContract.target) as any;
 
+        rollupManagerContract = PolygonRollupManagerFactoryCurrent.attach(polygonZkEVMContract.target) as any;
         await polygonZkEVMContract.initialize(
             {
                 admin: admin.address,
@@ -218,8 +221,8 @@ describe("Polygon Rollup manager upgraded", () => {
             unsafeAllow: ["constructor", "state-variable-immutable"],
         })) as any as PolygonZkEVMExistentEtrog;
 
-        //const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager");
-        const txRollupManager = await upgrades.upgradeProxy(polygonZkEVMContract.target, PolygonRollupManagerFactory, {
+        // upgrade from V1 to V2
+        const txRollupManager = await upgrades.upgradeProxy(polygonZkEVMContract.target, PolygonRollupManagerFactoryV1toV2, {
             constructorArgs: [
                 polygonZkEVMGlobalExitRoot.target,
                 polTokenContract.target,
@@ -244,7 +247,25 @@ describe("Polygon Rollup manager upgraded", () => {
             },
         });
 
+        // upgrade from V2 to Banana
         const txRollupManager2 = await upgrades.upgradeProxy(
+            polygonZkEVMContract.target,
+            PolygonRollupManagerFactoryPrevious,
+            {
+                constructorArgs: [
+                    polygonZkEVMGlobalExitRoot.target,
+                    polTokenContract.target,
+                    polygonZkEVMBridgeContract.target,
+                ],
+                unsafeAllow: ["constructor", "state-variable-immutable", "enum-definition", "struct-definition"],
+                unsafeAllowRenames: true,
+                unsafeAllowCustomTypes: true,
+                unsafeSkipStorageCheck: true,
+            }
+        );
+
+        // upgrade Banana to pessimsitic
+        const txRollupManager3 = await upgrades.upgradeProxy(
             polygonZkEVMContract.target,
             PolygonRollupManagerFactoryCurrent,
             {
@@ -257,6 +278,9 @@ describe("Polygon Rollup manager upgraded", () => {
                 unsafeAllowRenames: true,
                 unsafeAllowCustomTypes: true,
                 unsafeSkipStorageCheck: true,
+                call: {
+                    fn: "initialize"
+                }
             }
         );
     });
@@ -290,6 +314,8 @@ describe("Polygon Rollup manager upgraded", () => {
         expect(await rollupManagerContract.hasRole(EMERGENCY_COUNCIL_ADMIN, emergencyCouncil.address)).to.be.equal(
             true
         );
+
+        expect(await rollupManagerContract.ROLLUP_MANAGER_VERSION()).to.be.equal(latestVersionRollupManager);
     });
 
     it("Check admin parameters", async () => {
