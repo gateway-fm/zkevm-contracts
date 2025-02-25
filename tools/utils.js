@@ -3,6 +3,7 @@
 const ethers = require('ethers');
 
 const supportedBridgeContracts = ['PolygonZkEVMBridgeV2 proxy', 'PolygonZkEVMBridge proxy', 'BridgeL2SovereignChain proxy'];
+
 function genOperation(target, value, data, predecessor, salt) {
     const abiEncoded = ethers.AbiCoder.defaultAbiCoder().encode(
         ['address', 'uint256', 'bytes', 'uint256', 'bytes32'],
@@ -51,9 +52,30 @@ function convertBigIntsToNumbers(obj) {
     return obj; // Return the value if it's not a BigInt, object, or array
 }
 
+function checkBridgeAddress(genesis, expectedBridgeAddress){
+    // get bridge address in genesis file
+    let genesisBridgeAddress = ethers.ZeroAddress;
+    let bridgeContractName = "";
+
+    for (let i = 0; i < genesis.genesis.length; i++) {
+        if (supportedBridgeContracts.includes(genesis.genesis[i].contractName)) {
+            genesisBridgeAddress = genesis.genesis[i].address;
+            bridgeContractName = genesis.genesis[i].contractName;
+            break;
+        }
+    }
+
+    if (expectedBridgeAddress.toLowerCase() !== genesisBridgeAddress.toLowerCase()) {
+        throw new Error(
+            `checkBridgeAddress: '${bridgeContractName}' address in the 'genesis.json' does not match the 'expectedBridgeAddress'`
+        );
+    }
+}
+
 module.exports = {
     genOperation,
     transactionTypes,
     convertBigIntsToNumbers,
     supportedBridgeContracts,
+    checkBridgeAddress,
 };

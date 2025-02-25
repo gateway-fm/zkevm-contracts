@@ -45,6 +45,8 @@ cp ./tools/createSovereignGenesis/genesis-base.json.example ./tools/createSovere
   - `setTimelockParameters`: indicates if the timelock parameters are going to be changed
     - `timelockParameters.adminAddress`: address that will have all timelocks roles (ADMIN, PROPOSER, CANCELLER, EXECUTOR)
     - `timelockParameters.minDelay`: minimum delay set in the timelock smart contract
+- Optional parameters
+  - `format`: choose genesis output format. Supported ones: `geth`
 
 -  Run tool:
 ```
