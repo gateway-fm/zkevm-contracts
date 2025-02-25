@@ -41,6 +41,12 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
 
     // BRidge constants
     const networkIDMainnet = 0;
+    const networkIDRollup = 1;
+
+    const LEAF_TYPE_ASSET = 0;
+    const LEAF_TYPE_MESSAGE = 1;
+
+    let firstDeployment = true;
 
     //roles
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
@@ -56,6 +62,9 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
     const STOP_EMERGENCY_ROLE = ethers.id("STOP_EMERGENCY_ROLE");
     const EMERGENCY_COUNCIL_ROLE = ethers.id("EMERGENCY_COUNCIL_ROLE");
     const EMERGENCY_COUNCIL_ADMIN = ethers.id("EMERGENCY_COUNCIL_ADMIN");
+
+    const SIGNATURE_BYTES = 32 + 32 + 1;
+    const EFFECTIVE_PERCENTAGE_BYTES = 1;
 
     beforeEach("Deploy contract", async () => {
         upgrades.silenceWarnings();
@@ -76,23 +85,34 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             polTokenInitialBalance
         );
 
-        // deploy PolygonZkEVMBridge
-        const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        polygonZkEVMBridgeContract = await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], {
-            initializer: false,
-            unsafeAllow: ["constructor", "missing-initializer"],
-        });
+        /*
+         * deploy global exit root manager
+         * In order to not have trouble with nonce deploy first proxy admin
+         */
+        await upgrades.deployProxyAdmin();
 
-        const currentDeployerNonce = await ethers.provider.getTransactionCount(deployer.address);
+        if ((await upgrades.admin.getInstance()).target !== "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0") {
+            firstDeployment = false;
+        }
+        const nonceProxyBridge =
+            Number(await ethers.provider.getTransactionCount(deployer.address)) + (firstDeployment ? 3 : 2);
+
+        const nonceProxyZkevm = nonceProxyBridge + 2; // Always have to redeploy impl since the polygonZkEVMGlobalExitRoot address changes
+
+        const precalculateBridgeAddress = ethers.getCreateAddress({
+            from: deployer.address,
+            nonce: nonceProxyBridge,
+        });
         const precalculateRollupManagerAddress = ethers.getCreateAddress({
             from: deployer.address,
-            nonce: currentDeployerNonce + 3,
+            nonce: nonceProxyZkevm,
         });
+        firstDeployment = false;
 
         // deploy globalExitRoot
         const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory("PolygonZkEVMGlobalExitRootV2Mock");
         polygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
-            constructorArgs: [precalculateRollupManagerAddress, polygonZkEVMBridgeContract.target],
+            constructorArgs: [precalculateRollupManagerAddress, precalculateBridgeAddress],
             unsafeAllow: ["constructor", "state-variable-immutable"],
         });
 
@@ -105,6 +125,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
 
         // deploy polygon rollup manager mock
         const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManagerMock");
+
         rollupManagerContract = (await upgrades.deployProxy(PolygonRollupManagerFactory, [], {
             initializer: false,
             constructorArgs: [
@@ -119,6 +140,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         await rollupManagerContract.waitForDeployment();
 
         // check precalculated address
+        expect(precalculateBridgeAddress).to.be.equal(polygonZkEVMBridgeContract.target);
         expect(precalculateRollupManagerAddress).to.be.equal(rollupManagerContract.target);
 
         await polygonZkEVMBridgeContract.initialize(
@@ -216,7 +238,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         // create new pessimistic
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
-            nonce: 2,
+            nonce: 1,
         });
 
         await rollupManagerContract
