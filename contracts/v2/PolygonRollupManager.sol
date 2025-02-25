@@ -18,7 +18,7 @@ import "./interfaces/IPolygonPessimisticConsensus.sol";
 import "./interfaces/ISP1Verifier.sol";
 import "./interfaces/IPolygonRollupManager.sol";
 import "./interfaces/IAggchain.sol";
-import "./AggLayerGateway.sol";
+import "./interfaces/IAggLayerGateway.sol";
 import "./lib/Hashes.sol";
 
 /**
@@ -253,7 +253,7 @@ contract PolygonRollupManager is
 
     // Polygon Verifier Gateway address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    AggLayerGateway public immutable aggLayerGateway;
+    IAggLayerGateway public immutable aggLayerGateway;
 
     // Number of rollup types added, every new type will be assigned sequentially a new ID
     uint32 public rollupTypeCount;
@@ -413,7 +413,7 @@ contract PolygonRollupManager is
         IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
         IERC20Upgradeable _pol,
         IPolygonZkEVMBridge _bridgeAddress,
-        AggLayerGateway _aggLayerGateway
+        IAggLayerGateway _aggLayerGateway
     ) {
         globalExitRootManager = _globalExitRootManager;
         pol = _pol;

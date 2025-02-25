@@ -41,7 +41,7 @@ describe("Test vectors aggchain common utils", () => {
                 testVector.aggchainType
             );
             if (update) {
-                const AggchainBaseMockFactory = await ethers.getContractFactory("AggchainBaseMock");
+                const AggchainBaseMockFactory = await ethers.getContractFactory("AggchainBase");
                 const aggchainContract = await AggchainBaseMockFactory.deploy(
                     "0xA00000000000000000000000000000000000000A",
                     "0xB00000000000000000000000000000000000000B",

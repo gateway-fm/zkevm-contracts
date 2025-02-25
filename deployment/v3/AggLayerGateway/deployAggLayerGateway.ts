@@ -64,14 +64,14 @@ async function main() {
 
     // Check initializer params (ROLES)
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
-    const AGGLAYER_ADD_ROUTE_ROLE = ethers.id("AGGLAYER_ADD_ROUTE_ROLE");
-    const AGGLAYER_FREEZE_ROUTE_ROLE = ethers.id("AGGLAYER_FREEZE_ROUTE_ROLE");
+    const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
+    const AL_FREEZE_PP_ROUTE_ROLE = ethers.id("AL_FREEZE_PP_ROUTE_ROLE");
     // Admin role
     expect(await aggLayerGateway.hasRole(ethers.ZeroHash, defaultAdminAddress)).to.be.true;
     // Other roles
     expect(await aggLayerGateway.hasRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggchainDefaultVKeyRoleAddress)).to.be.true;
-    expect(await aggLayerGateway.hasRole(AGGLAYER_ADD_ROUTE_ROLE, addRouteRoleAddress)).to.be.true;
-    expect(await aggLayerGateway.hasRole(AGGLAYER_FREEZE_ROUTE_ROLE, freezeRouteRoleAddress)).to.be.true;
+    expect(await aggLayerGateway.hasRole(AL_ADD_PP_ROUTE_ROLE, addRouteRoleAddress)).to.be.true;
+    expect(await aggLayerGateway.hasRole(AL_FREEZE_PP_ROUTE_ROLE, freezeRouteRoleAddress)).to.be.true;
 
 
     // Compute output

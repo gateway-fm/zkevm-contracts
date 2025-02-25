@@ -30,7 +30,6 @@ cp ./deployment/v3/AggLayerGateway/deploy_parameters.json.example ./deployment/v
     - "aggchainDefaultVKeyRoleAddress": "0x.." -> The address of the AGGCHAIN_DEFAULT_VKEY_ROLE role
     - "addRouteRoleAddress": "0x.." -> The address of the AGGLAYER_ADD_ROUTE_ROLE role
     - "freezeRouteRoleAddress": "0x..." -> The address of the AGGLAYER_FREEZE_ROUTE_ROLE role
-    - 
     - "deployerPvtKey": "0x...", -> Optional: The private key of the wallet used to deploy the new implementation
 
 - Run tool:

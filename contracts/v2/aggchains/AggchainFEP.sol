@@ -22,7 +22,7 @@ contract AggchainFEP is AggchainBase, IAggchain {
         uint128 l2BlockNumber;
     }
 
-    // Aggchain type selector, hardcoded value used to force the first 2 byes of aggchain selector to retrieve  the aggchain verification key
+    // Aggchain type selector, hardcoded value used to force the last 2 bytes of aggchain selector to retrieve  the aggchain verification key
     bytes2 public constant AGGCHAIN_TYPE_SELECTOR = 0x0001;
 
     // fep-stack parameters
@@ -215,7 +215,7 @@ contract AggchainFEP is AggchainBase, IAggchain {
                 aggregationVkey
             )
         );
-        bytes4 finalAggchainVKeySelector = _getFinalAggchainVKeySelectorFromType(
+        bytes4 finalAggchainVKeySelector = getFinalAggchainVKeySelectorFromType(
                 aggchainVKeySelector,
                 AGGCHAIN_TYPE_SELECTOR
             );

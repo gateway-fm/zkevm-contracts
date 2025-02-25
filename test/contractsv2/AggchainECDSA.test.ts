@@ -244,7 +244,7 @@ describe("AggchainECDSA", () => {
 
         await expect(
             aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, ethers.ZeroHash)
-        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "InvalidAggchainVKey");
+        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "ZeroValueAggchainVKey");
 
         await expect(aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, newAggChainVKey))
             .to.emit(aggchainECDSAcontract, "AddAggchainVKey")
@@ -267,7 +267,7 @@ describe("AggchainECDSA", () => {
             aggchainECDSAcontract.connect(vKeyManager).updateOwnedAggchainVKey(aggchainSelector, newAggChainVKey2)
         )
             .to.emit(aggchainECDSAcontract, "UpdateAggchainVKey")
-            .withArgs(aggchainSelector, newAggChainVKey2);
+            .withArgs(aggchainSelector, newAggChainVKey, newAggChainVKey2);
 
         // getAggchainVKey useDefaultGateway === true
         expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey);

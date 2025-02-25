@@ -16,20 +16,22 @@ interface IAggLayerGatewayEvents {
     /// @notice Emitted when a verifier route is frozen.
     /// @param selector The verifier selector that was frozen.
     /// @param verifier The address of the verifier contract.
-    event RouteFrozen(bytes4 selector, address verifier);
+    event RouteIsAlreadyFrozen(bytes4 selector, address verifier, bytes32 pessimisticVKey);
 
     /**
-     * @notice Emitted when the aggLayerAdmin updates the pessimistic program verification key
+     * Emitted when a new default aggchain verification key is added
+     * @param selector The 4 bytes selector of the added default aggchain verification key.
+     * @param newVKey New aggchain verification key to be added
      */
-    event UpdatePessimisticVKey(
-        bytes4 selector,
-        address verifier,
-        bytes32 newPessimisticVKey
-    );
-
     event AddDefaultAggchainVKey(bytes4 selector, bytes32 newVKey);
 
-    event UpdateDefaultAggchainVKey(bytes4 selector, bytes32 newVKey);
+    /**
+     * Emitted when a default aggchain verification key is update
+     * @param selector The 4 bytes selector of the updated default aggchain verification key.
+     * @param previousVKey Aggchain verification key previous value
+     * @param newVKey Aggchain verification key updated value
+     */
+    event UpdateDefaultAggchainVKey(bytes4 selector, bytes32 previousVKey, bytes32 newVKey);
 }
 
 /// @dev Extended error events from https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
@@ -48,7 +50,7 @@ interface IAggLayerGatewayErrors {
 
     /// @notice Thrown when adding a verifier route and the selector returned by the verifier is
     /// zero.
-    error SelectorCannotBeZero();
+    error PPSelectorCannotBeZero();
 
     /// @notice Thrown when the caller is not the AggLayerAdmin
     error OnlyAggLayerAdmin();
@@ -67,6 +69,12 @@ interface IAggLayerGatewayErrors {
 /// @notice This contract is the interface for the AggLayerGateway.
 /// @notice Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
 interface IAggLayerGateway is IAggLayerGatewayEvents, IAggLayerGatewayErrors {
+    /**
+     * Struct that defines a verifier route
+     * @param verifier The address of the verifier contract.
+     * @param pessimisticVKey The verification key to be used for verifying pessimistic proofs.
+     * @param frozen Whether the route is frozen.
+     */
     struct AggLayerVerifierRoute {
         address verifier; // SP1 Verifier. It contains sanity check SP1 version with the 4 first bytes of the proof. proof[4:]
         bytes32 pessimisticVKey;

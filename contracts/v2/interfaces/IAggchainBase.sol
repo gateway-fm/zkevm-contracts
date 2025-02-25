@@ -4,31 +4,38 @@ pragma solidity 0.8.28;
 
 interface IAggchainBaseEvents {
     /**
-     * @dev Emitted when the admin adds an aggchain verification key.
+     * @notice Emitted when the admin adds an aggchain verification key.
+     * @param selector The selector of the verification key to add.
+     * @param newAggchainVKey The new aggchain verification key.
      */
     event AddAggchainVKey(bytes4 selector, bytes32 newAggchainVKey);
     /**
-     * @dev Emitted when the admin updates the aggchain verification key.
+     * @notice Emitted when the admin updates the aggchain verification key.
+     * @param selector The selector of the verification key to update.
+     * @param previousAggchainVKey The previous aggchain verification key.
+     * @param newAggchainVKey The new new aggchain verification key.
      */
-    event UpdateAggchainVKey(bytes4 selector, bytes32 newAggchainVKey);
+    event UpdateAggchainVKey(bytes4 selector, bytes32 previousAggchainVKey, bytes32 newAggchainVKey);
     /**
-     * @dev Emitted when the admin switches the use of the default gateway to manage the aggchain keys.
+     * @notice Emitted when the admin switches the use of the default gateway to manage the aggchain keys.
+     * @param useDefaultGateway The result of the switch.
      */
     event UpdateUseDefaultGatewayFlag(bool useDefaultGateway);
     /**
-     * @dev Emitted when the vKeyManager starts the two-step transfer role setting a new pending vKeyManager.
+     * @notice Emitted when the vKeyManager starts the two-step transfer role setting a new pending vKeyManager.
      * @param newVKeyManager The new vKeyManager.
      */
     event TransferVKeyManagerRole(address newVKeyManager);
     /**
-     * @dev Emitted when the pending vKeyManager accepts the vKeyManager role.
+     * @notice Emitted when the pending vKeyManager accepts the vKeyManager role.
+     * @param newVKeyManager The new vKeyManager.
      */
     event AcceptVKeyManagerRole(address newVKeyManager);
 }
 
 interface IAggchainBaseErrors {
-    /// @notice Thrown when trying to add an invalid verification key.
-    error InvalidAggchainVKey();
+    /// @notice Thrown when trying to add zero value verification key.
+    error ZeroValueAggchainVKey();
     /// @notice Thrown when trying to add an aggchain verification key that already exists.
     error OwnedAggchainVKeyAlreadyAdded();
     /// @notice Thrown when trying to retrieve an aggchain verification key that does not exist.

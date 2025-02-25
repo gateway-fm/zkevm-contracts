@@ -52,7 +52,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     const NETWORK_ID_MAINNET = 0;
     // AGGLAYER CONSTANTS
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
-    const AGGLAYER_ADD_ROUTE_ROLE = ethers.id("AGGLAYER_ADD_ROUTE_ROLE");
+    const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
     const PESSIMISTIC_SELECTOR = "0x00000001";
     // AGGCHAIN CONSTANTS
     const AGGCHAIN_VKEY_SELECTOR = "0x0001";
@@ -107,7 +107,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             freezePPRoute.address
         );
         // Grant role to agglayer admin
-        await aggLayerGatewayContract.connect(admin).grantRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address);
+        await aggLayerGatewayContract.connect(admin).grantRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address);
         // Add permission to add default aggchain verification key
         await aggLayerGatewayContract.connect(admin).grantRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggLayerAdmin.address);
         expect(await aggLayerGatewayContract.hasRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggLayerAdmin.address)).to.be.true;

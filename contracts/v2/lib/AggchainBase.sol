@@ -8,26 +8,33 @@ import "../interfaces/IAggchainBase.sol";
 
 /**
  * @title AggchainBase
- * @notice  Contract responsible for managing the states and the updates of L2 network.
- * There will be a trusted sequencer, which is able to send transactions.
- * Any user can force some transaction and the sequencer will have a timeout to add them in the queue.
- * The sequenced state is deterministic and can be precalculated before it's actually verified by a zkProof.
- * The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
- * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
+ * @notice Base contract for aggchain implementations. This contract is imported by other aggchain implementations to reuse the common logic.
  */
 abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
+    ////////////////////////////////////////////////////////////
+    //                  Constants & Immutables                //
+    ////////////////////////////////////////////////////////////
     // Aggchain type that support generic aggchain hash
     uint32 public constant AGGCHAIN_TYPE = 1;
+
     // AggLayerGateway address, used in case the flag `useDefaultGateway` is set to true, the aggchains keys are managed by the gateway
     IAggLayerGateway public immutable aggLayerGateway;
 
+    ////////////////////////////////////////////////////////////
+    //                       Variables                        //
+    ////////////////////////////////////////////////////////////
     // Address that will be able to manage the aggchain verification keys and swap the useDefaultGateway flag.
     address public vKeyManager;
+
     // This account will be able to accept the vKeyManager role
     address public pendingVKeyManager;
+
     // Flag to enable/disable the use of the custom chain gateway to handle the aggchain keys. In case  of true, the keys are managed by the aggregation layer gateway
     bool public useDefaultGateway;
 
+    ////////////////////////////////////////////////////////////
+    //                       Mappings                         //
+    ////////////////////////////////////////////////////////////
     // AggchainVKeys mapping
     mapping(bytes4 aggchainVKeySelector => bytes32 ownedAggchainVKey)
         public ownedAggchainVKeys;
@@ -38,6 +45,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      */
     uint256[50] private _gap;
 
+    ////////////////////////////////////////////////////////////
+    //                       Constructor                      //
+    ////////////////////////////////////////////////////////////
     /**
      * @param _globalExitRootManager Global exit root manager address.
      * @param _pol POL token address.
@@ -62,6 +72,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         aggLayerGateway = _aggLayerGateway;
     }
 
+    ////////////////////////////////////////////////////////////
+    //                  Initialization                        //
+    ////////////////////////////////////////////////////////////
     /**
      * @notice Override the function to prevent the contract from being initialized with the initializer implemented at PolygonConsensusBase.
      */
@@ -77,9 +90,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         revert InvalidInitializeFunction();
     }
 
-    //////////////////
-    // modifiers
-    //////////////////
+    //////////////////////////
+    //      modifiers       //
+    /////////////////////////
     // Modifier to check if the caller is the vKeyManager
     modifier onlyVKeyManager() {
         if (vKeyManager != msg.sender) {
@@ -88,9 +101,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         _;
     }
 
-    //////////////////
-    // admin functions
-    //////////////////
+    ///////////////////////////////
+    //   VKeyManager functions   //
+    //////////////////////////////
 
     /**
      * @notice Starts the vKeyManager role transfer
@@ -101,8 +114,10 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         address newVKeyManager
     ) external onlyVKeyManager {
         pendingVKeyManager = newVKeyManager;
+
         emit TransferVKeyManagerRole(newVKeyManager);
     }
+
     /**
      * @notice Allow the current pending vKeyManager to accept the vKeyManager role
      */
@@ -110,9 +125,12 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         if (pendingVKeyManager != msg.sender) {
             revert OnlyPendingVKeyManager();
         }
+
         vKeyManager = pendingVKeyManager;
+
         emit AcceptVKeyManagerRole(pendingVKeyManager);
     }
+
     /**
      * @notice Enable the use of the default gateway to manage the aggchain keys.
      */
@@ -120,7 +138,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         if (useDefaultGateway) {
             revert UseDefaultGatewayAlreadySet();
         }
+
         useDefaultGateway = true;
+
         // Emit event
         emit UpdateUseDefaultGatewayFlag(useDefaultGateway);
     }
@@ -132,7 +152,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         if (!useDefaultGateway) {
             revert UseDefaultGatewayAlreadySet();
         }
+
         useDefaultGateway = false;
+
         // Emit event
         emit UpdateUseDefaultGatewayFlag(useDefaultGateway);
     }
@@ -147,14 +169,15 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         bytes32 newAggchainVKey
     ) external onlyVKeyManager {
         if (newAggchainVKey == bytes32(0)) {
-            revert InvalidAggchainVKey();
+            revert ZeroValueAggchainVKey();
         }
-
-        // Check already added
+        // Check if proposed selector has already a verification key assigned
         if (ownedAggchainVKeys[aggchainSelector] != bytes32(0)) {
             revert OwnedAggchainVKeyAlreadyAdded();
         }
+
         ownedAggchainVKeys[aggchainSelector] = newAggchainVKey;
+
         emit AddAggchainVKey(aggchainSelector, newAggchainVKey);
     }
 
@@ -171,8 +194,15 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         if (ownedAggchainVKeys[aggchainSelector] == bytes32(0)) {
             revert OwnedAggchainVKeyNotFound();
         }
+
+        bytes32 previousAggchainVKey = ownedAggchainVKeys[aggchainSelector];
         ownedAggchainVKeys[aggchainSelector] = updatedAggchainVKey;
-        emit UpdateAggchainVKey(aggchainSelector, updatedAggchainVKey);
+
+        emit UpdateAggchainVKey(
+            aggchainSelector,
+            previousAggchainVKey,
+            updatedAggchainVKey
+        );
     }
 
     /**
@@ -184,6 +214,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ) public view returns (bytes32 aggchainVKey) {
         if (useDefaultGateway == false) {
             aggchainVKey = ownedAggchainVKeys[aggchainSelector];
+
             if (aggchainVKey == bytes32(0)) {
                 revert AggchainVKeyNotFound();
             }
@@ -200,11 +231,14 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * @dev It joins two bytes2 values into a bytes4 value.
      * @param aggchainVKeySelector The aggchain verification key selector, used to identify the aggchain verification key.
      * @param aggchainType The aggchain type, hardcoded in the aggchain contract.
+     * [             finalAggchainVKeySelector             ]
+     * [  aggchainVKeySelector  |  AGGCHAIN_TYPE_SELECTOR ]
+     * [        2 bytes         |         2 bytes         ]
      */
-    function _getFinalAggchainVKeySelectorFromType(
+    function getFinalAggchainVKeySelectorFromType(
         bytes2 aggchainVKeySelector,
         bytes2 aggchainType
-    ) internal pure returns (bytes4) {
+    ) public pure returns (bytes4) {
         return bytes4(aggchainVKeySelector) | (bytes4(aggchainType) >> 16);
     }
 }
