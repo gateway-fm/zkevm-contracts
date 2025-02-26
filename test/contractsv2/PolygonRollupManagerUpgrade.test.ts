@@ -256,7 +256,6 @@ describe("Polygon Rollup manager upgraded", () => {
                     polygonZkEVMGlobalExitRoot.target,
                     polTokenContract.target,
                     polygonZkEVMBridgeContract.target,
-                    ethers.ZeroAddress, // aggLayerGateway
                 ],
                 unsafeAllow: ["constructor", "state-variable-immutable"],
                 unsafeAllowRenames: true,
@@ -282,7 +281,7 @@ describe("Polygon Rollup manager upgraded", () => {
             }
         );
 
-         // upgrade pessimistic to ALv3
+        // upgrade pessimistic to ALv3
         const txRollupManager4 = await upgrades.upgradeProxy(
             polygonZkEVMContract.target,
             PolygonRollupManagerFactoryCurrent,

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
+
 // based on: https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
 
 interface IAggLayerGatewayEvents {
@@ -16,7 +17,11 @@ interface IAggLayerGatewayEvents {
     /// @notice Emitted when a verifier route is frozen.
     /// @param selector The verifier selector that was frozen.
     /// @param verifier The address of the verifier contract.
-    event RouteIsAlreadyFrozen(bytes4 selector, address verifier, bytes32 pessimisticVKey);
+    event RouteFrozen(
+        bytes4 selector,
+        address verifier,
+        bytes32 pessimisticVKey
+    );
 
     /**
      * Emitted when a new default aggchain verification key is added
@@ -31,7 +36,11 @@ interface IAggLayerGatewayEvents {
      * @param previousVKey Aggchain verification key previous value
      * @param newVKey Aggchain verification key updated value
      */
-    event UpdateDefaultAggchainVKey(bytes4 selector, bytes32 previousVKey, bytes32 newVKey);
+    event UpdateDefaultAggchainVKey(
+        bytes4 selector,
+        bytes32 previousVKey,
+        bytes32 newVKey
+    );
 }
 
 /// @dev Extended error events from https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/ISP1VerifierGateway.sol
@@ -44,9 +53,14 @@ interface IAggLayerGatewayErrors {
     /// @param selector The verifier selector that was specified.
     error RouteIsFrozen(bytes4 selector);
 
+    /// @notice Thrown when trying to freeze a route that is already frozen.
+    /// @param selector The pessimistic verification key selector that was specified.
+    error RouteIsAlreadyFrozen(bytes4 selector);
+
     /// @notice Thrown when adding a verifier route and the selector already contains a route.
+    /// @param selector The pessimistic verification key selector that was specified.
     /// @param verifier The address of the verifier contract in the existing route.
-    error RouteAlreadyExists(address verifier);
+    error RouteAlreadyExists(bytes4 selector, address verifier);
 
     /// @notice Thrown when adding a verifier route and the selector returned by the verifier is
     /// zero.

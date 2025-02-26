@@ -135,7 +135,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
             pessimisticVKeySelector
         ];
         if (route.verifier != address(0)) {
-            revert RouteAlreadyExists(route.verifier);
+            revert RouteAlreadyExists(pessimisticVKeySelector, route.verifier);
         }
 
         route.verifier = verifier;
@@ -157,12 +157,16 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
             revert RouteNotFound(pessimisticVKeySelector);
         }
         if (route.frozen) {
-            revert RouteIsFrozen(pessimisticVKeySelector);
+            revert RouteIsAlreadyFrozen(pessimisticVKeySelector);
         }
 
         route.frozen = true;
 
-        emit RouteIsAlreadyFrozen(pessimisticVKeySelector, route.verifier, route.pessimisticVKey);
+        emit RouteFrozen(
+            pessimisticVKeySelector,
+            route.verifier,
+            route.pessimisticVKey
+        );
     }
 
     ////////////////////////////////////////////////////////////

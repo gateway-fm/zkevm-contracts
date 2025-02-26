@@ -112,7 +112,7 @@ describe("AggLayerGateway tests", () => {
                 .addPessimisticVKeyRoute(selector, verifierContract.target, pessimisticVKey)
         )
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteAlreadyExists")
-            .withArgs(verifierContract.target);
+            .withArgs(selector, verifierContract.target);
     });
 
     it("freezePessimisticVKeyRoute", async () => {
@@ -156,14 +156,14 @@ describe("AggLayerGateway tests", () => {
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteNotFound")
             .withArgs(testSelector);
 
-        // check RouteIsAlreadyFrozen
+        // check RouteFrozen
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).freezePessimisticVKeyRoute(selector))
-            .to.emit(aggLayerGatewayContract, "RouteIsAlreadyFrozen")
+            .to.emit(aggLayerGatewayContract, "RouteFrozen")
             .withArgs(selector, verifierContract.target, pessimisticVKey);
 
         // check RouteIsFrozen
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).freezePessimisticVKeyRoute(selector))
-            .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteIsFrozen")
+            .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteIsAlreadyFrozen")
             .withArgs(selector);
     });
 
@@ -281,10 +281,10 @@ describe("AggLayerGateway tests", () => {
 
         // frozen route
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).freezePessimisticVKeyRoute(selector))
-            .to.emit(aggLayerGatewayContract, "RouteIsAlreadyFrozen")
+            .to.emit(aggLayerGatewayContract, "RouteFrozen")
             .withArgs(selector, verifierContract.target, pessimisticVKey);
 
-        // check RouteIsAlreadyFrozen
+        // check RouteIsFrozen
         await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], input["proof"]))
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteIsFrozen")
             .withArgs(selector);
