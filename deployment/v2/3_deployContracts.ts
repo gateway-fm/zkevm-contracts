@@ -403,9 +403,13 @@ async function main() {
             try {
                 aggLayerGatewayContract = await upgrades.deployProxy(AggLayerGatewayFactory,
                     [
+                        // defaultAdmin: The address of the default admin. Can grant role to addresses.
                         finalTimelockAddress,
+                        // aggchainDefaultVKeyRole: The address that can manage the aggchain verification keys
                         deployParameters.admin,
+                        // addRouteRole: The address that can add a route to a pessimistic verification key
                         deployParameters.admin,
+                        // freezeRouteRole: The address that can freeze a route to a pessimistic verification key
                         deployParameters.admin,
                     ],
                     {

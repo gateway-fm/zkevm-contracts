@@ -70,20 +70,22 @@ async function main() {
         sovereignParams,
     } = createRollupParameters;
 
-    const supportedConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus", "AggchainECDSA", "AggchainFEP"];
+    const arraySupportedAggchains = ["AggchainECDSA", "AggchainFEP"];
+    const arraySupportedConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"];
+    const supportedConsensus = arraySupportedConsensus.concat(arraySupportedAggchains);
 
     if (!supportedConsensus.includes(consensusContract)) {
         throw new Error(`Consensus contract not supported, supported contracts are: ${supportedConsensus}`);
     }
 
     // if consensusContract is Aggchain, check isVanillaClient === true
-    if (consensusContract.toLowerCase().includes("aggchain") && !isVanillaClient) {
+    if (arraySupportedAggchains.includes(consensusContract) && !isVanillaClient) {
         throw new Error(`Consensus contract ${consensusContract} requires isVanillaClient === true`);
     }
 
     // Check consensus compatibility
     if (isVanillaClient) {
-        if (consensusContract !== "PolygonPessimisticConsensus" && !consensusContract.toLowerCase().includes("aggchain") ) {
+        if (consensusContract !== "PolygonPessimisticConsensus" && !arraySupportedAggchains.includes(consensusContract) ) {
             throw new Error(`Vanilla client only supports PolygonPessimisticConsensus & Aggchain`);
         }
 
@@ -102,7 +104,7 @@ async function main() {
         }
 
         // check aggchainParams if consensusContract is Aggchain
-        if (consensusContract.includes("Aggchain")) {
+        if (arraySupportedAggchains.includes(consensusContract)) {
             if (createRollupParameters["aggchainParams"] === undefined) {
                 throw new Error(`Missing sovereign parameter: aggchainParams`);
             }
@@ -203,7 +205,8 @@ async function main() {
     let PolygonconsensusContract;
 
     // Create consensus/aggchain implementation
-    if(!consensusContract.toLowerCase().includes("aggchain")) {
+    if(arraySupportedConsensus.includes(consensusContract)) {
+        // create consensus contract
         PolygonconsensusContract = await PolygonconsensusFactory.deploy(
             deployOutput.polygonZkEVMGlobalExitRootAddress,
             deployOutput.polTokenAddress,
@@ -212,6 +215,7 @@ async function main() {
         );
         await PolygonconsensusContract.waitForDeployment();
     } else {
+        // create aggchain contract
         PolygonconsensusContract = await PolygonconsensusFactory.deploy(
             deployOutput.polygonZkEVMGlobalExitRootAddress,
             deployOutput.polTokenAddress,
@@ -274,7 +278,7 @@ async function main() {
     let verifierName;
     let initializeBytesCustomChain;
 
-    if (consensusContract.includes("Aggchain")) {
+    if (arraySupportedAggchains.includes(consensusContract)) {
         // If Aggchain
         // rollupVerifierType = VerifierType.ALGateway = 2
         rollupVerifierType = 2;
