@@ -52,6 +52,7 @@
         "prettier": "^2.8.8",
         "prettier-plugin-solidity": "^1.4.1",
         "solc-0.8": "npm:solc@0.8.20",
+        "solc-0.8.17": "npm:solc@0.8.17",
         "solidity-docgen": "^0.5.17",
         "winston": "^3.17.0"
     },
@@ -59,7 +60,8 @@
         "saveDeployment:goerli": "mkdir -p deployments/goerli_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/goerli_$(date +%s) && cp .openzeppelin/goerli.json deployments/goerli_$(date +%s) && cp deployment/v2/genesis.json deployments/goerli_$(date +%s) && cp deployment/v2/create_rollup_output.json deployments/goerli_$(date +%s)",
         "saveDeployment:mainnet": "mkdir -p deployments/mainnet_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/mainnet_$(date +%s) && cp .openzeppelin/mainnet.json deployments/mainnet_$(date +%s) && cp deployment/v2/genesis.json deployments/mainnet_$(date +%s) && cp deployment/v2/create_rollup_output.json deployments/mainnet_$(date +%s)",
         "test": "npx hardhat test test/contractsv2/*ts test/contractsv2/real-prover-sp1/*.ts test/src/*.ts",
-        "docgen": "npx solidity-docgen --solc-module solc-0.8 -t ./docs/templates -e ./contracts/verifiers,./contracts/mocks",
+        "docgen": "npx solidity-docgen --solc-module solc-0.8 -t ./docs/templates -e ./contracts/verifiers,./contracts/mocks,./contracts/token-wrapped-bridge-compiled",
+        "docgen:0.8.17": "npx solidity-docgen --solc-module solc-0.8.17 -t ./docs/templates -i ./contracts/token-wrapped-bridge-compiled -o ./docs/token-wrapped-bridge",
         "prepare:testnet:ZkEVM:localhost": "npx hardhat run deployment/testnet/prepareTestnet.ts --network localhost",
         "deploy:ZkEVM:localhost": "rm -f .openzeppelin/unknown-*.json && node deployment/1_createGenesis.js && npx hardhat run deployment/2_deployPolygonZKEVMDeployer.js --network localhost && npx hardhat run deployment/3_deployContracts.js --network localhost",
         "deploy:testnet:ZkEVM:localhost": "npm run prepare:testnet:ZkEVM:localhost && npm run deploy:ZkEVM:localhost",

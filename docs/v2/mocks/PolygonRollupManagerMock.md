@@ -46,3 +46,12 @@ PolygonRollupManager mock
 
 
 
+### setRollupData
+```solidity
+  function setRollupData(
+  ) external
+```
+
+
+
+
