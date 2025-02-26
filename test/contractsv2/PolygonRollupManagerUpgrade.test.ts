@@ -57,7 +57,7 @@ describe("Polygon Rollup manager upgraded", () => {
     let polygonZkEVMGlobalExitRoot: PolygonZkEVMGlobalExitRootV2;
     let rollupManagerContract: PolygonRollupManagerMock;
 
-    const latestVersionRollupManager = "pessimistic";
+    const latestVersionRollupManager = "al-v0.3.0";
     const polTokenName = "POL Token";
     const polTokenSymbol = "POL";
     const polTokenInitialBalance = ethers.parseEther("20000000");
@@ -177,6 +177,7 @@ describe("Polygon Rollup manager upgraded", () => {
         // get previous versions
         const PolygonRollupManagerFactoryV1toV2 = await ethers.getContractFactory("PolygonRollupManagerPreviousV1toV2");
         const PolygonRollupManagerFactoryPrevious = await ethers.getContractFactory("PolygonRollupManagerPrevious");
+        const PolygonRollupManagerFactoryPessimistic = await ethers.getContractFactory("PolygonRollupManagerPessimistic");
         const PolygonRollupManagerFactoryCurrent = await ethers.getContractFactory("PolygonRollupManagerMock");
 
         rollupManagerContract = PolygonRollupManagerFactoryCurrent.attach(polygonZkEVMContract.target) as any;
@@ -263,8 +264,25 @@ describe("Polygon Rollup manager upgraded", () => {
             }
         );
 
-        // upgrade Banana to pessimsitic
+        // upgrade Banana to pessimistic
         const txRollupManager3 = await upgrades.upgradeProxy(
+            polygonZkEVMContract.target,
+            PolygonRollupManagerFactoryPessimistic,
+            {
+                constructorArgs: [
+                    polygonZkEVMGlobalExitRoot.target,
+                    polTokenContract.target,
+                    polygonZkEVMBridgeContract.target,
+                ],
+                unsafeAllow: ["constructor", "state-variable-immutable", "enum-definition", "struct-definition"],
+                unsafeAllowRenames: true,
+                unsafeAllowCustomTypes: true,
+                unsafeSkipStorageCheck: true,
+            }
+        );
+
+         // upgrade pessimistic to ALv3
+        const txRollupManager4 = await upgrades.upgradeProxy(
             polygonZkEVMContract.target,
             PolygonRollupManagerFactoryCurrent,
             {
