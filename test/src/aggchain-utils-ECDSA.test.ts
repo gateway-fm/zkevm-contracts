@@ -38,8 +38,8 @@ describe("Test vectors aggchain ECDSA utils", () => {
             const testVector = aggchainInitBytesV0[i].input;
             const initBytesAggchainECDSAv0 = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 testVector.useDefaultGateway,
-                testVector.ownedAggchainVkeys,
-                testVector.aggchainVKeySelectors,
+                testVector.initOwnedAggchainVKey,
+                testVector.initAggchainVKeySelector,
                 testVector.vKeyManager,
                 testVector.admin,
                 testVector.trustedSequencer,
@@ -66,8 +66,8 @@ describe("Test vectors aggchain ECDSA utils", () => {
             const testVector = aggchainInitBytesV1[i].input;
             const initBytesAggchainECDSAv1 = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
                 testVector.useDefaultGateway,
-                testVector.ownedAggchainVkeys,
-                testVector.aggchainVKeySelectors,
+                testVector.initOwnedAggchainVKey,
+                testVector.initAggchainVKeySelector,
                 testVector.vKeyManager
             );
             if (update) {
