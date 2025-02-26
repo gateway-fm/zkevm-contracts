@@ -67,7 +67,7 @@ Allows a sequencer to send multiple batches
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`batches` | struct PolygonRollupBaseEtrog.BatchData[] | Struct array which holds the necessary data to append new batches to the sequence
-|`l1InfoTreeLeafCount` | uint32 | Index of the L1InfoRoot that will be used in this sequence
+|`l1InfoTreeLeafCount` | uint32 | Count of the L1InfoTree leaf that will be used in this sequence
 |`maxSequenceTimestamp` | uint64 | Max timestamp of the sequence. This timestamp must be inside a safety range (actual + 36 seconds).
 This timestamp should be equal or higher of the last block inside the sequence, otherwise this batch will be invalidated by circuit.
 |`expectedFinalAccInputHash` | bytes32 | This parameter must match the acc input hash after hash all the batch data

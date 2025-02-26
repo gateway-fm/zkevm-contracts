@@ -29,6 +29,15 @@
 
 
 
+### decimals
+```solidity
+  function decimals(
+  ) public returns (uint8)
+```
+
+
+
+
 ### permit
 ```solidity
   function permit(
