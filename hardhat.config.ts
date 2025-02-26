@@ -2,6 +2,7 @@ import "dotenv/config";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-dependency-compiler";
 import "hardhat-switch-network";
+import "@openzeppelin/hardhat-upgrades"
 import "@nomiclabs/hardhat-solhint";
 import "@nomicfoundation/hardhat-chai-matchers";
 import {HardhatUserConfig} from "hardhat/config";
