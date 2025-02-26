@@ -1,4 +1,8 @@
 #!/bin/bash
+# stop container
+docker stop docker_test
+# remove container
+docker container rm docker_test
 # Set the -e option to stop the script if any command fails
 set -e
 # Run docker tests

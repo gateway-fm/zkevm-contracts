@@ -76,10 +76,15 @@ async function main() {
         throw new Error(`Consensus contract not supported, supported contracts are: ${supportedConsensus}`);
     }
 
+    // if consensusContract is Aggchain, check isVanillaClient === true
+    if (consensusContract.toLowerCase().includes("aggchain") && !isVanillaClient) {
+        throw new Error(`Consensus contract ${consensusContract} requires isVanillaClient === true`);
+    }
+
     // Check consensus compatibility
     if (isVanillaClient) {
-        if (consensusContract !== "PolygonPessimisticConsensus") {
-            throw new Error(`Vanilla client only supports PolygonPessimisticConsensus`);
+        if (consensusContract !== "PolygonPessimisticConsensus" && !consensusContract.toLowerCase().includes("aggchain") ) {
+            throw new Error(`Vanilla client only supports PolygonPessimisticConsensus & Aggchain`);
         }
 
         // Check sovereign params
@@ -95,10 +100,13 @@ async function main() {
                 throw new Error(`Missing sovereign parameter: ${parameterName}`);
             }
         }
-    } else if (consensusContract.includes("Aggchain")) {
-       if (createRollupParameters["aggchainParams"] === undefined) {
-           throw new Error(`Missing sovereign parameter: aggchainParams`);
-       }
+
+        // check aggchainParams if consensusContract is Aggchain
+        if (consensusContract.includes("Aggchain")) {
+            if (createRollupParameters["aggchainParams"] === undefined) {
+                throw new Error(`Missing sovereign parameter: aggchainParams`);
+            }
+         }
     }
 
     const dataAvailabilityProtocol = createRollupParameters.dataAvailabilityProtocol || "PolygonDataCommittee";
@@ -265,10 +273,16 @@ async function main() {
     let verifierAddress;
     let verifierName;
     let initializeBytesCustomChain;
+
     if (consensusContract.includes("Aggchain")) {
+        // If Aggchain
+        // rollupVerifierType = VerifierType.ALGateway = 2
         rollupVerifierType = 2;
+        // genesis = bytes32(0)
         genesisFinal = ethers.ZeroHash;
+        // programVKey = bytes32(0)
         programVKey = ethers.ZeroHash;
+        // programVKey = address(0)
         verifierAddress = ethers.ZeroAddress;
         if(consensusContract == "AggchainECDSA") {
             initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
@@ -288,6 +302,7 @@ async function main() {
             throw new Error(`Aggchain ${consensusContract} not supported`);
         }
     } else {
+        // Verifier is only necessary if consensusContract !== Aggchain
         let verifierContract;
         if (realVerifier === true) {
             if (consensusContract != "PolygonPessimisticConsensus") {
@@ -448,7 +463,7 @@ async function main() {
             outputJson.WETHAddress = wethObject.address;
         }
     } else {
-        if (consensusContract === "PolygonPessimisticConsensus" || consensusContract.includes("Aggchain")) {
+        if (consensusContract === "PolygonPessimisticConsensus") {
             // Add the first batch of the created rollup
             const newZKEVMContract = (await PolygonconsensusFactory.attach(
                 newZKEVMAddress
