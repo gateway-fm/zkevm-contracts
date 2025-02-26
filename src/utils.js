@@ -4,37 +4,37 @@ const { Scalar } = require('ffjavascript');
 const { ethers } = require('ethers');
 
 /**
- * Adjusts the multiplier gas and/or the maxFeePer gas of the provider depending on the deploy parameters values and returns the adjusted provider
- * @param {Object} deployParameters The input deploy parameters of the script
- * @returns {Object} The adjusted provider or `ethers.provider` if no deploy parameters applied
+ * Adjusts the multiplier gas and/or the maxFeePer gas of the provider depending on the parameters values and returns the adjusted provider
+ * @param {Object} parameters The input  parameters of the script
+ * @returns {Object} The adjusted provider or `ethers.provider` if no parameters applied
  * @param {Object} connectedEthers current ethers instance connected to a network
  */
-function getProviderAdjustingMultiplierGas(deployParameters, connectedEthers) {
+function getProviderAdjustingMultiplierGas(parameters, connectedEthers) {
     let currentProvider = connectedEthers.provider;
-    if (deployParameters.multiplierGas || deployParameters.maxFeePerGas) {
+    if (parameters.multiplierGas || parameters.maxFeePerGas) {
         if (process.env.HARDHAT_NETWORK !== 'hardhat') {
             currentProvider = ethers.getDefaultProvider(
                 `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`,
             );
-            if (deployParameters.maxPriorityFeePerGas && deployParameters.maxFeePerGas) {
+            if (parameters.maxPriorityFeePerGas && parameters.maxFeePerGas) {
                 console.log(
-                    `Hardcoded gas used: MaxPriority${deployParameters.maxPriorityFeePerGas} gwei, MaxFee${deployParameters.maxFeePerGas} gwei`,
+                    `Hardcoded gas used: MaxPriority${parameters.maxPriorityFeePerGas} gwei, MaxFee${parameters.maxFeePerGas} gwei`,
                 );
                 const FEE_DATA = new ethers.FeeData(
                     null,
-                    ethers.parseUnits(deployParameters.maxFeePerGas, 'gwei'),
-                    ethers.parseUnits(deployParameters.maxPriorityFeePerGas, 'gwei'),
+                    ethers.parseUnits(parameters.maxFeePerGas, 'gwei'),
+                    ethers.parseUnits(parameters.maxPriorityFeePerGas, 'gwei'),
                 );
 
                 currentProvider.getFeeData = async () => FEE_DATA;
             } else {
-                console.log('Multiplier gas used: ', deployParameters.multiplierGas);
+                console.log('Multiplier gas used: ', parameters.multiplierGas);
                 async function overrideFeeData() {
                     const feedata = await connectedEthers.provider.getFeeData();
                     return new connectedEthers.FeeData(
                         null,
-                        ((feedata.maxFeePerGas) * BigInt(deployParameters.multiplierGas)) / BigInt(1000),
-                        ((feedata.maxPriorityFeePerGas) * BigInt(deployParameters.multiplierGas)) / BigInt(1000),
+                        ((feedata.maxFeePerGas) * BigInt(parameters.multiplierGas)) / BigInt(1000),
+                        ((feedata.maxPriorityFeePerGas) * BigInt(parameters.multiplierGas)) / BigInt(1000),
                     );
                 }
                 currentProvider.getFeeData = overrideFeeData;
@@ -45,16 +45,16 @@ function getProviderAdjustingMultiplierGas(deployParameters, connectedEthers) {
 }
 
 /**
- * Resolves a deployer given the deploy parameters and the current provider
+ * Resolves a deployer given the parameters and the current provider
  * @param {Object} currentProvider The current provider
- * @param {Object} deployParameters Json OBject with the script deploy parameters
+ * @param {Object} parameters Json OBject with the script parameters
  * @param {Object} connectedEthers current ethers instance connected to a network
  * @returns The resolved deployer
  */
-async function getDeployerFromParameters(currentProvider, deployParameters, connectedEthers) {
+async function getDeployerFromParameters(currentProvider, parameters, connectedEthers) {
     let deployer;
-    if (deployParameters.deployerPvtKey) {
-        deployer = new connectedEthers.Wallet(deployParameters.deployerPvtKey, currentProvider);
+    if (parameters.deployerPvtKey) {
+        deployer = new connectedEthers.Wallet(parameters.deployerPvtKey, currentProvider);
     } else if (process.env.MNEMONIC) {
         deployer = connectedEthers.HDNodeWallet.fromMnemonic(
             connectedEthers.Mnemonic.fromPhrase(process.env.MNEMONIC),

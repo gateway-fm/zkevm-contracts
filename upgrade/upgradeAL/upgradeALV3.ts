@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
 /* eslint-disable no-console, no-inner-declarations, no-undef, import/no-unresolved */
+import { expect } from "chai";
 import path = require("path");
 import fs = require("fs");
 import { utils } from "ffjavascript";
@@ -9,14 +10,13 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { ethers, upgrades } from "hardhat";
 import { PolygonRollupManagerPessimistic } from "../../typechain-types";
 import { genTimelockOperation, verifyContractEtherscan, decodeScheduleData } from "../utils";
-import { checkParams } from "../../src/utils";
+import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
 
 const pathOutputJson = path.join(__dirname, "./upgrade_output.json");
 
 const upgradeParameters = require("./upgrade_parameters.json");
 
 async function main() {
-    //upgrades.silenceWarnings();
 
     /*
      * Check upgrade parameters
@@ -39,70 +39,24 @@ async function main() {
     const bridgeAddress = await rollupManagerPessimisticContract.bridgeAddress();
 
     // Load provider
-    const currentProvider = ethers.provider;
-    if (upgradeParameters.multiplierGas || upgradeParameters.maxFeePerGas) {
-        if (process.env.HARDHAT_NETWORK !== "hardhat") {
-            currentProvider = ethers.getDefaultProvider(
-                `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
-            ) as any;
-            if (upgradeParameters.maxPriorityFeePerGas && upgradeParameters.maxFeePerGas) {
-                console.log(
-                    `Hardcoded gas used: MaxPriority${upgradeParameters.maxPriorityFeePerGas} gwei, MaxFee${upgradeParameters.maxFeePerGas} gwei`
-                );
-                const FEE_DATA = new ethers.FeeData(
-                    null,
-                    ethers.parseUnits(upgradeParameters.maxFeePerGas, "gwei"),
-                    ethers.parseUnits(upgradeParameters.maxPriorityFeePerGas, "gwei")
-                );
-
-                currentProvider.getFeeData = async () => FEE_DATA;
-            } else {
-                console.log("Multiplier gas used: ", upgradeParameters.multiplierGas);
-                async function overrideFeeData() {
-                    const feeData = await ethers.provider.getFeeData();
-                    return new ethers.FeeData(
-                        null,
-                        ((feeData.maxFeePerGas as bigint) * BigInt(upgradeParameters.multiplierGas)) / 1000n,
-                        ((feeData.maxPriorityFeePerGas as bigint) * BigInt(upgradeParameters.multiplierGas)) / 1000n
-                    );
-                }
-                currentProvider.getFeeData = overrideFeeData;
-            }
-        }
-    }
+    const currentProvider = getProviderAdjustingMultiplierGas(upgradeParameters, ethers);
 
     // Load deployer
-    let deployer;
-    if (upgradeParameters.deployerPvtKey) {
-        deployer = new ethers.Wallet(upgradeParameters.deployerPvtKey, currentProvider);
-    } else if (process.env.MNEMONIC) {
-        deployer = ethers.HDNodeWallet.fromMnemonic(
-            ethers.Mnemonic.fromPhrase(process.env.MNEMONIC),
-            "m/44'/60'/0'/0/0"
-        ).connect(currentProvider);
-    } else {
-        [deployer] = await ethers.getSigners();
-    }
-
+    const deployer = await getDeployerFromParameters(currentProvider, upgradeParameters, ethers);
     console.log("deploying with: ", deployer.address);
 
-    const proxyAdminAddress = await upgrades.erc1967.getAdminAddress(rollupManagerPessimisticContract.target);
-    const proxyAdminFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
-    );
-    const proxyAdmin = proxyAdminFactory.attach(proxyAdminAddress);
+    const proxyAdmin = await upgrades.admin.getInstance();
+
+    // Assert correct admin
+    expect(await upgrades.erc1967.getAdminAddress(rollupManagerAddress as string)).to.be.equal(proxyAdmin.target);
+
     const timelockAddress = await proxyAdmin.owner();
 
     // load timelock
     const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
 
     // prepare upgrades
-    // Force import the current deployed proxy and implementation for storage layout upgrade checks.
-    // It creates the manifest file for open zeppelin upgrades
-    await upgrades.forceImport(rollupManagerAddress, polygonRMPreviousFactory, {
-        constructorArgs: [globalExitRootManagerAddress, polAddress, bridgeAddress],
-        kind: "transparent",
-    });
+
     // Upgrade to rollup manager
     const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager", deployer);
 
@@ -148,11 +102,13 @@ async function main() {
 
     console.log({ scheduleData });
     console.log({ executeData });
-
+    // Get current block number, used in the shallow fork tests
+    const blockNumber = await ethers.provider.getBlockNumber();
     const outputJson = {
         scheduleData,
         executeData,
         timelockContractAddress: timelockAddress,
+        implementationDeployBlockNumber: blockNumber,
     };
 
     // Decode the scheduleData for better readability

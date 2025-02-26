@@ -9,7 +9,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { ethers } from "hardhat";
 import { PolygonRollupManager, PolygonZkEVMTimelock, PolygonRollupManagerPessimistic } from "../../typechain-types";
 
-import { time, reset, setBalance, setStorageAt } from "@nomicfoundation/hardhat-network-helpers";
+import { time, reset, setBalance, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { checkParams } from "../../../src/utils";
 
 const upgradeParams = require("../upgrade_parameters.json");
@@ -26,7 +26,17 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
         // hard fork
         const rpc = typeof upgradeParams.rpc === "undefined" ? `https://${upgradeParams.network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}` : upgradeParams.rpc;
         console.log(`Shallow forking ${rpc}`);
-        await reset(rpc);
+        await reset(rpc, upgradeOutput.implementationDeployBlockNumber + 1);
+        await mine();
+        let forkedBlock = await ethers.provider.getBlockNumber();
+        // If forked block is lower than implementation deploy block, wait until it is reached
+        while (forkedBlock <= upgradeOutput.implementationDeployBlockNumber) {
+            console.log(`Forked block is ${forkedBlock}, waiting until ${upgradeOutput.implementationDeployBlockNumber}, wait 1 minute...`);
+            await new Promise(r => setTimeout(r, 60000));
+            console.log("Retrying fork...")
+            await reset(rpc);
+        }
+        console.log("Shallow fork Succeed!")
         // Get contracts
         const rollupManagerPessimisticFactory = await ethers.getContractFactory("PolygonRollupManagerPessimistic");
         const rollupManagerPessimisticContract = rollupManagerPessimisticFactory.attach(
@@ -130,5 +140,5 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
         expect(await rollupManagerContract.totalVerifiedBatches()).to.equal(totalVerifiedBatches);
         console.log(`✓ Checked rollup manager contract storage parameters and new version`);
         console.log("Finished shallow fork upgrade");
-    });
-}).timeout(1000000);
+    }).timeout(0);
+});

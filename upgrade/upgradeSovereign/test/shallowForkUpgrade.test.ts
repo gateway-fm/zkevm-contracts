@@ -22,11 +22,21 @@ const upgradeOutput = require("../upgrade_output.json");
 async function main() {
     const mandatoryParameters = ["timelockAdminAddress", "rpc"];
     checkParams(upgradeParams, mandatoryParameters);
+    const rpc = typeof upgradeParams.rpc === "undefined" ? `https://${upgradeParams.network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}` : upgradeParams.rpc;
 
     // hard fork
     console.log(`Shallow forking ${upgradeParams.rpc}`);
-    await reset(upgradeParams.rpc);
+    await reset(rpc, upgradeOutput.implementationDeployBlockNumber + 1);
     await mine();
+    let forkedBlock = await ethers.provider.getBlockNumber();
+    // If forked block is lower than implementation deploy block, wait until it is reached
+    while (forkedBlock <= upgradeOutput.implementationDeployBlockNumber) {
+        console.log(`Forked block is ${forkedBlock}, waiting until ${upgradeOutput.implementationDeployBlockNumber}, wait 1 minute...`);
+        await new Promise(r => setTimeout(r, 60000));
+        console.log("Retrying fork...")
+        await reset(rpc);
+    }
+    console.log("Shallow fork Succeed!")
 
     // In case globalExitRootManagerL2SovereignChainAddress is not provided, use the default one, used by most chains in the genesis
     const globalExitRootManagerL2SovereignChainAddress =

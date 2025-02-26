@@ -44,7 +44,11 @@ async function main() {
 
     console.log("#######################\n");
     console.log("aggLayerGatewayContract deployed to:", aggLayerGatewayContract.target);
-    console.log("#######################\n");
+    console.log("#######################\n\n");
+
+    const proxyAdmin = await upgrades.admin.getInstance();
+    expect(await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string)).to.be.equal(proxyAdmin.target);
+
     await verifyContractEtherscan(aggLayerGatewayContract.target as string, [defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
@@ -69,13 +73,6 @@ async function main() {
     expect(await aggLayerGateway.hasRole(AGGLAYER_ADD_ROUTE_ROLE, addRouteRoleAddress)).to.be.true;
     expect(await aggLayerGateway.hasRole(AGGLAYER_FREEZE_ROUTE_ROLE, freezeRouteRoleAddress)).to.be.true;
 
-    // Check proxy owner is deployer
-    const proxyAdminAddress = await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string);
-    const proxyAdminFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
-    );
-    const proxyAdmin = proxyAdminFactory.attach(proxyAdminAddress);
-    const proxyOwnerAddress = await proxyAdmin.owner();
 
     // Compute output
     const outputJson = {

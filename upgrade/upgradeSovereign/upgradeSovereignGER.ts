@@ -1,16 +1,16 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
 /* eslint-disable no-console, no-inner-declarations, no-undef, import/no-unresolved */
-import {expect} from "chai";
+import { expect } from "chai";
 import path = require("path");
 import fs = require("fs");
-import {utils} from "ffjavascript";
+import { utils } from "ffjavascript";
 
 import * as dotenv from "dotenv";
-dotenv.config({path: path.resolve(__dirname, "../../.env")});
-import {ethers, upgrades, run} from "hardhat";
-import {GlobalExitRootManagerL2SovereignChainPessimistic} from "../../typechain-types";
-import {genTimelockOperation} from "../utils";
-import {checkParams} from "../../src/utils";
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+import { ethers, upgrades, run } from "hardhat";
+import { GlobalExitRootManagerL2SovereignChainPessimistic } from "../../typechain-types";
+import { genTimelockOperation } from "../utils";
+import { checkParams, getDeployerFromParameters } from "../../src/utils";
 
 const pathOutputJson = path.join(__dirname, "./upgrade_output.json");
 
@@ -24,7 +24,8 @@ async function main() {
     const mandatoryUpgradeParameters = ["timelockDelay"];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
-    const {timelockDelay} = upgradeParameters;
+    const { timelockDelay } = upgradeParameters;
+
     // In case globalExitRootManagerL2SovereignChainAddress is not provided, use the default one, used by most chains in the genesis
     const globalExitRootManagerL2SovereignChainAddress = typeof upgradeParameters.globalExitRootManagerL2SovereignChainAddress === "undefined" ? "0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa" : upgradeParameters.globalExitRootManagerL2SovereignChainAddress;
     const salt = upgradeParameters.timelockSalt || ethers.ZeroHash;
@@ -40,30 +41,10 @@ async function main() {
     const bridgeAddress = await gerManagerL2SovereignChainContract.bridgeAddress();
 
     // Load deployer
-    let deployer;
-    if (upgradeParameters.deployerPvtKey) {
-        deployer = new ethers.Wallet(upgradeParameters.deployerPvtKey, ethers.provider);
-    } else if (process.env.MNEMONIC) {
-        deployer = ethers.HDNodeWallet.fromMnemonic(
-            ethers.Mnemonic.fromPhrase(process.env.MNEMONIC),
-            "m/44'/60'/0'/0/0"
-        ).connect(ethers.provider);
-    } else {
-        [deployer] = await ethers.getSigners();
-    }
+    const deployer = await getDeployerFromParameters(ethers.provider, upgradeParameters, ethers);
+    console.log("Upgrading with: ", deployer.address);
 
-    const proxyAdminAddress = await upgrades.erc1967.getAdminAddress(gerManagerL2SovereignChainContract.target);
-    const proxyAdminFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
-    );
-    const proxyAdmin = proxyAdminFactory.attach(proxyAdminAddress);
-    const timelockAddress = await proxyAdmin.owner();
-
-    // load timelock
-    const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
-
-    // prepare upgrades
-    // Force import the current deployed proxy and implementation for storage layout upgrade checks
+    // As this contract is deployed in the genesis of a L2 network, no open zeppelin network file is created, we need to force import it
     await upgrades.forceImport(
         globalExitRootManagerL2SovereignChainAddress,
         gerManagerL2SovereignChainPessimisticFactory,
@@ -72,8 +53,18 @@ async function main() {
             kind: "transparent",
         }
     );
+
+    const proxyAdmin = await upgrades.admin.getInstance();
+    // Assert correct admin
+    expect(await upgrades.erc1967.getAdminAddress(globalExitRootManagerL2SovereignChainAddress as string)).to.be.equal(proxyAdmin.target);
+
+    const timelockAddress = await proxyAdmin.owner();
+
+    // load timelock
+    const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
+
+    // prepare upgrades
     // Upgrade to GlobalExitRootManagerL2SovereignChain
-    console.log("deploying with: ", deployer.address);
     const gerManagerL2SovereignChainFactory = await ethers.getContractFactory("GlobalExitRootManagerL2SovereignChain", deployer);
     const gerManagerL2SovereignChainImplementation = await upgrades.prepareUpgrade(
         globalExitRootManagerL2SovereignChainAddress,
@@ -141,17 +132,20 @@ async function main() {
         salt, // salt
     ]);
 
-    console.log({scheduleData});
-    console.log({executeData});
+    console.log({ scheduleData });
+    console.log({ executeData });
 
+    // Get current block number, used in the shallow fork tests
+    const blockNumber = await ethers.provider.getBlockNumber();
     const outputJson = {
         scheduleData,
         executeData,
         timelockContractAddress: timelockAddress,
+        implementationDeployBlockNumber: blockNumber,
     };
 
     // Decode the scheduleData for better readability
-    const timelockTx = timelockContractFactory.interface.parseTransaction({data: scheduleData});
+    const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
     const paramsArray = timelockTx?.fragment.inputs as any;
     const objectDecoded = {} as any;
 
