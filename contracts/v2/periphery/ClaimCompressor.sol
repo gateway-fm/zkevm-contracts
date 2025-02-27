@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 import "../PolygonZkEVMBridgeV2.sol";
-import "hardhat/console.sol";
 
 pragma solidity 0.8.28;
 
