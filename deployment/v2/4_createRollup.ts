@@ -71,8 +71,8 @@ async function main() {
     } = createRollupParameters;
 
     const arraySupportedAggchains = ["AggchainECDSA", "AggchainFEP"];
-    const arraySupportedConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"];
-    const supportedConsensus = arraySupportedConsensus.concat(arraySupportedAggchains);
+    const arraySupportedLegacyConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"];
+    const supportedConsensus = arraySupportedLegacyConsensus.concat(arraySupportedAggchains);
 
     if (!supportedConsensus.includes(consensusContract)) {
         throw new Error(`Consensus contract not supported, supported contracts are: ${supportedConsensus}`);
@@ -205,7 +205,7 @@ async function main() {
     let PolygonconsensusContract;
 
     // Create consensus/aggchain implementation
-    if(arraySupportedConsensus.includes(consensusContract)) {
+    if(arraySupportedLegacyConsensus.includes(consensusContract)) {
         // create consensus contract
         PolygonconsensusContract = await PolygonconsensusFactory.deploy(
             deployOutput.polygonZkEVMGlobalExitRootAddress,
@@ -286,7 +286,7 @@ async function main() {
         genesisFinal = ethers.ZeroHash;
         // programVKey = bytes32(0)
         programVKey = ethers.ZeroHash;
-        // programVKey = address(0)
+        // verifiderAddress = address(0)
         verifierAddress = ethers.ZeroAddress;
         if(consensusContract == "AggchainECDSA") {
             initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
@@ -342,6 +342,23 @@ async function main() {
             genesisFinal = genesis.root;
             programVKey = ethers.ZeroHash;
         }
+    }
+
+    // Sanity checks
+    if(consensusContract == "PolygonPessimisticConsensus" && genesisFinal != ethers.ZeroHash) {
+        throw new Error(`Genesis should be 0x for PolygonPessimisticConsensus`);
+    } else if(arraySupportedAggchains.includes(consensusContract)) {
+        if(verifierAddress != ethers.ZeroAddress) {
+            throw new Error(`For Aggchain: verifier == address(0)`);
+        } else if(forkID != 0) {
+            throw new Error(`For Aggchain: forkID == 0`);
+        } else if(genesisFinal != ethers.ZeroHash) {
+            throw new Error(`For Aggchain: genesis == bytes32(0)`);
+        } else if(programVKey != ethers.ZeroHash) {
+            throw new Error(`For Aggchain: programVKey == bytes32(0)`);
+        }
+    } else if(programVKey != ethers.ZeroHash) {
+        throw new Error(`programVKey should be 0x for ${consensusContract}`);
     }
 
     await (
