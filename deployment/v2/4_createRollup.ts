@@ -18,7 +18,8 @@ const deployOutput = require("./deploy_output.json");
 import "../helpers/utils";
 import updateVanillaGenesis from "./utils/updateVanillaGenesis";
 
-const pathOutputJson = path.join(__dirname, "./create_rollup_output.json");
+const dateStr = new Date().toISOString();
+const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.json`);
 import utilsECDSA from "../../src/utils-aggchain-ECDSA"
 
 import {
@@ -235,7 +236,8 @@ async function main() {
     if (
         createRollupParameters.gasTokenAddress &&
         createRollupParameters.gasTokenAddress !== "" &&
-        createRollupParameters.gasTokenAddress !== ethers.ZeroAddress
+        createRollupParameters.gasTokenAddress !== ethers.ZeroAddress &&
+        createRollupParameters.gasTokenAddress !== "deploy"
     ) {
         // Get token metadata
         gasTokenMetadata = await polygonZkEVMBridgeContract.getTokenMetadata(createRollupParameters.gasTokenAddress);
@@ -345,17 +347,19 @@ async function main() {
     }
 
     // Sanity checks
-    if(consensusContract == "PolygonPessimisticConsensus" && genesisFinal != ethers.ZeroHash) {
-        throw new Error(`Genesis should be 0x for PolygonPessimisticConsensus`);
+    if(consensusContract == "PolygonPessimisticConsensus") {
+        if(genesisFinal != ethers.ZeroHash) {
+            throw new Error(`genesis should be 0x for ${consensusContract}`);
+        }
     } else if(arraySupportedAggchains.includes(consensusContract)) {
         if(verifierAddress != ethers.ZeroAddress) {
-            throw new Error(`For Aggchain: verifier == address(0)`);
+            throw new Error(`For ${consensusContract}: verifier == address(0)`);
         } else if(forkID != 0) {
-            throw new Error(`For Aggchain: forkID == 0`);
+            throw new Error(`For ${consensusContract}: forkID == 0`);
         } else if(genesisFinal != ethers.ZeroHash) {
-            throw new Error(`For Aggchain: genesis == bytes32(0)`);
+            throw new Error(`For ${consensusContract}: genesis == bytes32(0)`);
         } else if(programVKey != ethers.ZeroHash) {
-            throw new Error(`For Aggchain: programVKey == bytes32(0)`);
+            throw new Error(`For ${consensusContract}: programVKey == bytes32(0)`);
         }
     } else if(programVKey != ethers.ZeroHash) {
         throw new Error(`programVKey should be 0x for ${consensusContract}`);
