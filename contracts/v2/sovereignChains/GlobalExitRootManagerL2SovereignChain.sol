@@ -124,7 +124,7 @@ contract GlobalExitRootManagerL2SovereignChain is
             globalExitRootMap[_newRoot] = block.timestamp;
             // Update hash chain value
             insertedGERHashChain = Hashes.efficientKeccak256(insertedGERHashChain, _newRoot);
-            // @dev we are emitting to events for backwards compatibility, should deprecate InsertGlobalExitRoot event in the future
+            // @dev we are emitting two events for backwards compatibility, should deprecate InsertGlobalExitRoot event in the future
             emit InsertGlobalExitRoot(_newRoot);
             emit UpdateHashChainValue(_newRoot, insertedGERHashChain);
         } else {

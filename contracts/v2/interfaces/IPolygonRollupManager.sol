@@ -309,6 +309,11 @@ interface IPolygonRollupManager {
      */
     error InvalidVerifierType();
 
+    /**
+     * @dev Thrown when trying to create a new ALGateway verifier type rollup with invalid inputs
+     */
+    error InvalidALGatewayInputs();
+
     enum VerifierType {
         StateTransition,
         Pessimistic,
