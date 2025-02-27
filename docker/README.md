@@ -81,7 +81,6 @@ npm i
 npm run dockerv2:contracts
 ```
 
-
 A new docker `geth-zkevm-contracts:latest` will be created
 This docker will contain a geth node with the deployed contracts
 The deployment output can be found in:
@@ -89,6 +88,14 @@ The deployment output can be found in:
 - `docker/deploymentOutput/deploy_output.json`
 - `docker/deploymentOutput/genesis.json`
 To run the docker you can use: `docker run -p 8545:8545 geth-zkevm-contracts:latest`
+
+or
+
+``` 
+npm i 
+npm run dockerv2:contracts:all
+```
+It's the same docker as before but deploying `AggchainECDSA` & `PolygonPessimisticConsensus`.
 
 To create other rollup:
 - copy template from `./docker/scripts/v2/create_rollup_parameters_docker-xxxx.json` to `deployment/v2/create_rollup_parameters.json`
