@@ -126,9 +126,11 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
             revert OnlyPendingVKeyManager();
         }
 
+        address oldVKeyManager = vKeyManager;
         vKeyManager = pendingVKeyManager;
+        delete pendingVKeyManager;
 
-        emit AcceptVKeyManagerRole(pendingVKeyManager);
+        emit AcceptVKeyManagerRole(oldVKeyManager, vKeyManager);
     }
 
     /**

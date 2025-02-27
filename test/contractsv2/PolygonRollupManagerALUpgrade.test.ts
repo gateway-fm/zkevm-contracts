@@ -1,5 +1,5 @@
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     AggLayerGateway,
     ERC20PermitMock,
@@ -10,15 +10,16 @@ import {
     VerifierRollupHelperMock,
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
-const {VerifierType, computeRandomBytes} = require("../../src/pessimistic-utils");
+const { VerifierType, computeRandomBytes } = require("../../src/pessimistic-utils");
 const {
     AGGCHAIN_TYPE_SELECTOR_ECDSA,
     encodeAggchainDataECDSA,
     encodeInitializeBytesAggchainECDSAv1,
     encodeInitializeBytesAggchainECDSAv0,
 } = require("../../src/utils-aggchain-ECDSA");
-const {AggchainType} = require("../../src/utils-common-aggchain");
-const {getFinalAggchainVKeySelectorFromType} = require("../../src/utils-common-aggchain");
+const { AggchainType } = require("../../src/utils-common-aggchain");
+const { getFinalAggchainVKeySelectorFromType } = require("../../src/utils-common-aggchain");
+const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
 
 describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     // SIGNERS
@@ -400,16 +401,12 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         const urlSequencer = "https://pessimistic:8545";
         const networkName = "testPessimistic";
         const pessimisticRollupID = 1; // Already aggchainECDSA rollup created created
+        const initializeBytesPessimistic = encodeInitializeBytesPessimistic(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await expect(
-            rollupManagerContract.connect(admin).createNewRollup(
+            rollupManagerContract.connect(admin).attachAggchainToAL(
                 pessimisticRollupTypeID,
                 chainID,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-                "0x" // initializeBytesCustomChain
+                initializeBytesPessimistic
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -486,7 +483,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         await createPessimisticRollupType();
 
         // Check new rollup data
-        const resRollupData = await rollupManagerContract.rollupIDToRollupDataDeserialized(pessimisticRollupID);
+        const resRollupData = await rollupManagerContract.rollupIDToRollupDataV2Deserialized(pessimisticRollupID);
         const expectedRollupData = [
             ECDSARollupContract.target,
             chainID,
@@ -607,15 +604,11 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
             nonce: rollupManagerNonce,
         });
         // Create pessimistic rollup
-        await rollupManagerContract.connect(admin).createNewRollup(
+        const initializeBytesCustomChain = encodeInitializeBytesPessimistic(admin.address, trustedSequencer.address, ethers.ZeroAddress, "", "");
+        await rollupManagerContract.connect(admin).attachAggchainToAL(
             pessimisticRollupTypeID2,
             2, // chainID
-            admin.address,
-            trustedSequencer.address,
-            ethers.ZeroAddress, // gas token address
-            "", // sequencer url
-            "", // network name
-            "0x" // initializeBytesCustomChain
+            initializeBytesCustomChain
         );
         expect(await rollupManagerContract.rollupAddressToID(pessimisticRollupAddress)).to.be.equal(1);
 
@@ -725,15 +718,10 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
             nonce: rollupManagerNonce,
         });
         await expect(
-            rollupManagerContract.connect(admin).createNewRollup(
+            rollupManagerContract.connect(admin).attachAggchainToAL(
                 rollupTypeIdECDSA, // rollupTypeID
                 1001, // chainID
-                admin.address,
-                trustedSequencer.address,
-                ethers.ZeroAddress, // gas token address
-                "", // sequencer url
-                "", // network name
-                initializeBytesCustomChain // initialize bytes custom chain
+                initializeBytesCustomChain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -742,7 +730,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
                 rollupTypeIdECDSA, // rollupType ID
                 precomputedAggchainECDSAAddress,
                 1001, // chainID
-                ethers.ZeroAddress // gasTokenAddress
+                "0x000000000000000000000000000000005Ca1aB1E" // gasTokenAddress
             );
         return [Number(rollupsCount) + 1, precomputedAggchainECDSAAddress];
     }

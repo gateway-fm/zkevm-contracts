@@ -551,115 +551,6 @@ contract PolygonRollupManager is
      * @notice Create a new rollup
      * @param rollupTypeID Rollup type to deploy
      * @param chainID ChainID of the rollup, must be a new one, can not have more than 32 bits
-     * @param admin Admin of the new created rollup
-     * @param sequencer Sequencer of the new created rollup
-     * @param gasTokenAddress Indicates the token address that will be used to pay gas fees in the new rollup
-     * Note if a wrapped token of the bridge is used, the original network and address of this wrapped will be used instead
-     * @param sequencerURL Sequencer URL of the new created rollup
-     * @param networkName Network name of the new created rollup
-     * @param initializeBytesCustomChain  Encoded params to initialize the chain. Each aggchain has its encoded params
-     */
-    function createNewRollup(
-        uint32 rollupTypeID,
-        uint64 chainID,
-        address admin,
-        address sequencer,
-        address gasTokenAddress,
-        string memory sequencerURL,
-        string memory networkName,
-        bytes memory initializeBytesCustomChain
-    ) external onlyRole(_CREATE_ROLLUP_ROLE) {
-        // Check that rollup type exists
-        if (rollupTypeID == 0 || rollupTypeID > rollupTypeCount) {
-            revert RollupTypeDoesNotExist();
-        }
-
-        // Check rollup type is not obsolete
-        RollupType storage rollupType = rollupTypeMap[rollupTypeID];
-        if (rollupType.obsolete) {
-            revert RollupTypeObsolete();
-        }
-
-        // Check parameters in case of ALGateway rollup type
-        // @dev in case of ALGateway rollup type, the admin, sequencer, gasTokenAddress, sequencerURL and networkName are encoded in initializeBytesCustomChain, so they should be zero.
-        if (rollupType.rollupVerifierType == VerifierType.ALGateway) {
-            if (
-                admin != address(0) ||
-                sequencer != address(0) ||
-                gasTokenAddress != address(0) ||
-                bytes(sequencerURL).length != 0 ||
-                bytes(networkName).length != 0
-            ) {
-                revert InvalidALGatewayInputs();
-            }
-        }
-        // check chainID max value
-        // Currently we have this limitation by the circuit, might be removed in a future
-        if (chainID > type(uint32).max) {
-            revert ChainIDOutOfRange();
-        }
-
-        // Check chainID nullifier
-        if (chainIDToRollupID[chainID] != 0) {
-            revert ChainIDAlreadyExist();
-        }
-
-        // Create a new Rollup, using a transparent proxy pattern
-        // Consensus will be the implementation, and this contract the admin
-        uint32 rollupID = ++rollupCount;
-        address rollupAddress = address(
-            new PolygonTransparentProxy(
-                rollupType.consensusImplementation,
-                address(this),
-                new bytes(0)
-            )
-        );
-
-        // Set chainID nullifier
-        chainIDToRollupID[chainID] = rollupID;
-
-        // Store rollup data
-        rollupAddressToID[rollupAddress] = rollupID;
-
-        RollupData storage rollup = _rollupIDToRollupData[rollupID];
-
-        rollup.rollupContract = rollupAddress;
-        rollup.forkID = rollupType.forkID;
-        rollup.verifier = rollupType.verifier;
-        rollup.chainID = chainID;
-        rollup.batchNumToStateRoot[0] = rollupType.genesis;
-        rollup.rollupTypeID = rollupTypeID;
-        rollup.rollupVerifierType = rollupType.rollupVerifierType;
-        rollup.programVKey = rollupType.programVKey;
-
-        emit CreateNewRollup(
-            rollupID,
-            rollupTypeID,
-            rollupAddress,
-            chainID,
-            gasTokenAddress
-        );
-
-        if (rollupType.rollupVerifierType == VerifierType.ALGateway) {
-            // Initialize aggchain with the custom chain bytes
-            IAggchain(rollupAddress).initialize(initializeBytesCustomChain);
-        } else {
-            // Initialize new rollup
-            IPolygonRollupBase(rollupAddress).initialize(
-                admin,
-                sequencer,
-                rollupID,
-                gasTokenAddress,
-                sequencerURL,
-                networkName
-            );
-        }
-    }
-
-    /**
-     * @notice Create a new rollup
-     * @param rollupTypeID Rollup type to deploy
-     * @param chainID ChainID of the rollup, must be a new one, can not have more than 32 bits
      * @param initializeBytesCustomChain Encoded params to initialize the chain. Each aggchain has its encoded params.
      * @dev in case of rollupType state transition or pessimistic, the encoded params
      * are the following: (address admin, address sequencer, address gasTokenAddress, string sequencerURL, string networkName)
@@ -709,13 +600,9 @@ contract PolygonRollupManager is
         RollupData storage rollup = _rollupIDToRollupData[rollupID];
 
         rollup.rollupContract = rollupAddress;
-        rollup.forkID = rollupType.forkID;
-        rollup.verifier = rollupType.verifier;
         rollup.chainID = chainID;
-        rollup.batchNumToStateRoot[0] = rollupType.genesis;
         rollup.rollupTypeID = rollupTypeID;
         rollup.rollupVerifierType = rollupType.rollupVerifierType;
-        rollup.programVKey = rollupType.programVKey;
 
         if (rollupType.rollupVerifierType == VerifierType.ALGateway) {
             // Emit create new aggchain event
@@ -728,9 +615,25 @@ contract PolygonRollupManager is
                 initializeBytesCustomChain
             );
 
+            // This event is emitted for backwards compatibility
+            /// @dev the address is hardcoded as it doesn't apply for aggchains and zero address is used for ether
+            emit CreateNewRollup(
+                rollupID,
+                rollupTypeID,
+                rollupAddress,
+                chainID,
+                0x000000000000000000000000000000005Ca1aB1E
+            );
+
             // Initialize aggchain with the custom chain bytes
             IAggchain(rollupAddress).initialize(initializeBytesCustomChain);
         } else {
+            // assign non ALGateway values to rollup data
+            rollup.forkID = rollupType.forkID;
+            rollup.verifier = rollupType.verifier;
+            rollup.batchNumToStateRoot[0] = rollupType.genesis;
+            rollup.programVKey = rollupType.programVKey;
+
             // custom parsing of the initializeBytesCustomChain for a sate transition or pessimistic rollup
             (
                 address admin,

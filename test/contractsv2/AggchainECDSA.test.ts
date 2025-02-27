@@ -297,7 +297,7 @@ describe("AggchainECDSA", () => {
 
         await expect(aggchainECDSAcontract.connect(admin).acceptVKeyManagerRole())
             .to.emit(aggchainECDSAcontract, "AcceptVKeyManagerRole")
-            .withArgs(admin.address);
+            .withArgs(vKeyManager.address, admin.address);
     });
 
     it("should check getAggchainHash", async () => {

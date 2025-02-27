@@ -62,8 +62,37 @@ function getFinalAggchainVKeySelectorFromType(_aggchainVKeySelector, _aggchainTy
     return `0x${aggchainVKeySelector}${aggChainType}`;
 }
 
+/**
+ * Function to encode the initialize bytes for pessimistic or state transition rollups
+ * @param {String} admin Admin address
+ * @param {String} trustedSequencer Trusted sequencer address
+ * @param {String} gasTokenAddress Indicates the token address in mainnet that will be used as a gas token
+ * @param {String} trustedSequencerURL Trusted sequencer URL
+ * @param {String} networkName L2 network name
+ * @returns {String} encoded value in hexadecimal string
+ */
+function encodeInitializeBytesPessimistic(
+    admin,
+    sequencer,
+    gasTokenAddress,
+    sequencerURL,
+    networkName,
+) {
+    return ethers.AbiCoder.defaultAbiCoder().encode(
+        ['address', 'address', 'address', 'string', 'string'],
+        [
+            admin,
+            sequencer,
+            gasTokenAddress,
+            sequencerURL,
+            networkName,
+        ],
+    );
+}
+
 module.exports = {
     AggchainType,
     computeAggchainHash,
     getFinalAggchainVKeySelectorFromType,
+    encodeInitializeBytesPessimistic,
 };

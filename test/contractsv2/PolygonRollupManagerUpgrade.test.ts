@@ -16,7 +16,7 @@ import {
 } from "../../typechain-types";
 import { takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 import { processorUtils, contractUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
-const { calculateSnarkInput, calculateAccInputHash, calculateBatchHashData } = contractUtils;
+const {encodeInitializeBytesPessimistic} = require("../../src/utils-common-aggchain");
 
 type BatchDataStructEtrog = PolygonRollupBaseEtrog.BatchDataStruct;
 
@@ -467,30 +467,21 @@ describe("Polygon Rollup manager upgraded", () => {
         expect(expectedRollupType).to.be.deep.equal(await rollupManagerContract.rollupTypeMap(newRollupTypeID));
 
         // Only admin can create new zkEVMs
+        const initializeBytesCustomChain = encodeInitializeBytesPessimistic(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await expect(
-            rollupManagerContract.createNewRollup(
+            rollupManagerContract.attachAggchainToAL(
                 newRollupTypeID,
                 chainID2,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-                "0x" // initializeBytesCustomChain
+                initializeBytesCustomChain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
         // UNexisting rollupType
         await expect(
-            rollupManagerContract.connect(admin).createNewRollup(
+            rollupManagerContract.connect(admin).attachAggchainToAL(
                 0,
                 chainID2,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-                "0x" // initializeBytesCustomChain
+                initializeBytesCustomChain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeDoesNotExist");
 
@@ -501,15 +492,10 @@ describe("Polygon Rollup manager upgraded", () => {
             .withArgs(newRollupTypeID);
 
         await expect(
-            rollupManagerContract.connect(admin).createNewRollup(
+            rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID2,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-                "0x" // initializeBytesCustomChain
+                initializeBytesCustomChain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeObsolete");
         await snapshot2.restore();
@@ -524,15 +510,10 @@ describe("Polygon Rollup manager upgraded", () => {
         const newSequencedBatch = 1;
 
         await expect(
-            rollupManagerContract.connect(admin).createNewRollup(
+            rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID2,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-                "0x" // initializeBytesCustomChain
+                initializeBytesCustomChain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -553,15 +534,10 @@ describe("Polygon Rollup manager upgraded", () => {
 
         // Cannot create 2 chains with the same chainID
         await expect(
-            rollupManagerContract.connect(admin).createNewRollup(
+            rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID2,
-                admin.address,
-                trustedSequencer.address,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
-                "0x" // initializeBytesCustomChain
+                initializeBytesCustomChain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "ChainIDAlreadyExist");
 

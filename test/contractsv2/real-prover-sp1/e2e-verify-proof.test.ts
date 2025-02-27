@@ -15,6 +15,7 @@ const {
     computeConsensusHashEcdsa,
 } = require("../../../src/pessimistic-utils");
 const inputProof = require("./test-inputs/input.json");
+const {encodeInitializeBytesPessimistic} = require("../../../src/utils-common-aggchain");
 
 describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
     let deployer: any;
@@ -234,7 +235,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const urlSequencer = "https://pessimistic:8545";
         const networkName = "testPessimistic";
         const pessimisticRollupID = inputProof["pp-inputs"]["origin-network"];
-        const initializeBytesCustomChain = "0x";
+        const initializeBytesCustomChain = encodeInitializeBytesPessimistic(admin.address, trustedSequencer, gasTokenAddress, urlSequencer, networkName);
         // create new pessimistic
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
@@ -243,14 +244,9 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
 
         await rollupManagerContract
             .connect(admin)
-            .createNewRollup(
+            .attachAggchainToAL(
                 rollupTypeID,
                 chainID,
-                admin.address,
-                trustedSequencer,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
                 initializeBytesCustomChain
             );
 

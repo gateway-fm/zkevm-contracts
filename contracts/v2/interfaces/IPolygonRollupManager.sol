@@ -332,14 +332,9 @@ interface IPolygonRollupManager {
 
     function obsoleteRollupType(uint32 rollupTypeID) external;
 
-    function createNewRollup(
+    function attachAggchainToAL(
         uint32 rollupTypeID,
         uint64 chainID,
-        address admin,
-        address sequencer,
-        address gasTokenAddress,
-        string memory sequencerURL,
-        string memory networkName,
         bytes memory initializeBytesCustomChain
     ) external;
 
