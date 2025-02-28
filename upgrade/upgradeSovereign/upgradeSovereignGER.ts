@@ -94,20 +94,13 @@ async function main() {
         );
         console.log("Copy the following constructor arguments on: upgrade/arguments.js \n", [bridgeAddress]);
     }
-    // Get initialize values
-    const globalExitRootUpdater = await gerManagerL2SovereignChainContract.globalExitRootUpdater();
-    const globalExitRootRemover = await gerManagerL2SovereignChainContract.globalExitRootRemover();
-
+    // gerManagerL2SovereignChainImplementation is upgraded but not initialized
     const timelockOperation = genTimelockOperation(
         proxyAdmin.target,
         0, // value
-        proxyAdmin.interface.encodeFunctionData("upgradeAndCall", [
+        proxyAdmin.interface.encodeFunctionData("upgrade", [
             globalExitRootManagerL2SovereignChainAddress,
             gerManagerL2SovereignChainImplementation,
-            gerManagerL2SovereignChainFactory.interface.encodeFunctionData("initialize", [
-                globalExitRootUpdater,
-                globalExitRootRemover,
-            ]),
         ]), // data
         ethers.ZeroHash, // predecessor
         salt // salt
