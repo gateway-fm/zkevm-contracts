@@ -23,6 +23,9 @@ contract BridgeL2SovereignChain is
     // Bridge manager address; can set custom mapping for any token. It's highly recommend to set a timelock at this address after bootstrapping phase
     address public bridgeManager;
 
+    // Value of the global indexes hash chain, update for every bridge claim
+    bytes32 public globalIndexHashChain;
+
     /**
      * @dev Emitted when a bridge manager is updated
      */
@@ -66,6 +69,12 @@ contract BridgeL2SovereignChain is
         bool isNotMintable
     );
 
+    /**
+     * @dev Emitted when the global index hash chain is updated (new claim)
+     * @param prevGlobalIndexHashChain Previous global index hash chain value
+     * @param globalIndexHashChain New global index hash chain value
+     */
+    event UpdatedGlobalIndexHashChain(bytes32 prevGlobalIndexHashChain, bytes32 globalIndexHashChain);
     /**
      * Disable initializers on the implementation following the best practices
      */
@@ -501,6 +510,14 @@ contract BridgeL2SovereignChain is
         if (flipped & mask == 0) {
             revert AlreadyClaimed();
         }
+        // Update globalIndexHashChain
+        bytes32 prevGlobalIndexHashChain = globalIndexHashChain;
+        globalIndexHashChain = Hashes.efficientKeccak256(
+            globalIndexHashChain,
+            bytes32(globalIndex)
+        );
+
+        emit UpdatedGlobalIndexHashChain(prevGlobalIndexHashChain, globalIndexHashChain);
     }
 
     /**
