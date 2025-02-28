@@ -75,6 +75,21 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ////////////////////////////////////////////////////////////
     //                  Initialization                        //
     ////////////////////////////////////////////////////////////
+    /**
+     * @notice Override the function to prevent the contract from being initialized with the initializer implemented at PolygonConsensusBase.
+     * @dev removing this function can cause critical security issues.
+     */
+    function initialize(
+        address, // _admin
+        address, // sequencer
+        uint32, //networkID,
+        address, // _gasTokenAddress,
+        string memory, // sequencerURL,
+        string memory // _networkName
+    ) external pure override(PolygonConsensusBase) {
+        // Set initialize variables
+        revert InvalidInitializeFunction();
+    }
 
     /**
      * @notice Initializer AggchainBase storage

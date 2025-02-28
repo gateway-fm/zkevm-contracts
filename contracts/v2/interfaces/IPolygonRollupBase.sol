@@ -3,12 +3,8 @@
 pragma solidity ^0.8.20;
 
 import "./IPolygonConsensusBase.sol";
-import "./IPolygonConsensusInitializable.sol";
 
-interface IPolygonRollupBase is
-    IPolygonConsensusBase,
-    IPolygonConsensusInitializable
-{
+interface IPolygonRollupBase is IPolygonConsensusBase {
     function onVerifyBatches(
         uint64 lastVerifiedBatch,
         bytes32 newStateRoot,

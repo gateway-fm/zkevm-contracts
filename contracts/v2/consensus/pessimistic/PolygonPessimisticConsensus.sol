@@ -3,12 +3,10 @@ pragma solidity 0.8.28;
 
 import "../../lib/PolygonConsensusBase.sol";
 import "../../interfaces/IPolygonPessimisticConsensus.sol";
-import "../../interfaces/IPolygonConsensusInitializable.sol";
 
 contract PolygonPessimisticConsensus is
     PolygonConsensusBase,
-    IPolygonPessimisticConsensus,
-    IPolygonConsensusInitializable
+    IPolygonPessimisticConsensus
 {
     uint32 public constant CONSENSUS_TYPE = 0;
 
@@ -32,31 +30,6 @@ contract PolygonPessimisticConsensus is
         )
     {}
 
-    /**
-     * @param _admin Admin address
-     * @param sequencer Trusted sequencer address
-     * @param _gasTokenAddress Indicates the token address in mainnet that will be used as a gas token
-     * Note if a wrapped token of the bridge is used, the original network and address of this wrapped are used instead
-     * @param sequencerURL Trusted sequencer URL
-     * @param _networkName L2 network name
-     */
-    function initialize(
-        address _admin,
-        address sequencer,
-        uint32, //networkID,
-        address _gasTokenAddress,
-        string memory sequencerURL,
-        string memory _networkName
-    ) external virtual onlyRollupManager initializer {
-        // Set initialize variables
-        _initializePolygonConsensusBase(
-            _admin,
-            sequencer,
-            _gasTokenAddress,
-            sequencerURL,
-            _networkName
-        );
-    }
     /**
      * Note Return the necessary consensus information for the proof hashed
      */

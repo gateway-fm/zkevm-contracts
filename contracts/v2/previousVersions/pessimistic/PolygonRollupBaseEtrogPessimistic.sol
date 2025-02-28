@@ -231,10 +231,7 @@ abstract contract PolygonRollupBaseEtrogPessimistic is
         string memory _networkName
     )
         external
-        override(
-            IPolygonConsensusInitializable,
-            PolygonConsensusBasePessimistic
-        )
+        override(IPolygonConsensusBase, PolygonConsensusBasePessimistic)
         onlyRollupManager
         initializer
     {

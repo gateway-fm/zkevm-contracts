@@ -42,7 +42,7 @@ describe("Test vectors aggchain ECDSA", () => {
             finalAggchainVKeySelector = utilsCommon.getFinalAggchainVKeySelectorFromType(
                 data.initAggchainVKeySelector,
                 utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA
-            )
+            );
 
             // check final aggchainSelector
             expect(finalAggchainVKeySelector).to.be.equal(
@@ -61,7 +61,7 @@ describe("Test vectors aggchain ECDSA", () => {
                     rollupManagerAddress,
                     aggLayerGatewayAddress,
                 ],
-                unsafeAllow: ["constructor", "state-variable-immutable"],
+                unsafeAllow: ["constructor", "state-variable-immutable", "missing-initializer-call"],
             });
             await aggchainECDSAContract.waitForDeployment();
 
@@ -101,17 +101,19 @@ describe("Test vectors aggchain ECDSA", () => {
 
             // if useDefaultGateway is true, disable it
             if (data.useDefaultGateway) {
-                await expect(aggchainECDSAContract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-                    .to.emit(aggchainECDSAContract, "DisableUseDefaultGatewayFlag");
+                await expect(aggchainECDSAContract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
+                    aggchainECDSAContract,
+                    "DisableUseDefaultGatewayFlag"
+                );
             }
 
             // encode aggchainData
             aggchainData = utilsECDSA.encodeAggchainDataECDSA(data.initAggchainVKeySelector, data.newStateRoot);
             // get aggchainHash
             aggchainHash = utilsCommon.computeAggchainHash(
-                    utilsCommon.AggchainType.GENERIC,
-                    data.initOwnedAggchainVKey,
-                    aggchainParams
+                utilsCommon.AggchainType.GENERIC,
+                data.initOwnedAggchainVKey,
+                aggchainParams
             );
             // get aggchainHash from contract
             const aggchainHashContract = await aggchainECDSAContract.getAggchainHash(aggchainData, {
