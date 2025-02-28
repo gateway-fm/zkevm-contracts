@@ -439,6 +439,15 @@ contract PolygonRollupManager is
         IPolygonZkEVMBridge _bridgeAddress,
         IAggLayerGateway _aggLayerGateway
     ) {
+        // Check non zero inputs
+        if (
+            address(_globalExitRootManager) == address(0) ||
+            address(_pol) == address(0) ||
+            address(_bridgeAddress) == address(0) ||
+            address(_aggLayerGateway) == address(0)
+        ) {
+            revert InvalidConstructorInputs();
+        }
         globalExitRootManager = _globalExitRootManager;
         pol = _pol;
         bridgeAddress = _bridgeAddress;

@@ -576,7 +576,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             )
         )
             .to.emit(rollupManagerContract, "VerifyBatchesTrustedAggregator")
-            .to.emit(ECDSARollupContract, "OnVerifyPessimistic")
+            .to.emit(ECDSARollupContract, "OnVerifyPessimisticECDSA")
             .withArgs(randomNewStateRoot);
     });
 

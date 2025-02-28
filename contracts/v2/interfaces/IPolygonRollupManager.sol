@@ -314,6 +314,11 @@ interface IPolygonRollupManager {
      */
     error InvalidALGatewayInputs();
 
+    /**
+     * @dev Thrown when trying to deploy rollup Manager with some zero address as the input
+     */
+    error InvalidConstructorInputs();
+
     enum VerifierType {
         StateTransition,
         Pessimistic,

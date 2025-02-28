@@ -130,6 +130,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         if (pessimisticVKeySelector == bytes4(0)) {
             revert PPSelectorCannotBeZero();
         }
+        if (pessimisticVKey == bytes32(0)) {
+            revert VKeyCannotBeZero();
+        }
 
         AggLayerVerifierRoute storage route = pessimisticVKeyRoutes[
             pessimisticVKeySelector
@@ -185,6 +188,9 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         // Check already exists
         if (defaultAggchainVKeys[defaultAggchainSelector] != bytes32(0)) {
             revert AggchainVKeyAlreadyExists();
+        }
+        if (newAggchainVKey == bytes32(0)) {
+            revert VKeyCannotBeZero();
         }
 
         // Add the new VKey to the mapping

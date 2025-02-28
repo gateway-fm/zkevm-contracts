@@ -7,14 +7,9 @@ import {
     PolygonRollupManagerMock,
     PolygonZkEVMGlobalExitRootV2,
     PolygonZkEVMBridgeV2,
-    PolygonZkEVMEtrog,
-    PolygonRollupBaseEtrog,
-    TokenWrapped,
     Address,
-    PolygonDataCommittee,
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
-import { takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 const { VerifierType, computeInputPessimisticBytes, computeConsensusHashEcdsa } = require("../../src/pessimistic-utils");
 const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
 
@@ -89,6 +84,14 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         if ((await upgrades.admin.getInstance()).target !== "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0") {
             firstDeployment = false;
         }
+
+        // deploy AggLayerGateway
+        const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway");
+        const aggLayerGatewayContract = (await upgrades.deployProxy(AggLayerGatewayFactory, [], {
+            initializer: false,
+            unsafeAllow: ["constructor"],
+        }));
+
         const nonceProxyBridge =
             Number(await ethers.provider.getTransactionCount(deployer.address)) + (firstDeployment ? 3 : 2);
 
@@ -127,9 +130,9 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 polygonZkEVMGlobalExitRoot.target,
                 polTokenContract.target,
                 polygonZkEVMBridgeContract.target,
-                ethers.ZeroAddress, // aggLayerGateway
+                aggLayerGatewayContract.target,
             ],
-            unsafeAllow: ["constructor", "state-variable-immutable"],
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call", "state-variable-immutable"],
         })) as unknown as PolygonRollupManagerMock;
 
         await rollupManagerContract.waitForDeployment();

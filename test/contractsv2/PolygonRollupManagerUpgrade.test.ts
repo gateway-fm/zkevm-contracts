@@ -13,10 +13,11 @@ import {
     Address,
     PolygonZkEVM,
     PolygonZkEVMExistentEtrog,
+    AggLayerGateway,
 } from "../../typechain-types";
-import { takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
-import { processorUtils, contractUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
-const {encodeInitializeBytesPessimistic} = require("../../src/utils-common-aggchain");
+import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
+import { processorUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
 
 type BatchDataStructEtrog = PolygonRollupBaseEtrog.BatchDataStruct;
 
@@ -257,7 +258,7 @@ describe("Polygon Rollup manager upgraded", () => {
                     polTokenContract.target,
                     polygonZkEVMBridgeContract.target,
                 ],
-                unsafeAllow: ["constructor", "state-variable-immutable"],
+                unsafeAllow: ["constructor", "missing-initializer", "state-variable-immutable"],
                 unsafeAllowRenames: true,
                 unsafeAllowCustomTypes: true,
                 unsafeSkipStorageCheck: true,
@@ -274,12 +275,19 @@ describe("Polygon Rollup manager upgraded", () => {
                     polTokenContract.target,
                     polygonZkEVMBridgeContract.target,
                 ],
-                unsafeAllow: ["constructor", "state-variable-immutable", "enum-definition", "struct-definition"],
+                unsafeAllow: ["constructor", "missing-initializer-call", "state-variable-immutable", "enum-definition", "struct-definition"],
                 unsafeAllowRenames: true,
                 unsafeAllowCustomTypes: true,
                 unsafeSkipStorageCheck: true,
             }
         );
+
+        // deploy AggLayerGateway
+        const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway");
+        const aggLayerGatewayContract = (await upgrades.deployProxy(AggLayerGatewayFactory, [], {
+            initializer: false,
+            unsafeAllow: ["constructor"],
+        })) as unknown as AggLayerGateway;
 
         // upgrade pessimistic to ALv3
         const txRollupManager4 = await upgrades.upgradeProxy(
@@ -290,9 +298,9 @@ describe("Polygon Rollup manager upgraded", () => {
                     polygonZkEVMGlobalExitRoot.target,
                     polTokenContract.target,
                     polygonZkEVMBridgeContract.target,
-                    ethers.ZeroAddress, // aggLayerGateway
+                    aggLayerGatewayContract.target,
                 ],
-                unsafeAllow: ["constructor", "state-variable-immutable"],
+                unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call", "state-variable-immutable"],
                 unsafeAllowRenames: true,
                 unsafeAllowCustomTypes: true,
                 unsafeSkipStorageCheck: true,

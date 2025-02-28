@@ -298,6 +298,9 @@ describe("AggchainECDSA", () => {
         await expect(aggchainECDSAcontract.connect(admin).acceptVKeyManagerRole())
             .to.emit(aggchainECDSAcontract, "AcceptVKeyManagerRole")
             .withArgs(vKeyManager.address, admin.address);
+
+        // Check now pendingVKeyManager address is zero
+        expect(await aggchainECDSAcontract.pendingVKeyManager()).to.be.equal(ethers.ZeroAddress);
     });
 
     it("should check getAggchainHash", async () => {
@@ -352,7 +355,7 @@ describe("AggchainECDSA", () => {
         await expect(
             aggchainECDSAcontract.connect(rollupManagerSigner).onVerifyPessimistic(aggchainData, {gasPrice: 0})
         )
-            .to.emit(aggchainECDSAcontract, "OnVerifyPessimistic")
+            .to.emit(aggchainECDSAcontract, "OnVerifyPessimisticECDSA")
             .withArgs(newStateRoot);
     });
 

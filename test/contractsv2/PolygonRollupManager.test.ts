@@ -1,6 +1,6 @@
 /* eslint-disable no-plusplus, no-await-in-loop */
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     VerifierRollupHelperMock,
     ERC20PermitMock,
@@ -13,14 +13,14 @@ import {
     Address,
     PolygonDataCommittee,
 } from "../../typechain-types";
-import {takeSnapshot, time} from "@nomicfoundation/hardhat-network-helpers";
-import {processorUtils, contractUtils, MTBridge, mtBridgeUtils, utils} from "@0xpolygonhermez/zkevm-commonjs";
+import { takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
+import { processorUtils, contractUtils, MTBridge, mtBridgeUtils, utils } from "@0xpolygonhermez/zkevm-commonjs";
 
 type BatchDataStructEtrog = PolygonRollupBaseEtrog.BatchDataStruct;
 
 const MerkleTreeBridge = MTBridge;
-const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
-const {encodeInitializeBytesPessimistic} = require("../../src/utils-common-aggchain");
+const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
+const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
 
 function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
     return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [mainnetExitRoot, rollupExitRoot]);
@@ -105,6 +105,14 @@ describe("Polygon Rollup Manager", () => {
         if ((await upgrades.admin.getInstance()).target !== "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0") {
             firstDeployment = false;
         }
+
+        // deploy AggLayerGateway
+        const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway");
+        const aggLayerGatewayContract = (await upgrades.deployProxy(AggLayerGatewayFactory, [], {
+            initializer: false,
+            unsafeAllow: ["constructor"],
+        }))
+
         const nonceProxyBridge =
             Number(await ethers.provider.getTransactionCount(deployer.address)) + (firstDeployment ? 3 : 2);
 
@@ -119,7 +127,7 @@ describe("Polygon Rollup Manager", () => {
             nonce: nonceProxyZkevm,
         });
         firstDeployment = false;
-        
+
         // deploy globalExitRoot
         const PolygonZkEVMGlobalExitRootFactory = await ethers.getContractFactory("PolygonZkEVMGlobalExitRootV2");
         polygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
@@ -127,12 +135,12 @@ describe("Polygon Rollup Manager", () => {
             unsafeAllow: ["constructor", "state-variable-immutable"],
         });
 
-         // deploy PolygonZkEVMBridge
-         const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-         polygonZkEVMBridgeContract = await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], {
-             initializer: false,
-             unsafeAllow: ["constructor", "missing-initializer"],
-         });
+        // deploy PolygonZkEVMBridge
+        const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
+        polygonZkEVMBridgeContract = await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], {
+            initializer: false,
+            unsafeAllow: ["constructor", "missing-initializer"],
+        });
 
         // deploy PolygonRollupManager
         const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManagerMock");
@@ -143,9 +151,9 @@ describe("Polygon Rollup Manager", () => {
                 polygonZkEVMGlobalExitRoot.target,
                 polTokenContract.target,
                 polygonZkEVMBridgeContract.target,
-                ethers.ZeroAddress, // aggLayerGateway
+                aggLayerGatewayContract.target,
             ],
-            unsafeAllow: ["constructor", "state-variable-immutable"],
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call", "state-variable-immutable"],
         })) as unknown as PolygonRollupManagerMock;
 
         await rollupManagerContract.waitForDeployment();
@@ -556,7 +564,7 @@ describe("Polygon Rollup Manager", () => {
         const zkEVMContractSigner = await ethers.getSigner(newZkEVMContract.target as any);
 
         await expect(
-            rollupManagerContract.connect(zkEVMContractSigner).onSequenceBatches(0, ethers.ZeroHash, {gasPrice: 0})
+            rollupManagerContract.connect(zkEVMContractSigner).onSequenceBatches(0, ethers.ZeroHash, { gasPrice: 0 })
         ).to.be.revertedWithCustomError(rollupManagerContract, "MustSequenceSomeBatch");
 
         // Sequence Batches

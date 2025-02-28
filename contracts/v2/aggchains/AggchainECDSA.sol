@@ -30,7 +30,7 @@ contract AggchainECDSA is AggchainBase, IAggchain {
      * @notice Emitted when Pessimistic proof is verified.
      * @param newStateRoot New state root after processing state transition.
      */
-    event OnVerifyPessimistic(bytes32 newStateRoot);
+    event OnVerifyPessimisticECDSA(bytes32 newStateRoot);
 
     ////////////////////////////////////////////////////////////
     //                         Errors                         //
@@ -240,7 +240,8 @@ contract AggchainECDSA is AggchainBase, IAggchain {
         bytes calldata aggChainData
     ) external onlyRollupManager {
         (, bytes32 newStateRoot) = abi.decode(aggChainData, (bytes2, bytes32));
+
         // Emit event
-        emit OnVerifyPessimistic(newStateRoot);
+        emit OnVerifyPessimisticECDSA(newStateRoot);
     }
 }

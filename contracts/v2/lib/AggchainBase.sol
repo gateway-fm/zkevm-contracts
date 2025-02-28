@@ -77,6 +77,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ////////////////////////////////////////////////////////////
     /**
      * @notice Override the function to prevent the contract from being initialized with the initializer implemented at PolygonConsensusBase.
+     * @dev removing this function can cause critical security issues.
      */
     function initialize(
         address, // _admin

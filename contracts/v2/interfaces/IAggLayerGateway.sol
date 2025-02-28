@@ -66,6 +66,9 @@ interface IAggLayerGatewayErrors {
     /// zero.
     error PPSelectorCannotBeZero();
 
+    /// @notice Thrown when adding a verifier key with value zero
+    error VKeyCannotBeZero();
+
     /// @notice Thrown when the caller is not the AggLayerAdmin
     error OnlyAggLayerAdmin();
 
