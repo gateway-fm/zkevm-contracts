@@ -62,8 +62,8 @@ You can change the deployment `mnemonic` creating a `.env` file in the project r
     -   `globalExitRootRemover`: Address of globalExitRootRemover for sovereign chains
 - `aggchainParams`: Only mandatory if consensusContract is AggchainECDSA or AggchainFEP
     - `useDefaultGateway`: bool, flag to setup initial values for the owned gateway
-    - `ownedAggchainVKeys`: bytes32, Initial owned aggchain verification key
-    - `aggchainVKeySelectors`: bytes4, Initial aggchain selector
+    - `ownedAggchainVKey`: bytes32, Initial owned aggchain verification key
+    - `aggchainVKeySelector`: bytes2, Initial aggchain selector
     - `vKeyManager`: address, Initial vKeyManager
 
 ## Run script

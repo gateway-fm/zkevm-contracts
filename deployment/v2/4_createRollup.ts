@@ -21,6 +21,7 @@ import updateVanillaGenesis from "./utils/updateVanillaGenesis";
 const dateStr = new Date().toISOString();
 const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.json`);
 import utilsECDSA from "../../src/utils-aggchain-ECDSA"
+const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
 
 import {
     PolygonRollupManager,
@@ -293,8 +294,8 @@ async function main() {
         if(consensusContract == "AggchainECDSA") {
             initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 createRollupParameters.aggchainParams.useDefaultGateway,
-                createRollupParameters.aggchainParams.ownedAggchainVKeys,
-                createRollupParameters.aggchainParams.aggchainVKeySelectors,
+                createRollupParameters.aggchainParams.ownedAggchainVKey,
+                createRollupParameters.aggchainParams.aggchainVKeySelector,
                 createRollupParameters.aggchainParams.vKeyManager,
                 adminZkEVM,
                 trustedSequencer,
@@ -330,7 +331,7 @@ async function main() {
             await verifierContract.waitForDeployment();
         }
         verifierAddress = verifierContract.target;
-        initializeBytesCustomChain = "0x"
+        initializeBytesCustomChain = encodeInitializeBytesPessimistic(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
         console.log("#######################\n");
         console.log("Verifier name:", verifierName);
         console.log("Verifier deployed to:", verifierAddress);
@@ -382,17 +383,11 @@ async function main() {
     const newRollupTypeID = await rollupManagerContract.rollupTypeCount();
 
     // Create new rollup
-    const txDeployRollup = await rollupManagerContract.createNewRollup(
+    const txDeployRollup = await rollupManagerContract.attachAggchainToAL(
         newRollupTypeID,
         chainID,
-        adminZkEVM,
-        trustedSequencer,
-        gasTokenAddress,
-        trustedSequencerURL,
-        networkName,
         initializeBytesCustomChain
     );
-
     const receipt = (await txDeployRollup.wait()) as any;
     const blockDeploymentRollup = await receipt?.getBlock();
     const timestampReceipt = blockDeploymentRollup.timestamp;

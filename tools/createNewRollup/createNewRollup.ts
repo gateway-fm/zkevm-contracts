@@ -1,15 +1,15 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
 /* eslint-disable no-console, no-inner-declarations, no-undef, import/no-unresolved */
-import {expect} from "chai";
+import { expect } from "chai";
 import path = require("path");
 import fs = require("fs");
 import * as dotenv from "dotenv";
-dotenv.config({path: path.resolve(__dirname, "../../.env")});
-import {ethers, upgrades} from "hardhat";
-import {processorUtils, Constants} from "@0xpolygonhermez/zkevm-commonjs";
-import {VerifierType, ConsensusContracts} from "../../src/pessimistic-utils";
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+import { ethers, upgrades } from "hardhat";
+import { processorUtils, Constants } from "@0xpolygonhermez/zkevm-commonjs";
+import { VerifierType, ConsensusContracts } from "../../src/pessimistic-utils";
 const createRollupParameters = require("./create_new_rollup.json");
-import {genOperation, transactionTypes, convertBigIntsToNumbers} from "../utils";
+import { genOperation, transactionTypes, convertBigIntsToNumbers } from "../utils";
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
 
 import {
@@ -152,7 +152,7 @@ async function main() {
                         null,
                         ((feeData.maxFeePerGas as bigint) * BigInt(createRollupParameters.multiplierGas)) / 1000n,
                         ((feeData.maxPriorityFeePerGas as bigint) * BigInt(createRollupParameters.multiplierGas)) /
-                            1000n
+                        1000n
                     );
                 }
                 currentProvider.getFeeData = overrideFeeData;
@@ -269,6 +269,9 @@ async function main() {
     outputJson.genesis = rollupType.genesis;
     outputJson.gasTokenAddress = createRollupParameters.gasTokenAddress;
     outputJson.rollupManagerAddress = createRollupParameters.rollupManagerAddress;
+
+    const initializeBytesCustomChain = encodeInitializeBytesPessimistic(rollupAdminAddress, trustedSequencer, createRollupParameters.gasTokenAddress, trustedSequencerURL, networkName);
+
     if (createRollupParameters.type === transactionTypes.TIMELOCK) {
         console.log("Creating timelock txs for rollup creation...");
         const salt = createRollupParameters.timelockSalt || ethers.ZeroHash;
@@ -277,14 +280,10 @@ async function main() {
         const operation = genOperation(
             createRollupParameters.rollupManagerAddress,
             0, // value
-            PolygonRollupManagerFactory.interface.encodeFunctionData("createNewRollup", [
+            PolygonRollupManagerFactory.interface.encodeFunctionData("attachAggchainToAL", [
                 createRollupParameters.rollupTypeId,
                 chainID,
-                rollupAdminAddress,
-                trustedSequencer,
-                createRollupParameters.gasTokenAddress,
-                trustedSequencerURL,
-                networkName,
+                initializeBytesCustomChain
             ]),
             predecessor, // predecessor
             salt // salt
@@ -306,12 +305,12 @@ async function main() {
             operation.predecessor,
             operation.salt,
         ]);
-        console.log({scheduleData});
-        console.log({executeData});
+        console.log({ scheduleData });
+        console.log({ executeData });
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
-        const timelockTx = timelockContractFactory.interface.parseTransaction({data: scheduleData});
+        const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
         const paramsArray = timelockTx?.fragment.inputs;
         const objectDecoded = {};
         for (let i = 0; i < paramsArray?.length; i++) {
@@ -340,14 +339,10 @@ async function main() {
         process.exit(0);
     } else if (createRollupParameters.type === transactionTypes.MULTISIG) {
         console.log("Creating calldata for rollup creation from multisig...");
-        const txDeployRollupCalldata = PolygonRollupManagerFactory.interface.encodeFunctionData("createNewRollup", [
+        const txDeployRollupCalldata = PolygonRollupManagerFactory.interface.encodeFunctionData("attachAggchainToAL", [
             createRollupParameters.rollupTypeId,
             chainID,
-            rollupAdminAddress,
-            trustedSequencer,
-            createRollupParameters.gasTokenAddress,
-            trustedSequencerURL,
-            networkName,
+            initializeBytesCustomChain
         ]);
         outputJson.txDeployRollupCalldata = txDeployRollupCalldata;
         fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
@@ -356,14 +351,10 @@ async function main() {
     } else {
         console.log("Deploying rollup....");
         // Create new rollup
-        const txDeployRollup = await rollupManagerContract.createNewRollup(
+        const txDeployRollup = await rollupManagerContract.attachAggchainToAL(
             createRollupParameters.rollupTypeId,
             chainID,
-            rollupAdminAddress,
-            trustedSequencer,
-            createRollupParameters.gasTokenAddress,
-            trustedSequencerURL,
-            networkName
+            initializeBytesCustomChain
         );
 
         const receipt = (await txDeployRollup.wait()) as any;
@@ -491,7 +482,7 @@ async function main() {
                 !ethers.isAddress(sovereignParams.sovereignWETHAddress))
         ) {
             console.log("Rollup with custom gas token, adding WETH address to deployment output...");
-            const wethObject = genesis.genesis.find(function (obj: {contractName: string}) {
+            const wethObject = genesis.genesis.find(function (obj: { contractName: string }) {
                 return obj.contractName == "WETH";
             });
             outputJson.WETHAddress = wethObject.address;
