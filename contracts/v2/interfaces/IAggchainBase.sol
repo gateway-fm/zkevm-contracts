@@ -54,7 +54,7 @@ interface IAggchainBaseErrors {
     error InvalidInitializeFunction();
     /// @notice Thrown when trying to enable the default gateway when it is already enabled.
     error UseDefaultGatewayAlreadyEnabled();
-     /// @notice Thrown when trying to disable the default gateway when it is already disabled.
+    /// @notice Thrown when trying to disable the default gateway when it is already disabled.
     error UseDefaultGatewayAlreadyDisabled();
     /// @notice Thrown when trying to call a function that only the VKeyManager can call.
     error OnlyVKeyManager();
@@ -69,6 +69,28 @@ interface IAggchainBaseErrors {
  * @notice Shared interface for native aggchain implementations.
  */
 interface IAggchainBase is IAggchainBaseErrors, IAggchainBaseEvents {
+    /**
+     * @notice Gets aggchain hash.
+     * @dev Each chain should properly manage its own aggchain hash.
+     * @param customChainData Custom chain data to build the consensus hash.
+     */
+    function getAggchainHash(
+        bytes calldata customChainData
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Callback from the PolygonRollupManager to update the chain's state.
+     * @dev Each chain should properly manage its own state.
+     * @param data Custom chain data to update chain's state
+     */
+    function onVerifyPessimistic(bytes calldata data) external;
+
+    /**
+     * @notice Initialize function of the aggchain where initial values are set.
+     * @param initializeBytesCustomChain Encoded initialize params for the aggchain.
+     */
+    function initialize(bytes calldata initializeBytesCustomChain) external;
+
     /// @notice Returns the unique aggchain type selector identifier.
     function AGGCHAIN_TYPE_SELECTOR() external view returns (bytes2);
 }

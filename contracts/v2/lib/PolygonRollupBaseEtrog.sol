@@ -229,12 +229,7 @@ abstract contract PolygonRollupBaseEtrog is
         address _gasTokenAddress,
         string memory sequencerURL,
         string memory _networkName
-    )
-        external
-        override(IPolygonConsensusBase, PolygonConsensusBase)
-        onlyRollupManager
-        initializer
-    {
+    ) external onlyRollupManager initializer {
         bytes memory gasTokenMetadata = _verifyOrigin(_gasTokenAddress);
 
         // Sequence transaction to initilize the bridge

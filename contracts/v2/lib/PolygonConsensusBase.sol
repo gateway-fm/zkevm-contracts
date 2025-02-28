@@ -138,15 +138,13 @@ abstract contract PolygonConsensusBase is
      * @param sequencerURL Trusted sequencer URL
      * @param _networkName L2 network name
      */
-    function initialize(
+    function _initializePolygonConsensusBase(
         address _admin,
         address sequencer,
-        uint32, //networkID,
         address _gasTokenAddress,
         string memory sequencerURL,
         string memory _networkName
-    ) external virtual onlyRollupManager initializer {
-        // Set initialize variables
+    ) internal onlyInitializing {
         admin = _admin;
         trustedSequencer = sequencer;
 
