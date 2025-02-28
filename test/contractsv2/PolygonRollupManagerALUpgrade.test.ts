@@ -20,6 +20,7 @@ const {
 const { AggchainType } = require("../../src/utils-common-aggchain");
 const { getFinalAggchainVKeySelectorFromType } = require("../../src/utils-common-aggchain");
 const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
+const {NO_ADDRESS} = require("../../src/constants");
 
 describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     // SIGNERS
@@ -730,7 +731,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
                 rollupTypeIdECDSA, // rollupType ID
                 precomputedAggchainECDSAAddress,
                 1001, // chainID
-                "0x000000000000000000000000000000005Ca1aB1E" // gasTokenAddress
+                NO_ADDRESS // gasTokenAddress
             );
         return [Number(rollupsCount) + 1, precomputedAggchainECDSAAddress];
     }

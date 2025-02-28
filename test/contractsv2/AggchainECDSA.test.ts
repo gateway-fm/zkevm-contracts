@@ -216,12 +216,11 @@ describe("AggchainECDSA", () => {
         );
 
         await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "UpdateUseDefaultGatewayFlag")
-            .withArgs(false);
+            .to.emit(aggchainECDSAcontract, "DisableUseDefaultGatewayFlag");
 
         await expect(
             aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()
-        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "UseDefaultGatewayAlreadySet");
+        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "UseDefaultGatewayAlreadyDisabled");
 
         // enableUseDefaultGatewayFlag
         await expect(aggchainECDSAcontract.enableUseDefaultGatewayFlag()).to.be.revertedWithCustomError(
@@ -230,12 +229,11 @@ describe("AggchainECDSA", () => {
         );
 
         await expect(aggchainECDSAcontract.connect(vKeyManager).enableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "UpdateUseDefaultGatewayFlag")
-            .withArgs(true);
+            .to.emit(aggchainECDSAcontract, "EnableUseDefaultGatewayFlag");
 
         await expect(
             aggchainECDSAcontract.connect(vKeyManager).enableUseDefaultGatewayFlag()
-        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "UseDefaultGatewayAlreadySet");
+        ).to.be.revertedWithCustomError(aggchainECDSAcontract, "UseDefaultGatewayAlreadyEnabled");
 
         // addOwnedAggchainVKey
         await expect(
@@ -273,8 +271,7 @@ describe("AggchainECDSA", () => {
         expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey);
 
         await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "UpdateUseDefaultGatewayFlag")
-            .withArgs(false);
+            .to.emit(aggchainECDSAcontract, "DisableUseDefaultGatewayFlag");
 
         // getAggchainVKey useDefaultGateway === false
         expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey2);
@@ -330,8 +327,7 @@ describe("AggchainECDSA", () => {
 
         // disable default gateway flag
         await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "UpdateUseDefaultGatewayFlag")
-            .withArgs(false);
+            .to.emit(aggchainECDSAcontract, "DisableUseDefaultGatewayFlag");
 
         // getAggchainHash
         expect(await aggchainECDSAcontract.getAggchainHash(aggchainData)).to.be.equal(aggchainHash);

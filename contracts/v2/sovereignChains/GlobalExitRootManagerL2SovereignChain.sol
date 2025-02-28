@@ -21,7 +21,7 @@ contract GlobalExitRootManagerL2SovereignChain is
 
     // Inserted GER counter
     /// @custom:oz-renamed-from insertedGERCount
-    uint256 public _legacyInsertedGERCount;
+    uint256 internal _legacyInsertedGERCount;
 
     // Value of the global exit roots hash chain after last insertion
     bytes32 public insertedGERHashChain;
@@ -130,17 +130,6 @@ contract GlobalExitRootManagerL2SovereignChain is
         } else {
             revert GlobalExitRootAlreadySet();
         }
-    }
-
-    /**
-     * @notice Legacy function to remove Last global exit roots
-     * @dev Now this function logic is moved to _removeGlobalExitRoots, in the past only last inserted GERs were allowed to remove, that is the reason for the name of the function.
-     * @param gersToRemove Array of gers to remove
-     */
-    function removeLastGlobalExitRoots(
-        bytes32[] calldata gersToRemove
-    ) external onlyGlobalExitRootRemover {
-        _removeGlobalExitRoots(gersToRemove);
     }
 
     /**

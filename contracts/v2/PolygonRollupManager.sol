@@ -239,6 +239,9 @@ contract PolygonRollupManager is
     // Current rollup manager version
     string public constant ROLLUP_MANAGER_VERSION = "al-v0.3.0";
 
+    // Hardcoded address used to indicate that this address triggered in an event should not be considered as valid.
+    address private constant _NO_ADDRESS = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+
     // Global Exit Root address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IPolygonZkEVMGlobalExitRootV2 public immutable globalExitRootManager;
@@ -406,13 +409,21 @@ contract PolygonRollupManager is
     /**
      * @notice Emitted when a ALGateway or Pessimistic chain verifies a pessimistic proof
      * @param rollupID Rollup ID
+     * @param prevPessimisticRoot Previous pessimistic root
      * @param newPessimisticRoot New pessimistic root
+     * @param prevLocalExitRoot Previous local exit root
      * @param newLocalExitRoot New local exit root
+     * @param l1InfoRoot L1 info root
+     * @param trustedAggregator Trusted aggregator address
      */
-    event VerifyPessimisticProof(
+    event VerifyPessimisticStateTransition(
         uint32 indexed rollupID,
-        bytes32 indexed newPessimisticRoot,
-        bytes32 indexed newLocalExitRoot
+        bytes32 prevPessimisticRoot,
+        bytes32 newPessimisticRoot,
+        bytes32 prevLocalExitRoot,
+        bytes32 newLocalExitRoot,
+        bytes32 l1InfoRoot,
+        address indexed trustedAggregator
     );
 
     /**
@@ -631,7 +642,7 @@ contract PolygonRollupManager is
                 rollupTypeID,
                 rollupAddress,
                 chainID,
-                0x000000000000000000000000000000005Ca1aB1E
+                _NO_ADDRESS
             );
 
             // Initialize aggchain with the custom chain bytes
@@ -781,8 +792,6 @@ contract PolygonRollupManager is
 
         // Only allowed to update to an older rollup type id if the destination rollup type is ALGateway
         if (
-            rollupTypeMap[newRollupTypeID].rollupVerifierType !=
-            VerifierType.ALGateway &&
             rollup.rollupTypeID >= newRollupTypeID
         ) {
             revert UpdateToOldRollupTypeID();
@@ -852,10 +861,6 @@ contract PolygonRollupManager is
 
         // If not upgrading to ALGateway
         if (newRollupType.rollupVerifierType != VerifierType.ALGateway) {
-            // Current rollup type cant be ALGateway
-            if (rollup.rollupVerifierType == VerifierType.ALGateway) {
-                revert UpdateNotCompatible();
-            }
             // Current rollup type must be same than new rollup type
             if (rollup.rollupVerifierType != newRollupType.rollupVerifierType) {
                 revert UpdateNotCompatible();
@@ -1218,28 +1223,35 @@ contract PolygonRollupManager is
         lastAggregationTimestamp = uint64(block.timestamp);
 
         // Consolidate state
+        bytes32 prevLocalExitRoot = rollup.lastLocalExitRoot;
         rollup.lastLocalExitRoot = newLocalExitRoot;
+        bytes32 prevPessimisticRoot = rollup.lastPessimisticRoot;
         rollup.lastPessimisticRoot = newPessimisticRoot;
 
         // Interact with globalExitRootManager
         globalExitRootManager.updateExitRoot(getRollupExitRoot());
 
         // Same event as verifyBatches to support current bridge service to synchronize everything
+        /// @dev moved newLocalExitRoot to aux variable to avoid stack too deep errors at compilation
+        bytes32 newLocalExitRootAux = newLocalExitRoot;
         emit VerifyBatchesTrustedAggregator(
             rollupID,
             0, // final batch: does not  apply in pessimistic
             bytes32(0), // new state root: does not apply in pessimistic
-            newLocalExitRoot,
+            newLocalExitRootAux,
             msg.sender
         );
 
         // If rollup verifier type is not state transition but ALGateway or pessimistic, emit specific event
         if (rollup.rollupVerifierType != VerifierType.StateTransition) {
-            // TODO: iterate on meet and fix
-            emit VerifyPessimisticProof(
+            emit VerifyPessimisticStateTransition(
                 rollupID,
+                prevPessimisticRoot,
                 newPessimisticRoot,
-                newLocalExitRoot
+                prevLocalExitRoot,
+                newLocalExitRootAux,
+                l1InfoRoot,
+                msg.sender
             );
         }
 

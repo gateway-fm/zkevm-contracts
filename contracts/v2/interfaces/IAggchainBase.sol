@@ -15,12 +15,21 @@ interface IAggchainBaseEvents {
      * @param previousAggchainVKey The previous aggchain verification key.
      * @param newAggchainVKey The new new aggchain verification key.
      */
-    event UpdateAggchainVKey(bytes4 selector, bytes32 previousAggchainVKey, bytes32 newAggchainVKey);
+    event UpdateAggchainVKey(
+        bytes4 selector,
+        bytes32 previousAggchainVKey,
+        bytes32 newAggchainVKey
+    );
     /**
-     * @notice Emitted when the admin switches the use of the default gateway to manage the aggchain keys.
-     * @param useDefaultGateway The result of the switch.
+     * @notice Emitted when the admin set the flag useDefaultGateway to true.
      */
-    event UpdateUseDefaultGatewayFlag(bool useDefaultGateway);
+    event EnableUseDefaultGatewayFlag();
+
+    /**
+     * @notice Emitted when the admin set the flag useDefaultGateway to false.
+     */
+    event DisableUseDefaultGatewayFlag();
+
     /**
      * @notice Emitted when the vKeyManager starts the two-step transfer role setting a new pending vKeyManager.
      * @param newVKeyManager The new vKeyManager.
@@ -43,8 +52,10 @@ interface IAggchainBaseErrors {
     error OwnedAggchainVKeyNotFound();
     /// @notice Thrown when trying to initialize the incorrect initialize function.
     error InvalidInitializeFunction();
-    /// @notice Thrown when trying to enable or disable the default gateway when it is already set.
-    error UseDefaultGatewayAlreadySet();
+    /// @notice Thrown when trying to enable the default gateway when it is already enabled.
+    error UseDefaultGatewayAlreadyEnabled();
+     /// @notice Thrown when trying to disable the default gateway when it is already disabled.
+    error UseDefaultGatewayAlreadyDisabled();
     /// @notice Thrown when trying to call a function that only the VKeyManager can call.
     error OnlyVKeyManager();
     /// @notice Thrown when trying to call a function that only the pending VKeyManager can call.
@@ -52,6 +63,7 @@ interface IAggchainBaseErrors {
     /// @notice Thrown when trying to retrieve an aggchain verification key from the mapping that doesn't exists.
     error AggchainVKeyNotFound();
 }
+
 /**
  * @title IAggchainBase
  * @notice Shared interface for native aggchain implementations.

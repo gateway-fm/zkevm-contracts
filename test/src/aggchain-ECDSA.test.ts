@@ -102,8 +102,7 @@ describe("Test vectors aggchain ECDSA", () => {
             // if useDefaultGateway is true, disable it
             if (data.useDefaultGateway) {
                 await expect(aggchainECDSAContract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-                    .to.emit(aggchainECDSAContract, "UpdateUseDefaultGatewayFlag")
-                    .withArgs(false);
+                    .to.emit(aggchainECDSAContract, "DisableUseDefaultGatewayFlag");
             }
 
             // encode aggchainData

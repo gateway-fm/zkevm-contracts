@@ -139,13 +139,13 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      */
     function enableUseDefaultGatewayFlag() external onlyVKeyManager {
         if (useDefaultGateway) {
-            revert UseDefaultGatewayAlreadySet();
+            revert UseDefaultGatewayAlreadyEnabled();
         }
 
         useDefaultGateway = true;
 
         // Emit event
-        emit UpdateUseDefaultGatewayFlag(useDefaultGateway);
+        emit EnableUseDefaultGatewayFlag();
     }
 
     /**
@@ -153,13 +153,13 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      */
     function disableUseDefaultGatewayFlag() external onlyVKeyManager {
         if (!useDefaultGateway) {
-            revert UseDefaultGatewayAlreadySet();
+            revert UseDefaultGatewayAlreadyDisabled();
         }
 
         useDefaultGateway = false;
 
         // Emit event
-        emit UpdateUseDefaultGatewayFlag(useDefaultGateway);
+        emit DisableUseDefaultGatewayFlag();
     }
 
     /**
