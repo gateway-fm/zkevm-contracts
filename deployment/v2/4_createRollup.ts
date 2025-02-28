@@ -18,7 +18,9 @@ const deployOutput = require("./deploy_output.json");
 import "../helpers/utils";
 import updateVanillaGenesis from "./utils/updateVanillaGenesis";
 
-const pathOutputJson = path.join(__dirname, "./create_rollup_output.json");
+const dateStr = new Date().toISOString();
+const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.json`);
+import utilsECDSA from "../../src/utils-aggchain-ECDSA"
 
 import {
     PolygonRollupManager,
@@ -69,16 +71,23 @@ async function main() {
         sovereignParams,
     } = createRollupParameters;
 
-    const supportedConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"];
+    const arraySupportedAggchains = ["AggchainECDSA", "AggchainFEP"];
+    const arraySupportedLegacyConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"];
+    const supportedConsensus = arraySupportedLegacyConsensus.concat(arraySupportedAggchains);
 
     if (!supportedConsensus.includes(consensusContract)) {
         throw new Error(`Consensus contract not supported, supported contracts are: ${supportedConsensus}`);
     }
 
+    // if consensusContract is Aggchain, check isVanillaClient === true
+    if (arraySupportedAggchains.includes(consensusContract) && !isVanillaClient) {
+        throw new Error(`Consensus contract ${consensusContract} requires isVanillaClient === true`);
+    }
+
     // Check consensus compatibility
     if (isVanillaClient) {
-        if (consensusContract !== "PolygonPessimisticConsensus") {
-            throw new Error(`Vanilla client only supports PolygonPessimisticConsensus`);
+        if (consensusContract !== "PolygonPessimisticConsensus" && !arraySupportedAggchains.includes(consensusContract) ) {
+            throw new Error(`Vanilla client only supports PolygonPessimisticConsensus & Aggchain`);
         }
 
         // Check sovereign params
@@ -94,6 +103,13 @@ async function main() {
                 throw new Error(`Missing sovereign parameter: ${parameterName}`);
             }
         }
+
+        // check aggchainParams if consensusContract is Aggchain
+        if (arraySupportedAggchains.includes(consensusContract)) {
+            if (createRollupParameters["aggchainParams"] === undefined) {
+                throw new Error(`Missing sovereign parameter: aggchainParams`);
+            }
+         }
     }
 
     const dataAvailabilityProtocol = createRollupParameters.dataAvailabilityProtocol || "PolygonDataCommittee";
@@ -175,86 +191,41 @@ async function main() {
         );
     }
 
-    let verifierContract;
-    let verifierName;
-    if (realVerifier === true) {
-        if (consensusContract != "PolygonPessimisticConsensus") {
-            verifierName = `FflonkVerifier_${forkID}`;
-
-            const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
-            verifierContract = await VerifierRollup.deploy();
-            await verifierContract.waitForDeployment();
-        } else {
-            verifierName = "SP1VerifierPlonk";
-            const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
-            verifierContract = await VerifierRollup.deploy();
-            await verifierContract.waitForDeployment();
-        }
-    } else {
-        verifierName = "VerifierRollupHelperMock";
-        const VerifierRollupHelperFactory = await ethers.getContractFactory(verifierName, deployer);
-        verifierContract = await VerifierRollupHelperFactory.deploy();
-        await verifierContract.waitForDeployment();
-    }
-    console.log("#######################\n");
-    console.log("Verifier name:", verifierName);
-    console.log("Verifier deployed to:", verifierContract.target);
-
     // Since it's a mock deployment deployer has all the rights
     const ADD_ROLLUP_TYPE_ROLE = ethers.id("ADD_ROLLUP_TYPE_ROLE");
     const CREATE_ROLLUP_ROLE = ethers.id("CREATE_ROLLUP_ROLE");
 
     // Check role:
-
     if ((await rollupManagerContract.hasRole(ADD_ROLLUP_TYPE_ROLE, deployer.address)) == false)
         await rollupManagerContract.grantRole(ADD_ROLLUP_TYPE_ROLE, deployer.address);
 
     if ((await rollupManagerContract.hasRole(CREATE_ROLLUP_ROLE, deployer.address)) == false)
         await rollupManagerContract.grantRole(CREATE_ROLLUP_ROLE, deployer.address);
 
-    // Create consensus implementation
     const PolygonconsensusFactory = (await ethers.getContractFactory(consensusContract, deployer)) as any;
     let PolygonconsensusContract;
 
-    PolygonconsensusContract = await PolygonconsensusFactory.deploy(
-        deployOutput.polygonZkEVMGlobalExitRootAddress,
-        deployOutput.polTokenAddress,
-        deployOutput.polygonZkEVMBridgeAddress,
-        deployOutput.polygonRollupManagerAddress
-    );
-    await PolygonconsensusContract.waitForDeployment();
-
-    // Add a new rollup type with timelock
-    let rollupVerifierType;
-    let genesisFinal;
-    let programVKey;
-
-    if (consensusContract == "PolygonPessimisticConsensus") {
-        rollupVerifierType = 1;
-        genesisFinal = ethers.ZeroHash;
-        programVKey = createRollupParameters.programVKey || ethers.ZeroHash;
+    // Create consensus/aggchain implementation
+    if(arraySupportedLegacyConsensus.includes(consensusContract)) {
+        // create consensus contract
+        PolygonconsensusContract = await PolygonconsensusFactory.deploy(
+            deployOutput.polygonZkEVMGlobalExitRootAddress,
+            deployOutput.polTokenAddress,
+            deployOutput.polygonZkEVMBridgeAddress,
+            deployOutput.polygonRollupManagerAddress
+        );
+        await PolygonconsensusContract.waitForDeployment();
     } else {
-        rollupVerifierType = 0;
-        genesisFinal = genesis.root;
-        programVKey = ethers.ZeroHash;
+        // create aggchain contract
+        PolygonconsensusContract = await PolygonconsensusFactory.deploy(
+            deployOutput.polygonZkEVMGlobalExitRootAddress,
+            deployOutput.polTokenAddress,
+            deployOutput.polygonZkEVMBridgeAddress,
+            deployOutput.polygonRollupManagerAddress,
+            deployOutput.aggLayerGatewayAddress,
+        );
+        await PolygonconsensusContract.waitForDeployment();
     }
-
-    await (
-        await rollupManagerContract.addNewRollupType(
-            PolygonconsensusContract.target,
-            verifierContract.target,
-            forkID,
-            rollupVerifierType,
-            genesisFinal,
-            description,
-            programVKey
-        )
-    ).wait();
-
-    console.log("#######################\n");
-    console.log("Added new Rollup Type deployed");
-    const newRollupTypeID = await rollupManagerContract.rollupTypeCount();
-
     let gasTokenAddress, gasTokenNetwork, gasTokenMetadata;
 
     // Get bridge instance
@@ -265,7 +236,8 @@ async function main() {
     if (
         createRollupParameters.gasTokenAddress &&
         createRollupParameters.gasTokenAddress !== "" &&
-        createRollupParameters.gasTokenAddress !== ethers.ZeroAddress
+        createRollupParameters.gasTokenAddress !== ethers.ZeroAddress &&
+        createRollupParameters.gasTokenAddress !== "deploy"
     ) {
         // Get token metadata
         gasTokenMetadata = await polygonZkEVMBridgeContract.getTokenMetadata(createRollupParameters.gasTokenAddress);
@@ -300,6 +272,115 @@ async function main() {
         nonce: nonce,
     });
 
+    // Add a new rollup type with timelock
+    let rollupVerifierType;
+    let genesisFinal;
+    let programVKey;
+    let verifierAddress;
+    let verifierName;
+    let initializeBytesCustomChain;
+
+    if (arraySupportedAggchains.includes(consensusContract)) {
+        // If Aggchain
+        // rollupVerifierType = VerifierType.ALGateway = 2
+        rollupVerifierType = 2;
+        // genesis = bytes32(0)
+        genesisFinal = ethers.ZeroHash;
+        // programVKey = bytes32(0)
+        programVKey = ethers.ZeroHash;
+        // verifiderAddress = address(0)
+        verifierAddress = ethers.ZeroAddress;
+        if(consensusContract == "AggchainECDSA") {
+            initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
+                createRollupParameters.aggchainParams.useDefaultGateway,
+                createRollupParameters.aggchainParams.ownedAggchainVKeys,
+                createRollupParameters.aggchainParams.aggchainVKeySelectors,
+                createRollupParameters.aggchainParams.vKeyManager,
+                adminZkEVM,
+                trustedSequencer,
+                gasTokenAddress,
+                trustedSequencerURL,
+                networkName
+            )
+        } else if(consensusContract.includes("FEP")) {
+            initializeBytesCustomChain = "0x";
+        } else {
+            throw new Error(`Aggchain ${consensusContract} not supported`);
+        }
+    } else {
+        // Verifier is only necessary if consensusContract !== Aggchain
+        let verifierContract;
+        if (realVerifier === true) {
+            if (consensusContract != "PolygonPessimisticConsensus") {
+                verifierName = `FflonkVerifier_${forkID}`;
+
+                const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
+                verifierContract = await VerifierRollup.deploy();
+                await verifierContract.waitForDeployment();
+            } else {
+                verifierName = "SP1VerifierPlonk";
+                const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
+                verifierContract = await VerifierRollup.deploy();
+                await verifierContract.waitForDeployment();
+            }
+        } else {
+            verifierName = "VerifierRollupHelperMock";
+            const VerifierRollupHelperFactory = await ethers.getContractFactory(verifierName, deployer);
+            verifierContract = await VerifierRollupHelperFactory.deploy();
+            await verifierContract.waitForDeployment();
+        }
+        verifierAddress = verifierContract.target;
+        initializeBytesCustomChain = "0x"
+        console.log("#######################\n");
+        console.log("Verifier name:", verifierName);
+        console.log("Verifier deployed to:", verifierAddress);
+
+        if (consensusContract == "PolygonPessimisticConsensus") {
+            rollupVerifierType = 1;
+            genesisFinal = ethers.ZeroHash;
+            programVKey = createRollupParameters.programVKey || ethers.ZeroHash;
+        } else {
+            rollupVerifierType = 0;
+            genesisFinal = genesis.root;
+            programVKey = ethers.ZeroHash;
+        }
+    }
+
+    // Sanity checks
+    if(consensusContract == "PolygonPessimisticConsensus") {
+        if(genesisFinal != ethers.ZeroHash) {
+            throw new Error(`genesis should be 0x for ${consensusContract}`);
+        }
+    } else if(arraySupportedAggchains.includes(consensusContract)) {
+        if(verifierAddress != ethers.ZeroAddress) {
+            throw new Error(`For ${consensusContract}: verifier == address(0)`);
+        } else if(forkID != 0) {
+            throw new Error(`For ${consensusContract}: forkID == 0`);
+        } else if(genesisFinal != ethers.ZeroHash) {
+            throw new Error(`For ${consensusContract}: genesis == bytes32(0)`);
+        } else if(programVKey != ethers.ZeroHash) {
+            throw new Error(`For ${consensusContract}: programVKey == bytes32(0)`);
+        }
+    } else if(programVKey != ethers.ZeroHash) {
+        throw new Error(`programVKey should be 0x for ${consensusContract}`);
+    }
+
+    await (
+        await rollupManagerContract.addNewRollupType(
+            PolygonconsensusContract.target,
+            verifierAddress,
+            forkID,
+            rollupVerifierType,
+            genesisFinal,
+            description,
+            programVKey
+        )
+    ).wait();
+
+    console.log("#######################\n");
+    console.log("Added new Rollup Type deployed");
+    const newRollupTypeID = await rollupManagerContract.rollupTypeCount();
+
     // Create new rollup
     const txDeployRollup = await rollupManagerContract.createNewRollup(
         newRollupTypeID,
@@ -308,7 +389,8 @@ async function main() {
         trustedSequencer,
         gasTokenAddress,
         trustedSequencerURL,
-        networkName
+        networkName,
+        initializeBytesCustomChain
     );
 
     const receipt = (await txDeployRollup.wait()) as any;
@@ -479,7 +561,7 @@ async function main() {
     outputJson.genesis = genesis.root;
     outputJson.createRollupBlockNumber = blockDeploymentRollup.number;
     outputJson.rollupAddress = newZKEVMAddress;
-    outputJson.verifierAddress = verifierContract.target;
+    outputJson.verifierAddress = verifierAddress;
     outputJson.consensusContract = consensusContract;
     outputJson.consensusContractAddress = PolygonconsensusContract.target;
     outputJson.rollupTypeId = newRollupTypeID;

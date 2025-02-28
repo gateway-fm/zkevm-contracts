@@ -46,7 +46,7 @@ You can change the deployment `mnemonic` creating a `.env` file in the project r
 -   `chainID`: uint64, chainID of the new rollup
 -   `adminZkEVM`: address, Admin address, can adjust Rollup parameters
 -   `forkID`: uint64, Fork ID of the new rollup, indicates the prover (zkROM/executor) version
--   `consensusContract`: select between consensus contract. Supported: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"]`. This is the name of the consensus of the rollupType of the rollup to be created
+-   `consensusContract`: select between consensus contract. Supported: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus", "AggchainECDSA", "AggchainFEP"]`. This is the name of the consensus of the rollupType of the rollup to be created
 -   `gasTokenAddress`:  Address of the native gas token of the rollup, zero if ether
 -   `deployerPvtKey`: Not mandatory, used to deploy from specific wallet
 -   `maxFeePerGas(optional)`: string, Set `maxFeePerGas`, must define as well `maxPriorityFeePerGas` to use it
@@ -60,6 +60,11 @@ You can change the deployment `mnemonic` creating a `.env` file in the project r
     -   `sovereignWETHAddressIsNotMintable`: Flag to indicate if the wrapped ETH is not mintable
     -   `globalExitRootUpdater`: Address of globalExitRootUpdater for sovereign chains
     -   `globalExitRootRemover`: Address of globalExitRootRemover for sovereign chains
+- `aggchainParams`: Only mandatory if consensusContract is AggchainECDSA or AggchainFEP
+    - `useDefaultGateway`: bool, flag to setup initial values for the owned gateway
+    - `ownedAggchainVKeys`: bytes32, Initial owned aggchain verification key
+    - `aggchainVKeySelectors`: bytes4, Initial aggchain selector
+    - `vKeyManager`: address, Initial vKeyManager
 
 ## Run script
 
@@ -69,6 +74,13 @@ npm i
 npm run docker:contracts
 ```
 
+or
+
+```
+npm i
+npm run dockerv2:contracts
+```
+
 A new docker `geth-zkevm-contracts:latest` will be created
 This docker will contain a geth node with the deployed contracts
 The deployment output can be found in:
@@ -76,3 +88,17 @@ The deployment output can be found in:
 - `docker/deploymentOutput/deploy_output.json`
 - `docker/deploymentOutput/genesis.json`
 To run the docker you can use: `docker run -p 8545:8545 geth-zkevm-contracts:latest`
+
+or
+
+``` 
+npm i 
+npm run dockerv2:contracts:all
+```
+It's the same docker as before but deploying `AggchainECDSA` & `PolygonPessimisticConsensus`.
+
+To create other rollup:
+- copy template from `./docker/scripts/v2/create_rollup_parameters_docker-xxxx.json` to `deployment/v2/create_rollup_parameters.json`
+- copy `genesis.json`, `genesis_sovereign.json` and `deploy_ouput.json` (from `docker/deploymentOutput`) to `deployment/v2/`
+- run `npx hardhat run ./deployment/v2/4_createRollup.ts --network localhost`
+- If you want, you can copy the file that has been generated here (`deployment/v2/create_rollup_output_*.json`) to deployment output folder (`docker/deploymentOutput`)
