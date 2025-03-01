@@ -31,7 +31,6 @@ contract PolygonRollupManagerNotUpgraded is PolygonRollupManager {
         address timelock,
         address emergencyCouncil
     ) external reinitializer(2) {
-
         // Constant deployment variables
         _batchFee = 0.1 ether; // 0.1 Matic
 
