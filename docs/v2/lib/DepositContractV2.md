@@ -23,7 +23,7 @@ Given the leaf data returns the leaf value
 | :--- | :--- | :------------------------------------------------------------------- |
 |`leafType` | uint8 | Leaf type -->  [0] transfer Ether / ERC20 tokens, [1] message
 |`originNetwork` | uint32 | Origin Network
-|`originAddress` | address | [0] Origin token address, 0 address is reserved for ether, [1] msg.sender of the message
+|`originAddress` | address | [0] Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token, [1] msg.sender of the message
 |`destinationNetwork` | uint32 | Destination network
 |`destinationAddress` | address | Destination address
 |`amount` | uint256 | [0] Amount of tokens/ether, [1] Amount of ether

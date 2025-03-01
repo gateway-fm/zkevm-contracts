@@ -62,7 +62,7 @@ note User/UI must be aware of the existing/available networks when choosing the 
 |`destinationNetwork` | uint32 | Network destination
 |`destinationAddress` | address | Address destination
 |`amount` | uint256 | Amount of tokens
-|`token` | address | Token address, 0 address is reserved for ether
+|`token` | address | Token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`forceUpdateGlobalExitRoot` | bool | Indicates if the new global exit root is updated or not
 |`permitData` | bytes | Raw data of the call `permit` of the token
 
@@ -166,7 +166,7 @@ to avoid possible synch attacks
 |`mainnetExitRoot` | bytes32 | Mainnet exit root
 |`rollupExitRoot` | bytes32 | Rollup exit root
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address |  Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address |  Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`destinationNetwork` | uint32 | Network destination
 |`destinationAddress` | address | Address destination
 |`amount` | uint256 | Amount of tokens
@@ -235,7 +235,7 @@ wrapped address if the metadata provided is not the original one.
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address | Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address | Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`name` | string | Name of the token
 |`symbol` | string | Symbol of the token
 |`decimals` | uint8 | Decimals of the token
@@ -254,7 +254,7 @@ Returns the address of a wrapper using the token information if already exist
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address | Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address | Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 
 ### activateEmergencyState
 ```solidity
@@ -316,6 +316,22 @@ Function to check if an index is claimed or not
 |`leafIndex` | uint32 | Index
 |`sourceBridgeNetwork` | uint32 | Origin network
 
+### _setAndCheckClaimed
+```solidity
+  function _setAndCheckClaimed(
+    uint32 leafIndex,
+    uint32 sourceBridgeNetwork
+  ) internal
+```
+Function to check that an index is not claimed and set it as claimed
+
+
+#### Parameters:
+| Name | Type | Description                                                          |
+| :--- | :--- | :------------------------------------------------------------------- |
+|`leafIndex` | uint32 | Index
+|`sourceBridgeNetwork` | uint32 | Origin network
+
 ### updateGlobalExitRoot
 ```solidity
   function updateGlobalExitRoot(
@@ -333,6 +349,56 @@ Function to update the globalExitRoot if the last deposit is not submitted
 Function to update the globalExitRoot
 
 
+
+### _bridgeWrappedAsset
+```solidity
+  function _bridgeWrappedAsset(
+    contract TokenWrapped tokenWrapped,
+    uint256 amount
+  ) internal
+```
+Burn tokens from wrapped token to execute the bridge
+note This  function has been extracted to be able to override it by other contracts like Bridge2SovereignChain
+
+
+#### Parameters:
+| Name | Type | Description                                                          |
+| :--- | :--- | :------------------------------------------------------------------- |
+|`tokenWrapped` | contract TokenWrapped | Wrapped token to burnt
+|`amount` | uint256 | Amount of tokens
+
+### _claimWrappedAsset
+```solidity
+  function _claimWrappedAsset(
+    contract TokenWrapped tokenWrapped,
+    address destinationAddress,
+    uint256 amount
+  ) internal
+```
+Mints tokens from wrapped token to proceed with the claim
+note This  function has been extracted to be able to override it by other contracts like Bridge2SovereignChain
+
+
+#### Parameters:
+| Name | Type | Description                                                          |
+| :--- | :--- | :------------------------------------------------------------------- |
+|`tokenWrapped` | contract TokenWrapped | Wrapped token to mint
+|`destinationAddress` | address | Minted token receiver
+|`amount` | uint256 | Amount of tokens
+
+### _bitmapPositions
+```solidity
+  function _bitmapPositions(
+    uint256 index
+  ) internal returns (uint256 wordPos, uint256 bitPos)
+```
+Function decode an index into a wordPos and bitPos
+
+
+#### Parameters:
+| Name | Type | Description                                                          |
+| :--- | :--- | :------------------------------------------------------------------- |
+|`index` | uint256 | Index
 
 ### _permit
 ```solidity
@@ -458,7 +524,7 @@ wrapped address if the metadata provided is not the original one.
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address | Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address | Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`token` | address | Address of the token to calculate the wrapper address
 
 ## Events

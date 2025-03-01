@@ -5,9 +5,9 @@ name: Main CI
 
 on:
     push:
-        branches: [feature/ongoingPP]
+        branches: [main, develop, feature/ongoingPP]
     pull_request:
-        branches: [feature/ongoingPP]
+        branches: [main, develop, feature/ongoingPP]
 
 jobs:
     lint-and-test:
@@ -15,7 +15,7 @@ jobs:
 
         strategy:
             matrix:
-                node-version: [18.x]
+                node-version: [20.x]
 
         steps:
             - name: Use Node.js ${{ matrix.node-version }}

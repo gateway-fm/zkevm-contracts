@@ -6,6 +6,8 @@ set -e
 docker run -p 8545:8545 -d --name docker_test hermeznetwork/geth-zkevm-contracts
 # Run docker tests
 npx hardhat test docker/docker-tests.test.ts --network localhost
+# Run tooling tests to docker
+npx hardhat test docker/tools-docker-tests.test.ts --network localhost
 # stop container
 docker stop docker_test
 # remove container

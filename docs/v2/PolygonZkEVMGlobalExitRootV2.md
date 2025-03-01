@@ -73,7 +73,7 @@ Given the leaf data returns the leaf hash
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`newGlobalExitRoot` | bytes32 | Last global exit root
-|`lastBlockHash` | uint256 | Last accesible block hash
+|`lastBlockHash` | uint256 | Last accessible block hash
 |`timestamp` | uint64 | Ethereum timestamp in seconds
 
 ## Events

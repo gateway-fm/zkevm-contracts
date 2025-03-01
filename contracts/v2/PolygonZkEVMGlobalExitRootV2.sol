@@ -78,7 +78,7 @@ contract PolygonZkEVMGlobalExitRootV2 is
      * @param newRoot new exit tree root
      */
     function updateExitRoot(bytes32 newRoot) external {
-        // Store storage variables into temporal variables since will be used multiple times
+        // Store storage variables into temporary variables since will be used multiple times
         bytes32 cacheLastRollupExitRoot;
         bytes32 cacheLastMainnetExitRoot;
 
@@ -101,14 +101,14 @@ contract PolygonZkEVMGlobalExitRootV2 is
 
         // If it already exists, do not modify the blockhash
         if (globalExitRootMap[newGlobalExitRoot] == 0) {
-            uint64 currentTimestmap = uint64(block.timestamp);
+            uint64 currentTimestamp = uint64(block.timestamp);
 
             uint256 lastBlockHash = uint256(blockhash(block.number - 1));
             globalExitRootMap[newGlobalExitRoot] = lastBlockHash;
 
             // save new leaf in L1InfoTree
             _addLeaf(
-                getLeafValue(newGlobalExitRoot, lastBlockHash, currentTimestmap)
+                getLeafValue(newGlobalExitRoot, lastBlockHash, currentTimestamp)
             );
 
             // Get the current historic root
@@ -126,7 +126,7 @@ contract PolygonZkEVMGlobalExitRootV2 is
                 currentL1InfoRoot,
                 uint32(depositCount),
                 lastBlockHash,
-                currentTimestmap
+                currentTimestamp
             );
         }
     }
@@ -157,7 +157,7 @@ contract PolygonZkEVMGlobalExitRootV2 is
     /**
      * @notice Given the leaf data returns the leaf hash
      * @param newGlobalExitRoot Last global exit root
-     * @param lastBlockHash Last accesible block hash
+     * @param lastBlockHash Last accessible block hash
      * @param timestamp Ethereum timestamp in seconds
      */
     function getLeafValue(
