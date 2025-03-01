@@ -8,6 +8,7 @@ import {
     ERC20Decimals,
 } from "../../typechain-types";
 import {MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
+import { valueTo32BytesHex } from "../../src/utils"
 const MerkleTreeBridge = MTBridge;
 const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
 
@@ -22,6 +23,10 @@ function computeGlobalIndex(indexLocal: any, indexRollup: any, isMainnet: Boolea
     } else {
         return BigInt(indexLocal) + BigInt(indexRollup) * 2n ** 32n;
     }
+}
+
+function newHashChainValue(prevHashChainValue: any, valueToAdd: any) {
+    return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [prevHashChainValue, valueToAdd]);
 }
 
 describe("BridgeL2SovereignChain Contract", () => {
@@ -212,6 +217,13 @@ describe("BridgeL2SovereignChain Contract", () => {
         const proofLocal = merkleTree.getProofTreeByIndex(0);
         const proofRollup = merkleTreeRollup.getProofTreeByIndex(0);
         const globalIndex = computeGlobalIndex(index, index, false);
+        let globalIndexHashChainJS = ethers.ZeroHash;
+
+        // check value globalIndexHashChain
+        expect(await sovereignChainBridgeContract.globalIndexHashChain()).to.be.equal(globalIndexHashChainJS);
+
+        // new hashchain value
+        globalIndexHashChainJS = newHashChainValue(globalIndexHashChainJS, valueTo32BytesHex(globalIndex));
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proofLocal, index, rootJSRollup)).to.be.equal(true);
@@ -241,7 +253,16 @@ describe("BridgeL2SovereignChain Contract", () => {
                 sixDecimalsTokenContract.target,
                 destinationAddress,
                 ethers.parseUnits(String(amountSIXBridged), sixDecimal)
+            )
+            .to.emit(sovereignChainBridgeContract, "UpdatedGlobalIndexHashChain")
+            .withArgs(
+                globalIndex,
+                globalIndexHashChainJS,
             );
+
+        // check value globalIndexHashChain
+        expect(await sovereignChainBridgeContract.globalIndexHashChain()).to.be.equal(globalIndexHashChainJS);
+
         // Check balance is with 6 decimals and check is from sovereign token
         const sovereignTokenAmount = await sovereignTokenContract.balanceOf(destinationAddress);
         const sixDecimalsTokenAmount = await sixDecimalsTokenContract.balanceOf(destinationAddress);
@@ -1231,6 +1252,10 @@ describe("BridgeL2SovereignChain Contract", () => {
             await sovereignChainBridgeContract.verifyMerkleProof(rootLocalRollup, proofRollup, indexRollup, rootRollup)
         ).to.be.equal(true);
         const globalIndex = computeGlobalIndex(indexLocal, indexRollup, false);
+        let globalIndexHashChainJS = ethers.ZeroHash;
+        globalIndexHashChainJS = newHashChainValue(globalIndexHashChainJS, valueTo32BytesHex(globalIndex));
+
+
         /*
          * claim
          * Can't claim without tokens
@@ -1275,7 +1300,12 @@ describe("BridgeL2SovereignChain Contract", () => {
             .to.emit(sovereignChainBridgeContract, "ClaimEvent")
             .withArgs(globalIndex, originNetwork, tokenAddress, destinationAddress, amount)
             .to.emit(polTokenContract, "Transfer")
-            .withArgs(sovereignChainBridgeContract.target, acc1.address, amount);
+            .withArgs(sovereignChainBridgeContract.target, acc1.address, amount)
+            .to.emit(sovereignChainBridgeContract, "UpdatedGlobalIndexHashChain")
+            .withArgs(
+                globalIndex,
+                globalIndexHashChainJS,
+            );
 
         // Can't claim because nullifier
         await expect(
@@ -1379,6 +1409,9 @@ describe("BridgeL2SovereignChain Contract", () => {
         ).to.be.equal(true);
         const globalIndex = computeGlobalIndex(indexLocal, indexRollup, false);
 
+        let globalIndexHashChainJS = ethers.ZeroHash;
+        globalIndexHashChainJS = newHashChainValue(globalIndexHashChainJS, valueTo32BytesHex(globalIndex));
+
         expect(false).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
 
         // claim
@@ -1425,7 +1458,12 @@ describe("BridgeL2SovereignChain Contract", () => {
             .to.emit(sovereignChainBridgeContract, "NewWrappedToken")
             .withArgs(originNetwork, tokenAddress, precalculateWrappedErc20, metadata)
             .to.emit(newWrappedToken, "Transfer")
-            .withArgs(ethers.ZeroAddress, destinationAddress, amount);
+            .withArgs(ethers.ZeroAddress, destinationAddress, amount)
+            .to.emit(sovereignChainBridgeContract, "UpdatedGlobalIndexHashChain")
+            .withArgs(
+                globalIndex,
+                globalIndexHashChainJS,
+            );
 
         const newTokenInfo = await sovereignChainBridgeContract.wrappedTokenToTokenInfo(precalculateWrappedErc20);
 
@@ -1482,6 +1520,8 @@ describe("BridgeL2SovereignChain Contract", () => {
         expect(verifyMerkleProof(rootLocalRollup, proofRollup, indexRollup, rollupExitRootSC)).to.be.equal(true);
 
         const globalIndex2 = computeGlobalIndex(index2, indexRollup, false);
+        globalIndexHashChainJS = newHashChainValue(globalIndexHashChainJS, valueTo32BytesHex(globalIndex2));
+
         await expect(
             sovereignChainBridgeContract.claimAsset(
                 proof2,
@@ -1500,7 +1540,15 @@ describe("BridgeL2SovereignChain Contract", () => {
             .to.emit(sovereignChainBridgeContract, "ClaimEvent")
             .withArgs(globalIndex2, originNetwork, tokenAddress, destinationAddress, amount)
             .to.emit(newWrappedToken, "Transfer")
-            .withArgs(ethers.ZeroAddress, destinationAddress, amount);
+            .withArgs(ethers.ZeroAddress, destinationAddress, amount)
+            .to.emit(sovereignChainBridgeContract, "UpdatedGlobalIndexHashChain")
+            .withArgs(
+                globalIndex2,
+                globalIndexHashChainJS,
+            );
+
+        // check globalIndexHashChain
+        expect(await sovereignChainBridgeContract.globalIndexHashChain()).to.be.equal(globalIndexHashChainJS);
 
         // Burn Tokens
         const depositCount = await sovereignChainBridgeContract.depositCount();
@@ -1953,6 +2001,9 @@ describe("BridgeL2SovereignChain Contract", () => {
         ).to.be.equal(true);
 
         const globalIndex = computeGlobalIndex(index, index, false);
+        let globalIndexHashChainJS = ethers.ZeroHash;
+        globalIndexHashChainJS = newHashChainValue(globalIndexHashChainJS, valueTo32BytesHex(globalIndex));
+
         // Can't claim without tokens
         await expect(
             sovereignChainBridgeContract.claimAsset(
@@ -2027,7 +2078,12 @@ describe("BridgeL2SovereignChain Contract", () => {
             .to.emit(sovereignChainBridgeContract, "ClaimEvent")
             .withArgs(index, originNetwork, tokenAddress, destinationAddress, amount)
             .to.emit(polTokenContract, "Transfer")
-            .withArgs(sovereignChainBridgeContract.target, deployer.address, amount);
+            .withArgs(sovereignChainBridgeContract.target, deployer.address, amount)
+            .to.emit(sovereignChainBridgeContract, "UpdatedGlobalIndexHashChain")
+            .withArgs(
+                globalIndex,
+                globalIndexHashChainJS,
+            );
 
         // Check Already claimed_claim
         await expect(
@@ -2109,7 +2165,8 @@ describe("BridgeL2SovereignChain Contract", () => {
         const proofLocal = merkleTree.getProofTreeByIndex(0);
         const proofRollup = merkleTreeRollup.getProofTreeByIndex(0);
         const globalIndex = computeGlobalIndex(index, index, false);
-
+        let globalIndexHashChainJS = ethers.ZeroHash;
+        globalIndexHashChainJS = newHashChainValue(globalIndexHashChainJS, valueTo32BytesHex(globalIndex));
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proofLocal, index, rootJSRollup)).to.be.equal(true);
         expect(
@@ -2183,7 +2240,12 @@ describe("BridgeL2SovereignChain Contract", () => {
             )
         )
             .to.emit(sovereignChainBridgeContract, "ClaimEvent")
-            .withArgs(index, originNetwork, tokenAddress, destinationAddress, amount);
+            .withArgs(index, originNetwork, tokenAddress, destinationAddress, amount)
+            .to.emit(sovereignChainBridgeContract, "UpdatedGlobalIndexHashChain")
+            .withArgs(
+                globalIndex,
+                globalIndexHashChainJS,
+            );
 
         // Check balances after claim
         expect(await ethers.provider.getBalance(sovereignChainBridgeContract.target)).to.be.equal(
@@ -2270,6 +2332,8 @@ describe("BridgeL2SovereignChain Contract", () => {
         const proofLocal = merkleTree.getProofTreeByIndex(0);
         const proofRollup = merkleTreeRollup.getProofTreeByIndex(0);
         const globalIndex = computeGlobalIndex(index, index, false);
+        let globalIndexHashChainJS = ethers.ZeroHash;
+        globalIndexHashChainJS = newHashChainValue(globalIndexHashChainJS, valueTo32BytesHex(globalIndex));
 
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proofLocal, index, rootJSRollup)).to.be.equal(true);
@@ -2433,7 +2497,12 @@ describe("BridgeL2SovereignChain Contract", () => {
             )
         )
             .to.emit(sovereignChainBridgeContract, "ClaimEvent")
-            .withArgs(index, originNetwork, tokenAddress, destinationAddress, amount);
+            .withArgs(index, originNetwork, tokenAddress, destinationAddress, amount)
+            .to.emit(sovereignChainBridgeContract, "UpdatedGlobalIndexHashChain")
+            .withArgs(
+                globalIndex,
+                globalIndexHashChainJS,
+            );
 
         // Check balances after claim
         expect(await ethers.provider.getBalance(sovereignChainBridgeContract.target)).to.be.equal(

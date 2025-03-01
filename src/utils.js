@@ -168,6 +168,7 @@ module.exports = {
     getStorageWrites,
     getStorageReadWrites,
     valueToStorageBytes,
+    valueTo32BytesHex: valueToStorageBytes,
     checkParams,
     getProviderAdjustingMultiplierGas,
     getDeployerFromParameters,

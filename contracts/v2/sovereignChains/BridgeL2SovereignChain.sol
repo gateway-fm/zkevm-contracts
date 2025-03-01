@@ -23,7 +23,7 @@ contract BridgeL2SovereignChain is
     // Bridge manager address; can set custom mapping for any token. It's highly recommend to set a timelock at this address after bootstrapping phase
     address public bridgeManager;
 
-    // Value of the global indexes hash chain, update for every bridge claim
+    // Value of the global indexes hash chain, updated for every bridge claim
     bytes32 public globalIndexHashChain;
 
     /**
@@ -71,10 +71,11 @@ contract BridgeL2SovereignChain is
 
     /**
      * @dev Emitted when the global index hash chain is updated (new claim)
-     * @param prevGlobalIndexHashChain Previous global index hash chain value
-     * @param globalIndexHashChain New global index hash chain value
+     * @param insertedGloblIndex Global index added to the hash chain
+     * @param newGlobalIndexHashChain New global index hash chain value
      */
-    event UpdatedGlobalIndexHashChain(bytes32 prevGlobalIndexHashChain, bytes32 globalIndexHashChain);
+    event UpdatedGlobalIndexHashChain(bytes32 insertedGloblIndex, bytes32 newGlobalIndexHashChain);
+
     /**
      * Disable initializers on the implementation following the best practices
      */
@@ -492,6 +493,42 @@ contract BridgeL2SovereignChain is
     }
 
     /**
+     * @notice Verify leaf and checks that it has not been claimed
+     * @dev Add logic to create a hash chain of globalIndexes
+     * @param smtProofLocalExitRoot Smt proof
+     * @param smtProofRollupExitRoot Smt proof
+     * @param globalIndex Index of the leaf
+     * @param mainnetExitRoot Mainnet exit root
+     * @param rollupExitRoot Rollup exit root
+     * @param leafValue leaf value
+     */
+    function _verifyLeaf(
+        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofLocalExitRoot,
+        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofRollupExitRoot,
+        uint256 globalIndex,
+        bytes32 mainnetExitRoot,
+        bytes32 rollupExitRoot,
+        bytes32 leafValue
+    ) internal override {
+        super._verifyLeaf(
+            smtProofLocalExitRoot,
+            smtProofRollupExitRoot,
+            globalIndex,
+            mainnetExitRoot,
+            rollupExitRoot,
+            leafValue
+        );
+
+        // Update globalIndexHashChain
+        globalIndexHashChain = Hashes.efficientKeccak256(
+            globalIndexHashChain,
+            bytes32(globalIndex)
+        );
+
+        emit UpdatedGlobalIndexHashChain(bytes32(globalIndex), globalIndexHashChain);
+    }
+
+    /**
      * @notice Function to check that an index is not claimed and set it as claimed
      * @dev function overridden to improve a bit the performance and bytecode not checking unnecessary conditions for sovereign chains context
      * @param leafIndex Index
@@ -510,14 +547,6 @@ contract BridgeL2SovereignChain is
         if (flipped & mask == 0) {
             revert AlreadyClaimed();
         }
-        // Update globalIndexHashChain
-        bytes32 prevGlobalIndexHashChain = globalIndexHashChain;
-        globalIndexHashChain = Hashes.efficientKeccak256(
-            globalIndexHashChain,
-            bytes32(globalIndex)
-        );
-
-        emit UpdatedGlobalIndexHashChain(prevGlobalIndexHashChain, globalIndexHashChain);
     }
 
     /**
