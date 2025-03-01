@@ -185,7 +185,7 @@ contract AggchainECDSA is AggchainBase {
         return
             keccak256(
                 abi.encodePacked(
-                    AGGCHAIN_TYPE,
+                    CONSENSUS_TYPE,
                     getAggchainVKey(finalAggchainVKeySelector),
                     keccak256(abi.encodePacked(trustedSequencer))
                 )

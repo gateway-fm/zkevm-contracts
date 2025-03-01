@@ -14,8 +14,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ////////////////////////////////////////////////////////////
     //                  Constants & Immutables                //
     ////////////////////////////////////////////////////////////
-    // Aggchain type that support generic aggchain hash
-    uint32 public constant AGGCHAIN_TYPE = 1;
+    // Consensus type that supports generic aggchain hash
+    // Naming has been kept as CONSENSUS_TYPE for consistency with the previous consensus type (PolygonPessimisticConsensus.sol)
+    uint32 public constant CONSENSUS_TYPE = 1;
 
     // AggLayerGateway address, used in case the flag `useDefaultGateway` is set to true, the aggchains keys are managed by the gateway
     IAggLayerGateway public immutable aggLayerGateway;
