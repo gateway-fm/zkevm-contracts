@@ -92,10 +92,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             }
         )) as unknown as GlobalExitRootManagerL2SovereignChain;
 
-        // initialize GlobalExitRootManagerL2SovereignChain
-        await sovereignChainGlobalExitRootContract.initialize(
-            ethers.ZeroAddress, deployer.address
-        );
         // cannot initialize bridgeV2 initializer from Sovereign bridge
         await expect(
             sovereignChainBridgeContract.initialize(

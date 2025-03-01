@@ -18,7 +18,7 @@ import "./interfaces/IPolygonPessimisticConsensus.sol";
 import "./interfaces/ISP1Verifier.sol";
 import "./interfaces/IPolygonRollupManager.sol";
 import "./interfaces/IAggchain.sol";
-import "./AggLayerGateway.sol";
+import "./interfaces/IAggLayerGateway.sol";
 import "./lib/Hashes.sol";
 
 /**
@@ -239,6 +239,9 @@ contract PolygonRollupManager is
     // Current rollup manager version
     string public constant ROLLUP_MANAGER_VERSION = "al-v0.3.0";
 
+    // Hardcoded address used to indicate that this address triggered in an event should not be considered as valid.
+    address private constant _NO_ADDRESS = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+
     // Global Exit Root address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IPolygonZkEVMGlobalExitRootV2 public immutable globalExitRootManager;
@@ -253,7 +256,7 @@ contract PolygonRollupManager is
 
     // Polygon Verifier Gateway address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    AggLayerGateway public immutable aggLayerGateway;
+    IAggLayerGateway public immutable aggLayerGateway;
 
     // Number of rollup types added, every new type will be assigned sequentially a new ID
     uint32 public rollupTypeCount;
@@ -404,6 +407,38 @@ contract PolygonRollupManager is
     event UpdateRollupManagerVersion(string rollupManagerVersion);
 
     /**
+     * @notice Emitted when a ALGateway or Pessimistic chain verifies a pessimistic proof
+     * @param rollupID Rollup ID
+     * @param prevPessimisticRoot Previous pessimistic root
+     * @param newPessimisticRoot New pessimistic root
+     * @param prevLocalExitRoot Previous local exit root
+     * @param newLocalExitRoot New local exit root
+     * @param l1InfoRoot L1 info root
+     * @param trustedAggregator Trusted aggregator address
+     */
+    event VerifyPessimisticStateTransition(
+        uint32 indexed rollupID,
+        bytes32 prevPessimisticRoot,
+        bytes32 newPessimisticRoot,
+        bytes32 prevLocalExitRoot,
+        bytes32 newLocalExitRoot,
+        bytes32 l1InfoRoot,
+        address indexed trustedAggregator
+    );
+
+    /**
+     * @dev Emitted when a new rollup is created based on a rollupType
+     */
+    event CreateNewAggchain(
+        uint32 indexed rollupID,
+        uint32 rollupTypeID,
+        address rollupAddress,
+        uint64 chainID,
+        uint8 rollupVerifierType,
+        bytes initializeBytesCustomChain
+    );
+
+    /**
      * @param _globalExitRootManager Global exit root manager address
      * @param _pol POL token address
      * @param _bridgeAddress Bridge address
@@ -413,8 +448,17 @@ contract PolygonRollupManager is
         IPolygonZkEVMGlobalExitRootV2 _globalExitRootManager,
         IERC20Upgradeable _pol,
         IPolygonZkEVMBridge _bridgeAddress,
-        AggLayerGateway _aggLayerGateway
+        IAggLayerGateway _aggLayerGateway
     ) {
+        // Check non zero inputs
+        if (
+            address(_globalExitRootManager) == address(0) ||
+            address(_pol) == address(0) ||
+            address(_bridgeAddress) == address(0) ||
+            address(_aggLayerGateway) == address(0)
+        ) {
+            revert InvalidConstructorInputs();
+        }
         globalExitRootManager = _globalExitRootManager;
         pol = _pol;
         bridgeAddress = _bridgeAddress;
@@ -527,28 +571,19 @@ contract PolygonRollupManager is
      * @notice Create a new rollup
      * @param rollupTypeID Rollup type to deploy
      * @param chainID ChainID of the rollup, must be a new one, can not have more than 32 bits
-     * @param admin Admin of the new created rollup
-     * @param sequencer Sequencer of the new created rollup
-     * @param gasTokenAddress Indicates the token address that will be used to pay gas fees in the new rollup
-     * Note if a wrapped token of the bridge is used, the original network and address of this wrapped will be used instead
-     * @param sequencerURL Sequencer URL of the new created rollup
-     * @param networkName Network name of the new created rollup
+     * @param initializeBytesCustomChain Encoded params to initialize the chain. Each aggchain has its encoded params.
+     * @dev in case of rollupType state transition or pessimistic, the encoded params
+     * are the following: (address admin, address sequencer, address gasTokenAddress, string sequencerURL, string networkName)
      */
-    function createNewRollup(
+    function attachAggchainToAL(
         uint32 rollupTypeID,
         uint64 chainID,
-        address admin,
-        address sequencer,
-        address gasTokenAddress,
-        string memory sequencerURL,
-        string memory networkName,
         bytes memory initializeBytesCustomChain
     ) external onlyRole(_CREATE_ROLLUP_ROLE) {
         // Check that rollup type exists
         if (rollupTypeID == 0 || rollupTypeID > rollupTypeCount) {
             revert RollupTypeDoesNotExist();
         }
-
         // Check rollup type is not obsolete
         RollupType storage rollupType = rollupTypeMap[rollupTypeID];
         if (rollupType.obsolete) {
@@ -560,7 +595,6 @@ contract PolygonRollupManager is
         if (chainID > type(uint32).max) {
             revert ChainIDOutOfRange();
         }
-
         // Check chainID nullifier
         if (chainIDToRollupID[chainID] != 0) {
             revert ChainIDAlreadyExist();
@@ -577,34 +611,70 @@ contract PolygonRollupManager is
             )
         );
 
-        // Set chainID nullifier
+        // Set chainID to rollup id mapping
         chainIDToRollupID[chainID] = rollupID;
-
-        // Store rollup data
+        // Set rollup address to rollup id mapping
         rollupAddressToID[rollupAddress] = rollupID;
 
+        // Set rollup data
         RollupData storage rollup = _rollupIDToRollupData[rollupID];
 
         rollup.rollupContract = rollupAddress;
-        rollup.forkID = rollupType.forkID;
-        rollup.verifier = rollupType.verifier;
         rollup.chainID = chainID;
-        rollup.batchNumToStateRoot[0] = rollupType.genesis;
         rollup.rollupTypeID = rollupTypeID;
         rollup.rollupVerifierType = rollupType.rollupVerifierType;
-        rollup.programVKey = rollupType.programVKey;
-
-        emit CreateNewRollup(
-            rollupID,
-            rollupTypeID,
-            rollupAddress,
-            chainID,
-            gasTokenAddress
-        );
 
         if (rollupType.rollupVerifierType == VerifierType.ALGateway) {
+            // Emit create new aggchain event
+            emit CreateNewAggchain(
+                rollupID,
+                rollupTypeID,
+                rollupAddress,
+                chainID,
+                uint8(rollupType.rollupVerifierType),
+                initializeBytesCustomChain
+            );
+
+            // This event is emitted for backwards compatibility
+            /// @dev the address is hardcoded as it doesn't apply for aggchains and zero address is used for ether
+            emit CreateNewRollup(
+                rollupID,
+                rollupTypeID,
+                rollupAddress,
+                chainID,
+                _NO_ADDRESS
+            );
+
+            // Initialize aggchain with the custom chain bytes
             IAggchain(rollupAddress).initialize(initializeBytesCustomChain);
         } else {
+            // assign non ALGateway values to rollup data
+            rollup.forkID = rollupType.forkID;
+            rollup.verifier = rollupType.verifier;
+            rollup.batchNumToStateRoot[0] = rollupType.genesis;
+            rollup.programVKey = rollupType.programVKey;
+
+            // custom parsing of the initializeBytesCustomChain for a sate transition or pessimistic rollup
+            (
+                address admin,
+                address sequencer,
+                address gasTokenAddress,
+                string memory sequencerURL,
+                string memory networkName
+            ) = abi.decode(
+                    initializeBytesCustomChain,
+                    (address, address, address, string, string)
+                );
+
+            // Emit create new rollup event
+            emit CreateNewRollup(
+                rollupID,
+                rollupTypeID,
+                rollupAddress,
+                chainID,
+                gasTokenAddress
+            );
+
             // Initialize new rollup
             IPolygonRollupBase(rollupAddress).initialize(
                 admin,
@@ -627,7 +697,7 @@ contract PolygonRollupManager is
      * @param initRoot Genesis block for StateTransitionChains & localExitRoot for pessimistic chain
      * @param rollupVerifierType Compatibility ID for the added rollup
      * @param programVKey Hashed program that will be executed in case of using a "general purpose ZK verifier" e.g SP1
-     * @param initPessimisticRoot Pessimistic root to init the chain, contains the local balance tree and the local nullifier tree hashed
+     * @param initPessimisticRoot Pessimistic root to init the chain.
      */
     function addExistingRollup(
         address rollupAddress,
@@ -722,8 +792,6 @@ contract PolygonRollupManager is
 
         // Only allowed to update to an older rollup type id if the destination rollup type is ALGateway
         if (
-            rollupTypeMap[newRollupTypeID].rollupVerifierType !=
-            VerifierType.ALGateway &&
             rollup.rollupTypeID >= newRollupTypeID
         ) {
             revert UpdateToOldRollupTypeID();
@@ -793,10 +861,6 @@ contract PolygonRollupManager is
 
         // If not upgrading to ALGateway
         if (newRollupType.rollupVerifierType != VerifierType.ALGateway) {
-            // Current rollup type cant be ALGateway
-            if (rollup.rollupVerifierType == VerifierType.ALGateway) {
-                revert UpdateNotCompatible();
-            }
             // Current rollup type must be same than new rollup type
             if (rollup.rollupVerifierType != newRollupType.rollupVerifierType) {
                 revert UpdateNotCompatible();
@@ -1103,7 +1167,7 @@ contract PolygonRollupManager is
      * @param newPessimisticRoot New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
      * @param proof SP1 proof (Plonk)
      * @param customChainData Specific custom data to verify Aggregation layer chains
-     * @dev A reentrancy measure has been applied because this function calls `getAggchainHash`, is an open function implemented by the aggchains
+     * @dev A reentrancy measure has been applied because this function calls `onVerifyPessimistic`, is an open function implemented by the aggchains
      * @dev the function can not be a view because the nonReentrant uses a transient storage variable
      */
     function verifyPessimisticTrustedAggregator(
@@ -1116,7 +1180,7 @@ contract PolygonRollupManager is
     ) external onlyRole(_TRUSTED_AGGREGATOR_ROLE) nonReentrant {
         RollupData storage rollup = _rollupIDToRollupData[rollupID];
 
-        // Only for pessimistic verifiers
+        // Not for state transition chains
         if (rollup.rollupVerifierType == VerifierType.StateTransition) {
             revert StateTransitionChainsNotAllowed();
         }
@@ -1159,20 +1223,38 @@ contract PolygonRollupManager is
         lastAggregationTimestamp = uint64(block.timestamp);
 
         // Consolidate state
+        bytes32 prevLocalExitRoot = rollup.lastLocalExitRoot;
         rollup.lastLocalExitRoot = newLocalExitRoot;
+        bytes32 prevPessimisticRoot = rollup.lastPessimisticRoot;
         rollup.lastPessimisticRoot = newPessimisticRoot;
 
         // Interact with globalExitRootManager
         globalExitRootManager.updateExitRoot(getRollupExitRoot());
 
         // Same event as verifyBatches to support current bridge service to synchronize everything
+        /// @dev moved newLocalExitRoot to aux variable to avoid stack too deep errors at compilation
+        bytes32 newLocalExitRootAux = newLocalExitRoot;
         emit VerifyBatchesTrustedAggregator(
             rollupID,
             0, // final batch: does not  apply in pessimistic
             bytes32(0), // new state root: does not apply in pessimistic
-            newLocalExitRoot,
+            newLocalExitRootAux,
             msg.sender
         );
+
+        // If rollup verifier type is not state transition but ALGateway or pessimistic, emit specific event
+        if (rollup.rollupVerifierType != VerifierType.StateTransition) {
+            emit VerifyPessimisticStateTransition(
+                rollupID,
+                prevPessimisticRoot,
+                newPessimisticRoot,
+                prevLocalExitRoot,
+                newLocalExitRootAux,
+                l1InfoRoot,
+                msg.sender
+            );
+        }
+
         if (rollup.rollupVerifierType == VerifierType.ALGateway) {
             // Allow chains to manage customData
             // Callback to the rollup address
@@ -1292,16 +1374,25 @@ contract PolygonRollupManager is
             for (uint256 i = 0; i < nextIterationNodes; i++) {
                 // if we are on the last iteration of the current level and the nodes are odd
                 if (i == nextIterationNodes - 1 && (currentNodes % 2) == 1) {
-                    nextTmpTree[i] = Hashes.efficientKeccak256(tmpTree[i * 2], currentZeroHashHeight);
+                    nextTmpTree[i] = Hashes.efficientKeccak256(
+                        tmpTree[i * 2],
+                        currentZeroHashHeight
+                    );
                 } else {
-                    nextTmpTree[i] = Hashes.efficientKeccak256(tmpTree[i * 2], tmpTree[(i * 2) + 1]);
+                    nextTmpTree[i] = Hashes.efficientKeccak256(
+                        tmpTree[i * 2],
+                        tmpTree[(i * 2) + 1]
+                    );
                 }
             }
 
             // Update tree variables
             tmpTree = nextTmpTree;
             currentNodes = nextIterationNodes;
-            currentZeroHashHeight = Hashes.efficientKeccak256(currentZeroHashHeight, currentZeroHashHeight);
+            currentZeroHashHeight = Hashes.efficientKeccak256(
+                currentZeroHashHeight,
+                currentZeroHashHeight
+            );
             remainingLevels--;
         }
 
@@ -1309,8 +1400,14 @@ contract PolygonRollupManager is
 
         // Calculate remaining levels, since it's a sequential merkle tree, the rest of the tree are zeroes
         for (uint256 i = 0; i < remainingLevels; i++) {
-            currentRoot = Hashes.efficientKeccak256(currentRoot, currentZeroHashHeight);
-            currentZeroHashHeight = Hashes.efficientKeccak256(currentZeroHashHeight, currentZeroHashHeight);
+            currentRoot = Hashes.efficientKeccak256(
+                currentRoot,
+                currentZeroHashHeight
+            );
+            currentZeroHashHeight = Hashes.efficientKeccak256(
+                currentZeroHashHeight,
+                currentZeroHashHeight
+            );
         }
         return currentRoot;
     }
@@ -1364,7 +1461,7 @@ contract PolygonRollupManager is
     }
 
     /**
-     * @notice Function to calculate the pessimistic or aggregation layer input bytes
+     * @notice Function to calculate the pessimistic input bytes
      * @param rollupID Rollup id used to calculate the input snark bytes
      * @param l1InfoTreeRoot L1 Info tree root to proof imported bridges
      * @param newLocalExitRoot New local exit root
@@ -1589,6 +1686,47 @@ contract PolygonRollupManager is
     }
 
     /**
+     * @notice Get rollup data: VerifierType State transition
+     * @param rollupID Rollup identifier
+     */
+    function rollupIDToRollupDataDeserialized(
+        uint32 rollupID
+    )
+        public
+        view
+        returns (
+            address rollupContract,
+            uint64 chainID,
+            address verifier,
+            uint64 forkID,
+            bytes32 lastLocalExitRoot,
+            uint64 lastBatchSequenced,
+            uint64 lastVerifiedBatch,
+            uint64 _legacyLastPendingState,
+            uint64 _legacyLastPendingStateConsolidated,
+            uint64 lastVerifiedBatchBeforeUpgrade,
+            uint64 rollupTypeID,
+            VerifierType rollupVerifierType
+        )
+    {
+        RollupData storage rollup = _rollupIDToRollupData[rollupID];
+
+        rollupContract = rollup.rollupContract;
+        chainID = rollup.chainID;
+        verifier = rollup.verifier;
+        forkID = rollup.forkID;
+        lastLocalExitRoot = rollup.lastLocalExitRoot;
+        lastBatchSequenced = rollup.lastBatchSequenced;
+        lastVerifiedBatch = rollup.lastVerifiedBatch;
+        _legacyLastPendingState = rollup._legacyLastPendingState;
+        _legacyLastPendingStateConsolidated = rollup
+            ._legacyLastPendingStateConsolidated;
+        lastVerifiedBatchBeforeUpgrade = rollup.lastVerifiedBatchBeforeUpgrade;
+        rollupTypeID = rollup.rollupTypeID;
+        rollupVerifierType = rollup.rollupVerifierType;
+    }
+
+    /**
      * @notice Get rollup data: VerifierType Pessimistic
      * @param rollupID Rollup identifier
      */
@@ -1617,7 +1755,7 @@ contract PolygonRollupManager is
      * @dev A deserialized version of the rollup data done for a better parsing from etherscan
      * @param rollupID Rollup identifier
      */
-    function rollupIDToRollupDataDeserialized(
+    function rollupIDToRollupDataV2Deserialized(
         uint32 rollupID
     )
         public

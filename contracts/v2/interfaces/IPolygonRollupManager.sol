@@ -309,6 +309,16 @@ interface IPolygonRollupManager {
      */
     error InvalidVerifierType();
 
+    /**
+     * @dev Thrown when trying to create a new ALGateway verifier type rollup with invalid inputs
+     */
+    error InvalidALGatewayInputs();
+
+    /**
+     * @dev Thrown when trying to deploy rollup Manager with some zero address as the input
+     */
+    error InvalidConstructorInputs();
+
     enum VerifierType {
         StateTransition,
         Pessimistic,
@@ -327,14 +337,9 @@ interface IPolygonRollupManager {
 
     function obsoleteRollupType(uint32 rollupTypeID) external;
 
-    function createNewRollup(
+    function attachAggchainToAL(
         uint32 rollupTypeID,
         uint64 chainID,
-        address admin,
-        address sequencer,
-        address gasTokenAddress,
-        string memory sequencerURL,
-        string memory networkName,
         bytes memory initializeBytesCustomChain
     ) external;
 

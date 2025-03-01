@@ -20,8 +20,8 @@ describe("AggLayerGateway tests", () => {
 
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
-    const AGGLAYER_ADD_ROUTE_ROLE = ethers.id("AGGLAYER_ADD_ROUTE_ROLE");
-    const AGGLAYER_FREEZE_ROUTE_ROLE = ethers.id("AGGLAYER_FREEZE_ROUTE_ROLE");
+    const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
+    const AL_FREEZE_PP_ROUTE_ROLE = ethers.id("AL_FREEZE_PP_ROUTE_ROLE");
 
     const selector = input["proof"].slice(0, 10);
     const pessimisticVKey = input["vkey"];
@@ -78,23 +78,23 @@ describe("AggLayerGateway tests", () => {
             aggLayerGatewayContract.addPessimisticVKeyRoute(selector, verifierContract.target, pessimisticVKey)
         )
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "AccessControlUnauthorizedAccount")
-            .withArgs(deployer.address, AGGLAYER_ADD_ROUTE_ROLE);
+            .withArgs(deployer.address, AL_ADD_PP_ROUTE_ROLE);
 
-        // grantRole AGGLAYER_ADD_ROUTE_ROLE --> aggLayerAdmin
+        // grantRole AL_ADD_PP_ROUTE_ROLE --> aggLayerAdmin
         await expect(
-            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address)
+            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address)
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
+            .withArgs(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
 
-        expect(await aggLayerGatewayContract.hasRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
+        expect(await aggLayerGatewayContract.hasRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
 
-        // check SelectorCannotBeZero
+        // check PPSelectorCannotBeZero
         await expect(
             aggLayerGatewayContract
                 .connect(aggLayerAdmin)
                 .addPessimisticVKeyRoute("0x00000000", verifierContract.target, pessimisticVKey)
-        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "SelectorCannotBeZero");
+        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "PPSelectorCannotBeZero");
 
         // check RouteAdded
         await expect(
@@ -112,20 +112,20 @@ describe("AggLayerGateway tests", () => {
                 .addPessimisticVKeyRoute(selector, verifierContract.target, pessimisticVKey)
         )
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteAlreadyExists")
-            .withArgs(verifierContract.target);
+            .withArgs(selector, verifierContract.target);
     });
 
     it("freezePessimisticVKeyRoute", async () => {
         const testSelector = "0x00000002";
 
-        // grantRole AGGLAYER_ADD_ROUTE_ROLE --> aggLayerAdmin
+        // grantRole AL_ADD_PP_ROUTE_ROLE --> aggLayerAdmin
         await expect(
-            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address)
+            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address)
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
+            .withArgs(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
 
-        expect(await aggLayerGatewayContract.hasRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
+        expect(await aggLayerGatewayContract.hasRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
 
         // add pessimistic vkey route
         await expect(
@@ -140,16 +140,16 @@ describe("AggLayerGateway tests", () => {
         // check onlyRole
         await expect(aggLayerGatewayContract.freezePessimisticVKeyRoute(selector))
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "AccessControlUnauthorizedAccount")
-            .withArgs(deployer.address, AGGLAYER_FREEZE_ROUTE_ROLE);
+            .withArgs(deployer.address, AL_FREEZE_PP_ROUTE_ROLE);
 
-        // grantRole AGGLAYER_FREEZE_ROUTE_ROLE --> aggLayerAdmin
+        // grantRole AL_FREEZE_PP_ROUTE_ROLE --> aggLayerAdmin
         await expect(
-            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AGGLAYER_FREEZE_ROUTE_ROLE, aggLayerAdmin.address)
+            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AL_FREEZE_PP_ROUTE_ROLE, aggLayerAdmin.address)
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(AGGLAYER_FREEZE_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
+            .withArgs(AL_FREEZE_PP_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
 
-        expect(await aggLayerGatewayContract.hasRole(AGGLAYER_FREEZE_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
+        expect(await aggLayerGatewayContract.hasRole(AL_FREEZE_PP_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
 
         // check RouteNotFound
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).freezePessimisticVKeyRoute(testSelector))
@@ -159,11 +159,11 @@ describe("AggLayerGateway tests", () => {
         // check RouteFrozen
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).freezePessimisticVKeyRoute(selector))
             .to.emit(aggLayerGatewayContract, "RouteFrozen")
-            .withArgs(selector, verifierContract.target);
+            .withArgs(selector, verifierContract.target, pessimisticVKey);
 
         // check RouteIsFrozen
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).freezePessimisticVKeyRoute(selector))
-            .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteIsFrozen")
+            .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteIsAlreadyFrozen")
             .withArgs(selector);
     });
 
@@ -237,7 +237,7 @@ describe("AggLayerGateway tests", () => {
             aggLayerGatewayContract.connect(aggLayerAdmin).updateDefaultAggchainVKey(selector, newPessimisticVKey)
         )
             .to.emit(aggLayerGatewayContract, "UpdateDefaultAggchainVKey")
-            .withArgs(selector, newPessimisticVKey);
+            .withArgs(selector, pessimisticVKey, newPessimisticVKey);
 
         // check getDefaultAggchainVKey --> newPessimisticVKey
         expect(await aggLayerGatewayContract.getDefaultAggchainVKey(selector)).to.be.equal(newPessimisticVKey);
@@ -250,14 +250,14 @@ describe("AggLayerGateway tests", () => {
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteNotFound")
             .withArgs(selector);
 
-        // grantRole AGGLAYER_ADD_ROUTE_ROLE --> aggLayerAdmin
+        // grantRole AL_ADD_PP_ROUTE_ROLE --> aggLayerAdmin
         await expect(
-            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address)
+            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address)
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
+            .withArgs(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
 
-        expect(await aggLayerGatewayContract.hasRole(AGGLAYER_ADD_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
+        expect(await aggLayerGatewayContract.hasRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
 
         await expect(
             aggLayerGatewayContract
@@ -270,21 +270,21 @@ describe("AggLayerGateway tests", () => {
         // check verifyProof
         await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], input["proof"]));
 
-        // grantRole AGGLAYER_FREEZE_ROUTE_ROLE --> aggLayerAdmin
+        // grantRole AL_FREEZE_PP_ROUTE_ROLE --> aggLayerAdmin
         await expect(
-            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AGGLAYER_FREEZE_ROUTE_ROLE, aggLayerAdmin.address)
+            aggLayerGatewayContract.connect(defaultAdmin).grantRole(AL_FREEZE_PP_ROUTE_ROLE, aggLayerAdmin.address)
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(AGGLAYER_FREEZE_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
+            .withArgs(AL_FREEZE_PP_ROUTE_ROLE, aggLayerAdmin.address, defaultAdmin.address);
 
-        expect(await aggLayerGatewayContract.hasRole(AGGLAYER_FREEZE_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
+        expect(await aggLayerGatewayContract.hasRole(AL_FREEZE_PP_ROUTE_ROLE, aggLayerAdmin.address)).to.be.true;
 
         // frozen route
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).freezePessimisticVKeyRoute(selector))
             .to.emit(aggLayerGatewayContract, "RouteFrozen")
-            .withArgs(selector, verifierContract.target);
+            .withArgs(selector, verifierContract.target, pessimisticVKey);
 
-        // check RouteFrozen
+        // check RouteIsFrozen
         await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], input["proof"]))
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteIsFrozen")
             .withArgs(selector);

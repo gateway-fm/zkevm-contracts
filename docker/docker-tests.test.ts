@@ -85,11 +85,11 @@ describe("Docker build tests Contract", () => {
         expect(AggLayerGatewayContract.target).to.equal(aggLayerGatewayAddress);
         const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
         const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
-        const AGGLAYER_ADD_ROUTE_ROLE = ethers.id("AGGLAYER_ADD_ROUTE_ROLE");
-        const AGGLAYER_FREEZE_ROUTE_ROLE = ethers.id("AGGLAYER_FREEZE_ROUTE_ROLE");
+        const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
+        const AL_FREEZE_PP_ROUTE_ROLE = ethers.id("AL_FREEZE_PP_ROUTE_ROLE");
         expect(await AggLayerGatewayContract.hasRole(DEFAULT_ADMIN_ROLE, admin)).to.be.true;
         expect(await AggLayerGatewayContract.hasRole(AGGCHAIN_DEFAULT_VKEY_ROLE, admin)).to.be.true;
-        expect(await AggLayerGatewayContract.hasRole(AGGLAYER_ADD_ROUTE_ROLE, admin)).to.be.true;
-        expect(await AggLayerGatewayContract.hasRole(AGGLAYER_FREEZE_ROUTE_ROLE, admin)).to.be.true;
+        expect(await AggLayerGatewayContract.hasRole(AL_ADD_PP_ROUTE_ROLE, admin)).to.be.true;
+        expect(await AggLayerGatewayContract.hasRole(AL_FREEZE_PP_ROUTE_ROLE, admin)).to.be.true;
     });
 });

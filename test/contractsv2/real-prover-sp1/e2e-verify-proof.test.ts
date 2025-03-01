@@ -15,6 +15,7 @@ const {
     computeConsensusHashEcdsa,
 } = require("../../../src/pessimistic-utils");
 const inputProof = require("./test-inputs/input.json");
+const { encodeInitializeBytesPessimistic } = require("../../../src/utils-common-aggchain");
 
 describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
     let deployer: any;
@@ -94,10 +95,18 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         if ((await upgrades.admin.getInstance()).target !== "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0") {
             firstDeployment = false;
         }
+
+        // deploy AggLayerGateway
+        const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway");
+        const aggLayerGatewayContract = (await upgrades.deployProxy(AggLayerGatewayFactory, [], {
+            initializer: false,
+            unsafeAllow: ["constructor"],
+        }))
+
         const nonceProxyBridge =
             Number(await ethers.provider.getTransactionCount(deployer.address)) + (firstDeployment ? 3 : 2);
 
-        const nonceProxyZkevm = nonceProxyBridge + 2; // Always have to redeploy impl since the polygonZkEVMGlobalExitRoot address changes
+        const nonceProxyZkevm = nonceProxyBridge + 2; // Always have to redeploy impl since the polygonZkEVMGlobalExitRoot address changes,
 
         const precalculateBridgeAddress = ethers.getCreateAddress({
             from: deployer.address,
@@ -132,7 +141,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 polygonZkEVMGlobalExitRoot.target,
                 polTokenContract.target,
                 polygonZkEVMBridgeContract.target,
-                ethers.ZeroAddress // AggLayer Gateway address
+                aggLayerGatewayContract.target,
             ],
             unsafeAllow: ["constructor", "state-variable-immutable"],
         })) as unknown as PolygonRollupManagerMock;
@@ -234,7 +243,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const urlSequencer = "https://pessimistic:8545";
         const networkName = "testPessimistic";
         const pessimisticRollupID = inputProof["pp-inputs"]["origin-network"];
-        const initializeBytesCustomChain = "0x";
+        const initializeBytesCustomChain = encodeInitializeBytesPessimistic(admin.address, trustedSequencer, gasTokenAddress, urlSequencer, networkName);
         // create new pessimistic
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
@@ -243,14 +252,9 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
 
         await rollupManagerContract
             .connect(admin)
-            .createNewRollup(
+            .attachAggchainToAL(
                 rollupTypeID,
                 chainID,
-                admin.address,
-                trustedSequencer,
-                gasTokenAddress,
-                urlSequencer,
-                networkName,
                 initializeBytesCustomChain
             );
 

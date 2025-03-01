@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
-// TODO: check to upgrade version (bugs in solidity?) Check optimism supports cancun
 import {ISP1Verifier} from "./interfaces/ISP1Verifier.sol";
 import {IAggLayerGateway} from "./interfaces/IAggLayerGateway.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts52/access/AccessControl.sol";
+
 // Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/SP1VerifierGateway.sol
 
 /**
  * @title AggLayerGateway
  * @notice Contract to handle the verification keys for the pessimistic proof.
  * It supports adding and freezing PP verification keys and verifying the PP.
- * Also maintains the default verification keys of aggchains when the flag of using default
- * keys is enabled (check aggchainBase contract)
+ * Also maintains the default verification keys of aggchains
  */
 contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     ////////////////////////////////////////////////////////////
@@ -20,14 +19,19 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     ////////////////////////////////////////////////////////////
     // Roles
     // Default admin role, can grant roles to addresses
+    // @dev value: 0x131410eab1236cee2db19035b0e825c94e5ab705dffe23321dd53856da531617
     bytes32 internal constant AGGCHAIN_DEFAULT_VKEY_ROLE =
         keccak256("AGGCHAIN_DEFAULT_VKEY_ROLE");
+
     // Can add a route to a pessimistic verification key.
-    bytes32 internal constant AGGLAYER_ADD_ROUTE_ROLE =
-        keccak256("AGGLAYER_ADD_ROUTE_ROLE");
+    // @dev value 0x0fdc2a718b96bc741c7544001e3dd7c26730802c54781668fa78a120e622629b
+    bytes32 internal constant AL_ADD_PP_ROUTE_ROLE =
+        keccak256("AL_ADD_PP_ROUTE_ROLE");
+
     // Can freeze a route to a pessimistic verification key.
-    bytes32 internal constant AGGLAYER_FREEZE_ROUTE_ROLE =
-        keccak256("AGGLAYER_FREEZE_ROUTE_ROLE");
+    // @dev value 0xca75ae4228cde6195f9fa3dbde8dc352fb30aa63780717a378ccfc50274355dd
+    bytes32 internal constant AL_FREEZE_PP_ROUTE_ROLE =
+        keccak256("AL_FREEZE_PP_ROUTE_ROLE");
 
     ////////////////////////////////////////////////////////////
     //                       Mappings                         //
@@ -35,6 +39,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     // Mapping with the default aggchain verification keys
     mapping(bytes4 defaultAggchainSelector => bytes32 defaultAggchainVKey)
         public defaultAggchainVKeys;
+
     // Mapping with the pessimistic verification key routes
     mapping(bytes4 pessimisticVKeySelector => AggLayerVerifierRoute)
         public pessimisticVKeyRoutes;
@@ -44,19 +49,6 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
      * variables without shifting down storage in the inheritance chain.
      */
     uint256[50] private _gap;
-
-    ////////////////////////////////////////////////////////////
-    //                       Events                           //
-    ////////////////////////////////////////////////////////////
-    /**
-     * @dev Emitted when the admin starts the two-step transfer role setting a new pending admin
-     */
-    event TransferAggLayerAdminRole(address newPendingAggLayerAdmin);
-
-    /**
-     * @dev Emitted when the pending admin accepts the admin role
-     */
-    event AcceptAggLayerAdminRole(address newAggLayerAdmin);
 
     ////////////////////////////////////////////////////////////
     //                       Constructor                      //
@@ -75,25 +67,25 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     /**
      * @notice  Initializer function to set new rollup manager version.
      * @param defaultAdmin The address of the default admin. Can grant role to addresses.
+     * @dev This address is the highest privileged address so it's recommended to use a timelock
      * @param aggchainDefaultVKeyRole The address that can manage the aggchain verification keys.
      * @param addRouteRole The address that can add a route to a pessimistic verification key.
      * @param freezeRouteRole The address that can freeze a route to a pessimistic verification key.
-     * @dev This address is the highest privileged address so it's recommended to use a timelock
      */
     function initialize(
         address defaultAdmin,
         address aggchainDefaultVKeyRole,
         address addRouteRole,
         address freezeRouteRole
-    ) external virtual initializer {
+    ) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggchainDefaultVKeyRole);
-        _grantRole(AGGLAYER_ADD_ROUTE_ROLE, addRouteRole);
-        _grantRole(AGGLAYER_FREEZE_ROUTE_ROLE, freezeRouteRole);
+        _grantRole(AL_ADD_PP_ROUTE_ROLE, addRouteRole);
+        _grantRole(AL_FREEZE_PP_ROUTE_ROLE, freezeRouteRole);
     }
 
     ////////////////////////////////////////////////////////////
-    //                    Functions: views                    //
+    //        Functions: AggLayerGateway (pessimistic)        //
     ////////////////////////////////////////////////////////////
     /**
      * @notice Function to verify the pessimistic proof.
@@ -109,12 +101,14 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         bytes calldata proofBytes
     ) external view {
         bytes4 ppSelector = bytes4(proofBytes[:4]);
+
         AggLayerVerifierRoute memory route = pessimisticVKeyRoutes[ppSelector];
         if (route.verifier == address(0)) {
             revert RouteNotFound(ppSelector);
         } else if (route.frozen) {
             revert RouteIsFrozen(ppSelector);
         }
+
         ISP1Verifier(route.verifier).verifyProof(
             route.pessimisticVKey,
             publicValues,
@@ -122,9 +116,6 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         );
     }
 
-    ////////////////////////////////////////////////////////////
-    //               Functions: AggLayerGateway               //
-    ////////////////////////////////////////////////////////////
     /**
      * @notice Function to add a pessimistic verification key route
      * @param pessimisticVKeySelector The 4 bytes selector to add to the pessimistic verification keys.
@@ -135,16 +126,19 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         bytes4 pessimisticVKeySelector,
         address verifier,
         bytes32 pessimisticVKey
-    ) external onlyRole(AGGLAYER_ADD_ROUTE_ROLE) {
+    ) external onlyRole(AL_ADD_PP_ROUTE_ROLE) {
         if (pessimisticVKeySelector == bytes4(0)) {
-            revert SelectorCannotBeZero();
+            revert PPSelectorCannotBeZero();
+        }
+        if (pessimisticVKey == bytes32(0)) {
+            revert VKeyCannotBeZero();
         }
 
         AggLayerVerifierRoute storage route = pessimisticVKeyRoutes[
             pessimisticVKeySelector
         ];
         if (route.verifier != address(0)) {
-            revert RouteAlreadyExists(route.verifier);
+            revert RouteAlreadyExists(pessimisticVKeySelector, route.verifier);
         }
 
         route.verifier = verifier;
@@ -158,7 +152,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
      */
     function freezePessimisticVKeyRoute(
         bytes4 pessimisticVKeySelector
-    ) external onlyRole(AGGLAYER_FREEZE_ROUTE_ROLE) {
+    ) external onlyRole(AL_FREEZE_PP_ROUTE_ROLE) {
         AggLayerVerifierRoute storage route = pessimisticVKeyRoutes[
             pessimisticVKeySelector
         ];
@@ -166,12 +160,16 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
             revert RouteNotFound(pessimisticVKeySelector);
         }
         if (route.frozen) {
-            revert RouteIsFrozen(pessimisticVKeySelector);
+            revert RouteIsAlreadyFrozen(pessimisticVKeySelector);
         }
 
         route.frozen = true;
 
-        emit RouteFrozen(pessimisticVKeySelector, route.verifier);
+        emit RouteFrozen(
+            pessimisticVKeySelector,
+            route.verifier,
+            route.pessimisticVKey
+        );
     }
 
     ////////////////////////////////////////////////////////////
@@ -180,8 +178,8 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     /**
      * @notice Function to add an aggchain verification key
      * @param defaultAggchainSelector The 4 bytes selector to add to the default aggchain verification keys.
-     * @dev First 2 bytes of the selector are the aggchain type (ex: FEP, ECDSA), the last 2 bytes are the 'verification key identifier'
-     * @param newAggchainVKey New pessimistic program verification key
+     * @dev First 2 bytes of the selector  are the 'verification key identifier', the last 2 bytes are the aggchain type (ex: FEP, ECDSA)
+     * @param newAggchainVKey New default aggchain verification key to be added
      */
     function addDefaultAggchainVKey(
         bytes4 defaultAggchainSelector,
@@ -191,6 +189,10 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         if (defaultAggchainVKeys[defaultAggchainSelector] != bytes32(0)) {
             revert AggchainVKeyAlreadyExists();
         }
+        if (newAggchainVKey == bytes32(0)) {
+            revert VKeyCannotBeZero();
+        }
+
         // Add the new VKey to the mapping
         defaultAggchainVKeys[defaultAggchainSelector] = newAggchainVKey;
 
@@ -200,7 +202,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     /**
      * @notice Function to update a default aggchain verification key from the mapping
      * @param defaultAggchainSelector The 4 bytes selector to update the default aggchain verification keys.
-     * @param newDefaultAggchainVKey New pessimistic program verification key
+     * @param newDefaultAggchainVKey Updated default aggchain verification key value
      */
     function updateDefaultAggchainVKey(
         bytes4 defaultAggchainSelector,
@@ -210,11 +212,14 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         if (defaultAggchainVKeys[defaultAggchainSelector] == bytes32(0)) {
             revert AggchainVKeyNotFound();
         }
+
         // Update the VKey
+        bytes32 previousVKey = defaultAggchainVKeys[defaultAggchainSelector];
         defaultAggchainVKeys[defaultAggchainSelector] = newDefaultAggchainVKey;
 
         emit UpdateDefaultAggchainVKey(
             defaultAggchainSelector,
+            previousVKey,
             newDefaultAggchainVKey
         );
     }
@@ -230,6 +235,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         if (defaultAggchainVKeys[defaultAggchainSelector] == bytes32(0)) {
             revert AggchainVKeyNotFound();
         }
+
         return defaultAggchainVKeys[defaultAggchainSelector];
     }
 }

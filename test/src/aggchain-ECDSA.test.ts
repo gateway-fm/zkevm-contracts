@@ -28,9 +28,10 @@ describe("Test vectors aggchain ECDSA", () => {
         let initializeBytesAggchainV0: string;
         let initializeBytesAggchainV1: string;
         let aggchainParams: string;
-        let aggchainSelectors: string[] = [];
-        let aggchainData: string[] = [];
-        let aggchainHash: string[] = [];
+        let aggchainSelectors: string;
+        let finalAggchainVKeySelector: string;
+        let aggchainData: string;
+        let aggchainHash: string;
 
         const data = dataECDSA[i].input;
 
@@ -38,26 +39,15 @@ describe("Test vectors aggchain ECDSA", () => {
             // load signers
             [vKeyManager, admin] = await ethers.getSigners();
 
-            if (data.aggchainVKeySelectors.length !== data.ownedAggchainVkeys.length) {
-                throw new Error("aggchainVKeySelectors and ownedAggchainVkeys must have the same length");
-            }
+            finalAggchainVKeySelector = utilsCommon.getFinalAggchainVKeySelectorFromType(
+                data.initAggchainVKeySelector,
+                utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA
+            )
 
-            if (data.aggchainVKeySelectors.length !== 0) {
-                for (let j = 0; j < data.aggchainVKeySelectors.length; j++) {
-                    // get final aggchainSelector
-                    aggchainSelectors.push(
-                        utilsCommon.getFinalAggchainVKeySelectorFromType(
-                            data?.aggchainVKeySelectors[j],
-                            utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA
-                        )
-                    );
-
-                    // check final aggchainSelector
-                    expect(aggchainSelectors[j]).to.be.equal(
-                        `${data.aggchainVKeySelectors[j]}${utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA.slice(2)}`
-                    );
-                }
-            }
+            // check final aggchainSelector
+            expect(finalAggchainVKeySelector).to.be.equal(
+                `${data.initAggchainVKeySelector}${utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA.slice(2)}`
+            );
 
             // deploy aggchain
             // create aggchainECDSA implementation
@@ -78,8 +68,8 @@ describe("Test vectors aggchain ECDSA", () => {
             // encode initializeBytesAggchain
             initializeBytesAggchainV0 = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 data.useDefaultGateway,
-                data.ownedAggchainVkeys,
-                aggchainSelectors,
+                data.initOwnedAggchainVKey,
+                data.initAggchainVKeySelector,
                 vKeyManager.address,
                 admin.address,
                 data.trustedSequencer,
@@ -102,12 +92,9 @@ describe("Test vectors aggchain ECDSA", () => {
             expect(await aggchainECDSAContract.trustedSequencerURL()).to.be.equal(data.trustedSequencerURL);
             expect(await aggchainECDSAContract.networkName()).to.be.equal(data.networkName);
             expect(await aggchainECDSAContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
-
-            for (let j = 0; j < aggchainSelectors.length; j++) {
-                expect(await aggchainECDSAContract.ownedAggchainVKeys(aggchainSelectors[j])).to.be.equal(
-                    data.ownedAggchainVkeys[j]
-                );
-            }
+            expect(await aggchainECDSAContract.ownedAggchainVKeys(finalAggchainVKeySelector)).to.be.equal(
+                data.initOwnedAggchainVKey
+            );
 
             // encode aggchainParams
             aggchainParams = utilsECDSA.computeHashAggchainParamsECDSA(data.trustedSequencer);
@@ -115,29 +102,24 @@ describe("Test vectors aggchain ECDSA", () => {
             // if useDefaultGateway is true, disable it
             if (data.useDefaultGateway) {
                 await expect(aggchainECDSAContract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-                    .to.emit(aggchainECDSAContract, "UpdateUseDefaultGatewayFlag")
-                    .withArgs(false);
+                    .to.emit(aggchainECDSAContract, "DisableUseDefaultGatewayFlag");
             }
 
-            for (let j = 0; j < aggchainSelectors.length; j++) {
-                // encode aggchainData
-                aggchainData.push(utilsECDSA.encodeAggchainDataECDSA(data.aggchainVKeySelectors[j], data.newStateRoot));
-                // get aggchainHash
-                aggchainHash.push(
-                    utilsCommon.computeAggchainHash(
-                        utilsCommon.AggchainType.GENERIC,
-                        data.ownedAggchainVkeys[j],
-                        aggchainParams
-                    )
-                );
-                // get aggchainHash from contract
-                const aggchainHashContract = await aggchainECDSAContract.getAggchainHash(aggchainData[j], {
-                    gasPrice: 0,
-                });
-                // check aggchainHash === aggchainHash from contract
-                // with this check we can be sure that the aggchainParams & aggchainHash works correctly
-                expect(aggchainHash[j]).to.be.equal(aggchainHashContract);
-            }
+            // encode aggchainData
+            aggchainData = utilsECDSA.encodeAggchainDataECDSA(data.initAggchainVKeySelector, data.newStateRoot);
+            // get aggchainHash
+            aggchainHash = utilsCommon.computeAggchainHash(
+                    utilsCommon.AggchainType.GENERIC,
+                    data.initOwnedAggchainVKey,
+                    aggchainParams
+            );
+            // get aggchainHash from contract
+            const aggchainHashContract = await aggchainECDSAContract.getAggchainHash(aggchainData, {
+                gasPrice: 0,
+            });
+            // check aggchainHash === aggchainHash from contract
+            // with this check we can be sure that the aggchainParams & aggchainHash works correctly
+            expect(aggchainHash).to.be.equal(aggchainHashContract);
 
             // reinitialize using rollup manager & initializeBytesAggchainECDSAv1
 
@@ -187,8 +169,8 @@ describe("Test vectors aggchain ECDSA", () => {
             // encode initializeBytesAggchain version 1
             initializeBytesAggchainV1 = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
                 data.useDefaultGateway,
-                data.ownedAggchainVkeys,
-                aggchainSelectors,
+                data.initOwnedAggchainVKey,
+                data.initAggchainVKeySelector,
                 vKeyManager.address
             );
 
@@ -201,12 +183,9 @@ describe("Test vectors aggchain ECDSA", () => {
             expect(await aggchainECDSAContract.trustedSequencerURL()).to.be.equal(data.trustedSequencerURL);
             expect(await aggchainECDSAContract.networkName()).to.be.equal(data.networkName);
             expect(await aggchainECDSAContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
-
-            for (let j = 0; j < aggchainSelectors.length; j++) {
-                expect(await aggchainECDSAContract.ownedAggchainVKeys(aggchainSelectors[j])).to.be.equal(
-                    data.ownedAggchainVkeys[j]
-                );
-            }
+            expect(await aggchainECDSAContract.ownedAggchainVKeys(finalAggchainVKeySelector)).to.be.equal(
+                data.initOwnedAggchainVKey
+            );
 
             // add data to test-vector
             if (update) {
@@ -217,8 +196,8 @@ describe("Test vectors aggchain ECDSA", () => {
                 dataECDSA[i].output.initializeBytesAggchainV0 = initializeBytesAggchainV0;
                 dataECDSA[i].output.initializeBytesAggchainV1 = initializeBytesAggchainV1;
                 dataECDSA[i].output.aggchainData = aggchainData;
-                dataECDSA[i].output.aggchainSelectors = aggchainSelectors;
-                dataECDSA[i].output.aggchainHashes = aggchainHash;
+                dataECDSA[i].output.finalAggchainVKeySelector = finalAggchainVKeySelector;
+                dataECDSA[i].output.aggchainHash = aggchainHash;
                 dataECDSA[i].output.aggchainParams = aggchainParams;
 
                 console.log(`Writing data to test-vector: ${i}. Path: ${pathTestVector}`);
@@ -229,8 +208,8 @@ describe("Test vectors aggchain ECDSA", () => {
                 expect(dataECDSA[i].output.initializeBytesAggchainV0).to.be.equal(initializeBytesAggchainV0);
                 expect(dataECDSA[i].output.initializeBytesAggchainV1).to.be.equal(initializeBytesAggchainV1);
                 expect(dataECDSA[i].output.aggchainData).to.be.deep.equal(aggchainData);
-                expect(dataECDSA[i].output.aggchainSelectors).to.be.deep.equal(aggchainSelectors);
-                expect(dataECDSA[i].output.aggchainHashes).to.be.deep.equal(aggchainHash);
+                expect(dataECDSA[i].output.finalAggchainVKeySelector).to.be.deep.equal(finalAggchainVKeySelector);
+                expect(dataECDSA[i].output.aggchainHash).to.be.deep.equal(aggchainHash);
                 expect(dataECDSA[i].output.aggchainParams).to.be.equal(aggchainParams);
             }
         });

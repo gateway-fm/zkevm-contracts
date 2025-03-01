@@ -1,4 +1,4 @@
-import {ethers} from "hardhat";
+import {ethers, upgrades} from "hardhat";
 import {expect} from "chai";
 import fs = require("fs");
 import path = require("path");
@@ -41,14 +41,20 @@ describe("Test vectors aggchain common utils", () => {
                 testVector.aggchainType
             );
             if (update) {
-                const AggchainBaseMockFactory = await ethers.getContractFactory("AggchainBaseMock");
-                const aggchainContract = await AggchainBaseMockFactory.deploy(
-                    "0xA00000000000000000000000000000000000000A",
-                    "0xB00000000000000000000000000000000000000B",
-                    "0xC00000000000000000000000000000000000000C",
-                    "0xD00000000000000000000000000000000000000D",
-                    "0xE00000000000000000000000000000000000000E"
-                );
+                const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+                const aggchainContract = await upgrades.deployProxy(aggchainECDSAFactory, [], {
+                                initializer: false,
+                                constructorArgs: [
+                                    "0xA00000000000000000000000000000000000000A",
+                                    "0xB00000000000000000000000000000000000000B",
+                                    "0xC00000000000000000000000000000000000000C",
+                                    "0xD00000000000000000000000000000000000000D",
+                                    "0xE00000000000000000000000000000000000000E"
+                                ],
+                                unsafeAllow: ["constructor", "state-variable-immutable"],
+                            });
+                await aggchainContract.waitForDeployment();
+                
                 finalAggchainSelectorTestVectors[i].output = {};
                 finalAggchainSelectorTestVectors[i].output.finalAggchainVKeySelector =
                     await aggchainContract.getFinalAggchainVKeySelectorFromType(
