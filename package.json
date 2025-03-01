@@ -81,6 +81,8 @@
         "verify:ZkEVM:mainnet": "npx hardhat run deployment/verifyContracts.js --network mainnet",
         "lint": "npx eslint ./test && npx eslint ./docker/scripts && npx eslint ./deployment && npx eslint ./src",
         "lint:fix": "npx eslint ./test --fix && npx eslint ./docker/scripts --fix && npx eslint ./deployment --fix && npx eslint ./src --fix",
+        "prettier:contracts": "npx prettier --check 'contracts/**/*.sol'",
+        "prettier:contracts:fix": "npx prettier --write 'contracts/**/*.sol'",
         "compile": "npx hardhat compile",
         "docker:contracts": "./docker/scripts/v2/deploy-docker.sh",
         "dockerv2:contracts": "./docker/scripts/v2/deploy-dockerv2.sh",

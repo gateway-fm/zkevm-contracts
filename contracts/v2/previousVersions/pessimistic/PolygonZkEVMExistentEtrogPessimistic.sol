@@ -11,7 +11,9 @@ import "./PolygonRollupBaseEtrogPessimistic.sol";
  * The aggregators will be able to verify the sequenced state with zkProofs and therefore make available the withdrawals from L2 network.
  * To enter and exit of the L2 network will be used a PolygonZkEVMBridge smart contract that will be deployed in both networks.
  */
-contract PolygonZkEVMExistentEtrogPessimistic is PolygonRollupBaseEtrogPessimistic {
+contract PolygonZkEVMExistentEtrogPessimistic is
+    PolygonRollupBaseEtrogPessimistic
+{
     // Transaction that will be injected as a forced transaction, to setup the timestamp on the state root, we just need a well encoded RLP transaction
     // It's ok if the transaction is not processable
     /* Encoded transaction:

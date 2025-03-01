@@ -12,11 +12,13 @@ pragma solidity ^0.8.20;
  * _Available since v5.1._
  */
 library Hashes {
-
     /**
      * @dev Implementation of keccak256(abi.encode(a, b)) that doesn't allocate or expand memory.
      */
-    function efficientKeccak256(bytes32 a, bytes32 b) internal pure returns (bytes32 value) {
+    function efficientKeccak256(
+        bytes32 a,
+        bytes32 b
+    ) internal pure returns (bytes32 value) {
         assembly ("memory-safe") {
             mstore(0x00, a)
             mstore(0x20, b)

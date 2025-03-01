@@ -7,7 +7,9 @@ import "./IBasePolygonZkEVMGlobalExitRootPessimistic.sol";
  * Contract responsible for managing the exit roots for the L2 and global exit roots
  * The special zkRom variables will be accessed and updated directly by the zkRom
  */
-contract PolygonZkEVMGlobalExitRootL2Pessimistic is IBasePolygonZkEVMGlobalExitRootPessimistic {
+contract PolygonZkEVMGlobalExitRootL2Pessimistic is
+    IBasePolygonZkEVMGlobalExitRootPessimistic
+{
     /////////////////////////////
     // Special zkRom variables
     ////////////////////////////

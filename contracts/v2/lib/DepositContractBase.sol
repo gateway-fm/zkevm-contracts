@@ -48,10 +48,12 @@ contract DepositContractBase {
         ) {
             if (((size >> height) & 1) == 1)
                 node = Hashes.efficientKeccak256(_branch[height], node);
-            else
-                node = Hashes.efficientKeccak256(node, currentZeroHashHeight);
+            else node = Hashes.efficientKeccak256(node, currentZeroHashHeight);
 
-            currentZeroHashHeight = Hashes.efficientKeccak256(currentZeroHashHeight, currentZeroHashHeight);
+            currentZeroHashHeight = Hashes.efficientKeccak256(
+                currentZeroHashHeight,
+                currentZeroHashHeight
+            );
         }
         return node;
     }

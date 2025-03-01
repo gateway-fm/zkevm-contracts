@@ -74,7 +74,10 @@ contract BridgeL2SovereignChain is
      * @param insertedGloblIndex Global index added to the hash chain
      * @param newGlobalIndexHashChain New global index hash chain value
      */
-    event UpdatedGlobalIndexHashChain(bytes32 insertedGloblIndex, bytes32 newGlobalIndexHashChain);
+    event UpdatedGlobalIndexHashChain(
+        bytes32 insertedGloblIndex,
+        bytes32 newGlobalIndexHashChain
+    );
 
     /**
      * Disable initializers on the implementation following the best practices
@@ -525,7 +528,10 @@ contract BridgeL2SovereignChain is
             bytes32(globalIndex)
         );
 
-        emit UpdatedGlobalIndexHashChain(bytes32(globalIndex), globalIndexHashChain);
+        emit UpdatedGlobalIndexHashChain(
+            bytes32(globalIndex),
+            globalIndexHashChain
+        );
     }
 
     /**

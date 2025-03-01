@@ -770,7 +770,7 @@ contract PolygonZkEVMBridgeV2 is
         bytes32 mainnetExitRoot,
         bytes32 rollupExitRoot,
         bytes32 leafValue
-    ) internal virtual{
+    ) internal virtual {
         // Check blockhash where the global exit root was set
         // Note that previusly timestamps were setted, since in only checked if != 0 it's ok
         uint256 blockHashGlobalExitRoot = globalExitRootManager
