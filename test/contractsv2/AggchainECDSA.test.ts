@@ -126,7 +126,7 @@ describe("AggchainECDSA", () => {
                 rollupManagerAddress,
                 aggLayerGatewayContract.target,
             ],
-            unsafeAllow: ["constructor", "state-variable-immutable"],
+            unsafeAllow: ["constructor", "state-variable-immutable", "missing-initializer-call"],
         });
 
         await aggchainECDSAcontract.waitForDeployment();
@@ -150,7 +150,9 @@ describe("AggchainECDSA", () => {
         expect(await aggchainECDSAcontract.trustedSequencerURL()).to.be.equal(urlSequencer);
         expect(await aggchainECDSAcontract.networkName()).to.be.equal(networkName);
         expect(await aggchainECDSAcontract.gasTokenAddress()).to.be.equal(gasTokenAddress);
-        expect(await aggchainECDSAcontract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)).to.be.equal(ownedAggchainVKey);
+        expect(
+            await aggchainECDSAcontract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)
+        ).to.be.equal(ownedAggchainVKey);
 
         // initialize again
         await expect(
@@ -215,8 +217,10 @@ describe("AggchainECDSA", () => {
             "OnlyVKeyManager"
         );
 
-        await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "DisableUseDefaultGatewayFlag");
+        await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
+            aggchainECDSAcontract,
+            "DisableUseDefaultGatewayFlag"
+        );
 
         await expect(
             aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()
@@ -228,8 +232,10 @@ describe("AggchainECDSA", () => {
             "OnlyVKeyManager"
         );
 
-        await expect(aggchainECDSAcontract.connect(vKeyManager).enableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "EnableUseDefaultGatewayFlag");
+        await expect(aggchainECDSAcontract.connect(vKeyManager).enableUseDefaultGatewayFlag()).to.emit(
+            aggchainECDSAcontract,
+            "EnableUseDefaultGatewayFlag"
+        );
 
         await expect(
             aggchainECDSAcontract.connect(vKeyManager).enableUseDefaultGatewayFlag()
@@ -270,8 +276,10 @@ describe("AggchainECDSA", () => {
         // getAggchainVKey useDefaultGateway === true
         expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey);
 
-        await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "DisableUseDefaultGatewayFlag");
+        await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
+            aggchainECDSAcontract,
+            "DisableUseDefaultGatewayFlag"
+        );
 
         // getAggchainVKey useDefaultGateway === false
         expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey2);
@@ -326,8 +334,10 @@ describe("AggchainECDSA", () => {
             .withArgs(finalAggchainSelector, newAggChainVKey);
 
         // disable default gateway flag
-        await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag())
-            .to.emit(aggchainECDSAcontract, "DisableUseDefaultGatewayFlag");
+        await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
+            aggchainECDSAcontract,
+            "DisableUseDefaultGatewayFlag"
+        );
 
         // getAggchainHash
         expect(await aggchainECDSAcontract.getAggchainHash(aggchainData)).to.be.equal(aggchainHash);
@@ -416,6 +426,8 @@ describe("AggchainECDSA", () => {
         expect(await ppConsensusContract.trustedSequencerURL()).to.be.equal(urlSequencer);
         expect(await ppConsensusContract.networkName()).to.be.equal(networkName);
         expect(await ppConsensusContract.gasTokenAddress()).to.be.equal(gasTokenAddress);
-        expect(await ppConsensusContract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)).to.be.equal(ownedAggchainVKey);
+        expect(
+            await ppConsensusContract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)
+        ).to.be.equal(ownedAggchainVKey);
     });
 });

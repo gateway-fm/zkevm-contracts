@@ -408,13 +408,17 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         const urlSequencer = "https://pessimistic:8545";
         const networkName = "testPessimistic";
         const pessimisticRollupID = 1; // Already aggchainECDSA rollup created created
-        const initializeBytesPessimistic = encodeInitializeBytesPessimistic(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesPessimistic = encodeInitializeBytesPessimistic(
+            admin.address,
+            trustedSequencer.address,
+            gasTokenAddress,
+            urlSequencer,
+            networkName
+        );
         await expect(
-            rollupManagerContract.connect(admin).attachAggchainToAL(
-                pessimisticRollupTypeID,
-                chainID,
-                initializeBytesPessimistic
-            )
+            rollupManagerContract
+                .connect(admin)
+                .attachAggchainToAL(pessimisticRollupTypeID, chainID, initializeBytesPessimistic)
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
             .withArgs(pessimisticRollupID, pessimisticRollupTypeID, precomputedRollupAddress, chainID, gasTokenAddress);
@@ -503,7 +507,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             0, // _legacyLastPendingStateConsolidated
             0, // lastVerifiedBatchBeforeUpgrade
             rollupTypeECDSAId,
-            VerifierType.ALGateway
+            VerifierType.ALGateway,
         ];
 
         expect(expectedRollupData).to.be.deep.equal(resRollupData);
@@ -630,12 +634,18 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             nonce: rollupManagerNonce,
         });
         // Create pessimistic rollup
-        const initializeBytesCustomChain = encodeInitializeBytesPessimistic(admin.address, trustedSequencer.address, ethers.ZeroAddress, "", "");
+        const initializeBytesCustomChain = encodeInitializeBytesPessimistic(
+            admin.address,
+            trustedSequencer.address,
+            ethers.ZeroAddress,
+            "",
+            ""
+        );
         await rollupManagerContract.connect(admin).attachAggchainToAL(
             pessimisticRollupTypeID2,
             2, // chainID
             initializeBytesCustomChain
-        )
+        );
         expect(await rollupManagerContract.rollupAddressToID(pessimisticRollupAddress)).to.be.equal(1);
 
         // Try to upgrade from rollupType1 to rollupType2 should revert (lowest rollup typed id)

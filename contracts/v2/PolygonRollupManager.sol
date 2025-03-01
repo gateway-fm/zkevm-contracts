@@ -17,7 +17,7 @@ import "./lib/PolygonConstantsBase.sol";
 import "./interfaces/IPolygonPessimisticConsensus.sol";
 import "./interfaces/ISP1Verifier.sol";
 import "./interfaces/IPolygonRollupManager.sol";
-import "./interfaces/IAggchain.sol";
+import "./interfaces/IAggchainBase.sol";
 import "./interfaces/IAggLayerGateway.sol";
 import "./lib/Hashes.sol";
 
@@ -240,7 +240,8 @@ contract PolygonRollupManager is
     string public constant ROLLUP_MANAGER_VERSION = "al-v0.3.0";
 
     // Hardcoded address used to indicate that this address triggered in an event should not be considered as valid.
-    address private constant _NO_ADDRESS = 0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
+    address private constant _NO_ADDRESS =
+        0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
     // Global Exit Root address
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
@@ -646,7 +647,7 @@ contract PolygonRollupManager is
             );
 
             // Initialize aggchain with the custom chain bytes
-            IAggchain(rollupAddress).initialize(initializeBytesCustomChain);
+            IAggchainBase(rollupAddress).initialize(initializeBytesCustomChain);
         } else {
             // assign non ALGateway values to rollup data
             rollup.forkID = rollupType.forkID;
@@ -791,9 +792,7 @@ contract PolygonRollupManager is
         }
 
         // Only allowed to update to an older rollup type id if the destination rollup type is ALGateway
-        if (
-            rollup.rollupTypeID >= newRollupTypeID
-        ) {
+        if (rollup.rollupTypeID >= newRollupTypeID) {
             revert UpdateToOldRollupTypeID();
         }
 
@@ -859,12 +858,12 @@ contract PolygonRollupManager is
             revert RollupTypeObsolete();
         }
 
-        // If not upgrading to ALGateway
-        if (newRollupType.rollupVerifierType != VerifierType.ALGateway) {
-            // Current rollup type must be same than new rollup type
-            if (rollup.rollupVerifierType != newRollupType.rollupVerifierType) {
-                revert UpdateNotCompatible();
-            }
+        // Only allow update rollupVerifierType when updating to ALGateway
+        if (
+            newRollupType.rollupVerifierType != VerifierType.ALGateway &&
+            rollup.rollupVerifierType != newRollupType.rollupVerifierType
+        ) {
+            revert UpdateNotCompatible();
         }
 
         // Update rollup parameters
@@ -1258,7 +1257,7 @@ contract PolygonRollupManager is
         if (rollup.rollupVerifierType == VerifierType.ALGateway) {
             // Allow chains to manage customData
             // Callback to the rollup address
-            IAggchain(rollup.rollupContract).onVerifyPessimistic(
+            IAggchainBase(rollup.rollupContract).onVerifyPessimistic(
                 customChainData
             );
         }
@@ -1504,7 +1503,7 @@ contract PolygonRollupManager is
     ) internal view returns (bytes memory inputPessimisticBytes) {
         // Different consensusHash and encoding if the rollup is ALGateway or pessimistic
         if (rollup.rollupVerifierType == VerifierType.ALGateway) {
-            bytes32 aggchainHash = IAggchain(rollup.rollupContract)
+            bytes32 aggchainHash = IAggchainBase(rollup.rollupContract)
                 .getAggchainHash(customChainData);
 
             inputPessimisticBytes = abi.encodePacked(

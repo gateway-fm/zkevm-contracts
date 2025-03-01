@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import "../lib/AggchainBase.sol";
-import "../interfaces/IAggchain.sol";
 
 /**
  * @title AggchainECDSA
@@ -11,7 +10,7 @@ import "../interfaces/IAggchain.sol";
  * transitions on the pessimistic trees (local_exit_tree, local_balance_tree, nullifier_tree & height).
  * That address is the trustedSequencer and is set during the chain initialization.
  */
-contract AggchainECDSA is AggchainBase, IAggchain {
+contract AggchainECDSA is AggchainBase {
     ////////////////////////////////////////////////////////////
     //                  Transient Storage                     //
     ////////////////////////////////////////////////////////////
@@ -80,9 +79,9 @@ contract AggchainECDSA is AggchainBase, IAggchain {
     /**
      * @param initializeBytesAggchain Encoded bytes to initialize the chain.
      * Each aggchain has its decoded params.
-    * @custom:security First initialization takes into account this contracts and all the inheritance contracts
-    *                  Second initialization does not initialize PolygonConsensusBase parameters
-    *                  Second initialization can happen if a chain is upgraded from a PolygonPessimisticConsensus
+     * @custom:security First initialization takes into account this contracts and all the inheritance contracts
+     *                  Second initialization does not initialize PolygonConsensusBase parameters
+     *                  Second initialization can happen if a chain is upgraded from a PolygonPessimisticConsensus
      * @dev The reinitializer(2) is set to support the upgrade from PolygonPessimisticConsensus to AggchainECDSA, where PolygonPessimisticConsensus is already initialized
      */
     function initialize(
@@ -118,15 +117,17 @@ contract AggchainECDSA is AggchainBase, IAggchain {
                     )
                 );
             // Set aggchainBase variables
-            _initializeAggchainBase(_useDefaultGateway, _initOwnedAggchainVKey, _initAggchainVKeySelector, _vKeyManager);
-
-            // init polygonConsensusBase params
-            _initializePolygonConsensusBase(
+            _initializeAggchainBaseAndConsensusBase(
                 _admin,
                 _trustedSequencer,
                 _gasTokenAddress,
                 _trustedSequencerURL,
-                _networkName
+                _networkName,
+                _useDefaultGateway,
+                _initOwnedAggchainVKey,
+                _initAggchainVKeySelector,
+                _vKeyManager,
+                AGGCHAIN_TYPE_SELECTOR
             );
         } else if (_initializerVersion == 1) {
             // Only need to initialize values that are specific for ECDSA because we are performing an upgrade from a Pessimistic chain
@@ -145,53 +146,13 @@ contract AggchainECDSA is AggchainBase, IAggchain {
                 _useDefaultGateway,
                 _initOwnedAggchainVKey,
                 _initAggchainVKeySelector,
-                _vKeyManager
+                _vKeyManager,
+                AGGCHAIN_TYPE_SELECTOR
             );
         } else {
             // This case should never happen because reinitializer is 2 so initializer version is 0 or 1, but it's here to avoid any possible future issue if the reinitializer version is increased
             revert InvalidInitializer();
         }
-    }
-
-    /**
-    * @notice Initializer AggchainBase storage
-    * @param _useOwnedGateway Flag to setup initial values for the owned gateway
-    * @param _initOwnedAggchainVKey Initial owned aggchain verification key
-    * @param _initAggchainVKeySelector Initial aggchain selector
-    * @param _vKeyManager Initial vKeyManager
-    */
-      function _initializeAggchainBase(bool _useOwnedGateway, bytes32 _initOwnedAggchainVKey, bytes2 _initAggchainVKeySelector, address _vKeyManager) internal {
-        useDefaultGateway = _useOwnedGateway;
-        // set the initial aggchain keys
-        ownedAggchainVKeys[getFinalAggchainVKeySelectorFromType(_initAggchainVKeySelector, AGGCHAIN_TYPE_SELECTOR)] = _initOwnedAggchainVKey;
-        // set initial vKeyManager
-        vKeyManager = _vKeyManager;
-    }
-
-
-    /**
-    * @notice Initializer PolygonConsensusBase storage
-    * @param _admin Admin address
-    * @param sequencer Trusted sequencer address
-    * @param _gasTokenAddress Indicates the token address in mainnet that will be used as a gas token
-    * Note if a wrapped token of the bridge is used, the original network and address of this wrapped are used instead
-    * @param sequencerURL Trusted sequencer URL
-    * @param _networkName L2 network name
-    */
-    function _initializePolygonConsensusBase(
-        address _admin,
-        address sequencer,
-        address _gasTokenAddress,
-        string memory sequencerURL,
-        string memory _networkName
-    ) internal {
-        admin = _admin;
-        trustedSequencer = sequencer;
-
-        trustedSequencerURL = sequencerURL;
-        networkName = _networkName;
-
-        gasTokenAddress = _gasTokenAddress;
     }
 
     ////////////////////////////////////////////////////////////
@@ -207,7 +168,7 @@ contract AggchainECDSA is AggchainBase, IAggchain {
      * @param aggChainData custom bytes provided by the chain
      * @return aggchainHash resulting aggchain hash
      */
-    /// @inheritdoc IAggchain
+    /// @inheritdoc IAggchainBase
     function getAggchainHash(
         bytes memory aggChainData
     ) external view returns (bytes32) {
@@ -235,7 +196,7 @@ contract AggchainECDSA is AggchainBase, IAggchain {
     //                       Functions                        //
     ////////////////////////////////////////////////////////////
 
-    /// @inheritdoc IAggchain
+    /// @inheritdoc IAggchainBase
     function onVerifyPessimistic(
         bytes calldata aggChainData
     ) external onlyRollupManager {

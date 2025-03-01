@@ -76,6 +76,7 @@ contract GlobalExitRootManagerL2SovereignChain is
 
     /**
      * @notice Initialize contract
+     * Note this initialize function is exactly the same as the last version, therefore no modifications needed
      * @param _globalExitRootUpdater setting the globalExitRootUpdater.
      * @param _globalExitRootRemover In case of initializing a chain with Full execution proofs, this address should be set to zero, otherwise, some malicious sequencer could insert invalid global exit roots, claim and go back and the execution would be correctly proved.
      */
@@ -123,7 +124,10 @@ contract GlobalExitRootManagerL2SovereignChain is
         if (globalExitRootMap[_newRoot] == 0) {
             globalExitRootMap[_newRoot] = block.timestamp;
             // Update hash chain value
-            insertedGERHashChain = Hashes.efficientKeccak256(insertedGERHashChain, _newRoot);
+            insertedGERHashChain = Hashes.efficientKeccak256(
+                insertedGERHashChain,
+                _newRoot
+            );
             // @dev we are emitting two events for backwards compatibility, should deprecate InsertGlobalExitRoot event in the future
             emit InsertGlobalExitRoot(_newRoot);
             emit UpdateHashChainValue(_newRoot, insertedGERHashChain);
@@ -141,15 +145,6 @@ contract GlobalExitRootManagerL2SovereignChain is
     function removeGlobalExitRoots(
         bytes32[] calldata gersToRemove
     ) external onlyGlobalExitRootRemover {
-        _removeGlobalExitRoots(gersToRemove);
-    }
-
-    /**
-     * @notice Remove global exit roots private function
-     * @dev This function should only be called by functions with the onlyGlobalExitRootRemover modifier
-     * @param gersToRemove Array of gers to remove
-     */
-    function _removeGlobalExitRoots(bytes32[] calldata gersToRemove) private {
         // @dev A memory variable is used to reduce sload/sstore operations while the loop
         bytes32 nextRemovalHashChainValue = removedGERHashChain;
         for (uint256 i = 0; i < gersToRemove.length; i++) {
@@ -159,7 +154,10 @@ contract GlobalExitRootManagerL2SovereignChain is
                 revert GlobalExitRootNotFound();
             }
             // Encode new removed GERs to generate the nextRemovalHashChainValue
-            nextRemovalHashChainValue = Hashes.efficientKeccak256(nextRemovalHashChainValue, gerToRemove);
+            nextRemovalHashChainValue = Hashes.efficientKeccak256(
+                nextRemovalHashChainValue,
+                gerToRemove
+            );
 
             // Remove the GER from the map
             delete globalExitRootMap[gerToRemove];
@@ -175,6 +173,7 @@ contract GlobalExitRootManagerL2SovereignChain is
         // Update the removedGERHashChain
         removedGERHashChain = nextRemovalHashChainValue;
     }
+
     /**
      * @notice Set the globalExitRootUpdater
      * @param _globalExitRootUpdater new globalExitRootUpdater address

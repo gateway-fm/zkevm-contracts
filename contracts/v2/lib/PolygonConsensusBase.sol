@@ -146,7 +146,30 @@ abstract contract PolygonConsensusBase is
         string memory sequencerURL,
         string memory _networkName
     ) external virtual onlyRollupManager initializer {
-        // Set initialize variables
+        _initializePolygonConsensusBase(
+            _admin,
+            sequencer,
+            _gasTokenAddress,
+            sequencerURL,
+            _networkName
+        );
+    }
+
+    /**
+     * @param _admin Admin address
+     * @param sequencer Trusted sequencer address
+     * @param _gasTokenAddress Indicates the token address in mainnet that will be used as a gas token
+     * Note if a wrapped token of the bridge is used, the original network and address of this wrapped are used instead
+     * @param sequencerURL Trusted sequencer URL
+     * @param _networkName L2 network name
+     */
+    function _initializePolygonConsensusBase(
+        address _admin,
+        address sequencer,
+        address _gasTokenAddress,
+        string memory sequencerURL,
+        string memory _networkName
+    ) internal {
         admin = _admin;
         trustedSequencer = sequencer;
 

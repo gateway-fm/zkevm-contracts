@@ -91,6 +91,78 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         revert InvalidInitializeFunction();
     }
 
+    /**
+     * @notice Initializer AggchainBase storage
+     * @param _admin Admin address
+     * @param sequencer Trusted sequencer address
+     * @param _gasTokenAddress Indicates the token address in mainnet that will be used as a gas token
+     * Note if a wrapped token of the bridge is used, the original network and address of this wrapped are used instead
+     * @param sequencerURL Trusted sequencer URL
+     * @param _networkName L2 network name
+     * @param _useOwnedGateway Flag to setup initial values for the owned gateway
+     * @param _initOwnedAggchainVKey Initial owned aggchain verification key
+     * @param _initAggchainVKeySelector Initial aggchain selector
+     * @param _vKeyManager Initial vKeyManager
+     */
+    function _initializeAggchainBaseAndConsensusBase(
+        address _admin,
+        address sequencer,
+        address _gasTokenAddress,
+        string memory sequencerURL,
+        string memory _networkName,
+        bool _useOwnedGateway,
+        bytes32 _initOwnedAggchainVKey,
+        bytes2 _initAggchainVKeySelector,
+        address _vKeyManager,
+        bytes2 aggchain_type_selector
+    ) internal onlyInitializing {
+        // Initialize PolygonConsensusBase
+        _initializePolygonConsensusBase(
+            _admin,
+            sequencer,
+            _gasTokenAddress,
+            sequencerURL,
+            _networkName
+        );
+
+        useDefaultGateway = _useOwnedGateway;
+        // set the initial aggchain keys
+        ownedAggchainVKeys[
+            getFinalAggchainVKeySelectorFromType(
+                _initAggchainVKeySelector,
+                aggchain_type_selector
+            )
+        ] = _initOwnedAggchainVKey;
+        // set initial vKeyManager
+        vKeyManager = _vKeyManager;
+    }
+
+    /**
+     * @notice Initializer AggchainBase storage
+     * @param _useOwnedGateway Flag to setup initial values for the owned gateway
+     * @param _initOwnedAggchainVKey Initial owned aggchain verification key
+     * @param _initAggchainVKeySelector Initial aggchain selector
+     * @param _vKeyManager Initial vKeyManager
+     */
+    function _initializeAggchainBase(
+        bool _useOwnedGateway,
+        bytes32 _initOwnedAggchainVKey,
+        bytes2 _initAggchainVKeySelector,
+        address _vKeyManager,
+        bytes2 aggchain_type_selector
+    ) internal onlyInitializing {
+        useDefaultGateway = _useOwnedGateway;
+        // set the initial aggchain keys
+        ownedAggchainVKeys[
+            getFinalAggchainVKeySelectorFromType(
+                _initAggchainVKeySelector,
+                aggchain_type_selector
+            )
+        ] = _initOwnedAggchainVKey;
+        // set initial vKeyManager
+        vKeyManager = _vKeyManager;
+    }
+
     //////////////////////////
     //      modifiers       //
     /////////////////////////
