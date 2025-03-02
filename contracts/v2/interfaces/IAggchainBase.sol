@@ -91,6 +91,6 @@ interface IAggchainBase is IAggchainBaseErrors, IAggchainBaseEvents {
      */
     function initialize(bytes calldata initializeBytesCustomChain) external;
 
-    /// @notice Returns the unique aggchain type selector identifier.
-    function AGGCHAIN_TYPE_SELECTOR() external view returns (bytes2);
+    /// @notice Returns the unique aggchain type identifier.
+    function AGGCHAIN_TYPE() external view returns (bytes2);
 }

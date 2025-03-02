@@ -5,7 +5,7 @@ const ethers = require('ethers');
 /// //////////////////////////////
 
 // aggchain type constant to define an aggchain using pessimistic proof v0.3.0
-const AggchainType = {
+const CONSENSUS_TYPE = {
     LEGACY: 0,
     GENERIC: 1,
 };
@@ -26,8 +26,8 @@ function computeAggchainHash(
     hashAggchainParams,
 ) {
     // sanity check
-    if (Number(aggchainType) !== AggchainType.GENERIC) {
-        throw new Error(`Invalid aggchain type for v0.3.0. Must be ${AggchainType.GENERIC}`);
+    if (Number(aggchainType) !== CONSENSUS_TYPE.GENERIC) {
+        throw new Error(`Invalid aggchain type for v0.3.0. Must be ${CONSENSUS_TYPE.GENERIC}`);
     }
 
     // solidity keccak
@@ -38,14 +38,14 @@ function computeAggchainHash(
 }
 
 /**
- * Encodes the final selector for aggchain
- * @param {String} _aggchainVKeySelector aggchain vkey selector
+ * Encodes the vKey selector for aggchain
+ * @param {String} _aggchainVKeyVersion aggchain vkey selector
  * @param {String} _aggchainType aggchain selector type (ECDSA:0, FEP: 1)
- * @returns Final selector
+ * @returns AggchainVKeySelector
  */
-function getFinalAggchainVKeySelectorFromType(_aggchainVKeySelector, _aggchainType) {
+function getAggchainVKeySelector(_aggchainVKeyVersion, _aggchainType) {
     // remove "0x" if ot exist on aggchainSelector with startWith method
-    const aggchainVKeySelector = _aggchainVKeySelector.startsWith('0x') ? _aggchainVKeySelector.slice(2) : _aggchainVKeySelector;
+    const aggchainVKeySelector = _aggchainVKeyVersion.startsWith('0x') ? _aggchainVKeyVersion.slice(2) : _aggchainVKeyVersion;
 
     // remove "0x" if ot exist on _aggchainType with startWith method
     const aggChainType = _aggchainType.startsWith('0x') ? _aggchainType.slice(2) : _aggchainType;
@@ -91,8 +91,8 @@ function encodeInitializeBytesPessimistic(
 }
 
 module.exports = {
-    AggchainType,
+    CONSENSUS_TYPE,
     computeAggchainHash,
-    getFinalAggchainVKeySelectorFromType,
+    getAggchainVKeySelector,
     encodeInitializeBytesPessimistic,
 };

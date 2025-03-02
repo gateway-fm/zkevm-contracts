@@ -7,7 +7,7 @@ const ethers = require('ethers');
 /// ////////////////////////////////////
 
 // aggchain type selector for ECDSA
-const AGGCHAIN_TYPE_SELECTOR_ECDSA = '0x0000';
+const AGGCHAIN_TYPE_ECDSA = '0x0000';
 
 /// ////////////////////////////////////
 /// // Functions for Aggchain ECDSA ////
@@ -98,7 +98,7 @@ function computeHashAggchainParamsECDSA(trustedSequencer) {
 }
 
 module.exports = {
-    AGGCHAIN_TYPE_SELECTOR_ECDSA,
+    AGGCHAIN_TYPE_ECDSA,
     encodeInitializeBytesAggchainECDSAv0,
     encodeInitializeBytesAggchainECDSAv1,
     encodeAggchainDataECDSA,

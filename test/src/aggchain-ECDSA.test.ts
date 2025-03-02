@@ -28,8 +28,7 @@ describe("Test vectors aggchain ECDSA", () => {
         let initializeBytesAggchainV0: string;
         let initializeBytesAggchainV1: string;
         let aggchainParams: string;
-        let aggchainSelectors: string;
-        let finalAggchainVKeySelector: string;
+        let aggchainVKeySelector: string;
         let aggchainData: string;
         let aggchainHash: string;
 
@@ -39,14 +38,14 @@ describe("Test vectors aggchain ECDSA", () => {
             // load signers
             [vKeyManager, admin] = await ethers.getSigners();
 
-            finalAggchainVKeySelector = utilsCommon.getFinalAggchainVKeySelectorFromType(
+            aggchainVKeySelector = utilsCommon.getAggchainVKeySelector(
                 data.initAggchainVKeySelector,
-                utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA
+                utilsECDSA.AGGCHAIN_TYPE_ECDSA
             );
 
             // check final aggchainSelector
-            expect(finalAggchainVKeySelector).to.be.equal(
-                `${data.initAggchainVKeySelector}${utilsECDSA.AGGCHAIN_TYPE_SELECTOR_ECDSA.slice(2)}`
+            expect(aggchainVKeySelector).to.be.equal(
+                `${data.initAggchainVKeySelector}${utilsECDSA.AGGCHAIN_TYPE_ECDSA.slice(2)}`
             );
 
             // deploy aggchain
@@ -92,7 +91,7 @@ describe("Test vectors aggchain ECDSA", () => {
             expect(await aggchainECDSAContract.trustedSequencerURL()).to.be.equal(data.trustedSequencerURL);
             expect(await aggchainECDSAContract.networkName()).to.be.equal(data.networkName);
             expect(await aggchainECDSAContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
-            expect(await aggchainECDSAContract.ownedAggchainVKeys(finalAggchainVKeySelector)).to.be.equal(
+            expect(await aggchainECDSAContract.ownedAggchainVKeys(aggchainVKeySelector)).to.be.equal(
                 data.initOwnedAggchainVKey
             );
 
@@ -111,7 +110,7 @@ describe("Test vectors aggchain ECDSA", () => {
             aggchainData = utilsECDSA.encodeAggchainDataECDSA(data.initAggchainVKeySelector, data.newStateRoot);
             // get aggchainHash
             aggchainHash = utilsCommon.computeAggchainHash(
-                utilsCommon.AggchainType.GENERIC,
+                utilsCommon.CONSENSUS_TYPE.GENERIC,
                 data.initOwnedAggchainVKey,
                 aggchainParams
             );
@@ -185,7 +184,7 @@ describe("Test vectors aggchain ECDSA", () => {
             expect(await aggchainECDSAContract.trustedSequencerURL()).to.be.equal(data.trustedSequencerURL);
             expect(await aggchainECDSAContract.networkName()).to.be.equal(data.networkName);
             expect(await aggchainECDSAContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
-            expect(await aggchainECDSAContract.ownedAggchainVKeys(finalAggchainVKeySelector)).to.be.equal(
+            expect(await aggchainECDSAContract.ownedAggchainVKeys(aggchainVKeySelector)).to.be.equal(
                 data.initOwnedAggchainVKey
             );
 
@@ -198,7 +197,7 @@ describe("Test vectors aggchain ECDSA", () => {
                 dataECDSA[i].output.initializeBytesAggchainV0 = initializeBytesAggchainV0;
                 dataECDSA[i].output.initializeBytesAggchainV1 = initializeBytesAggchainV1;
                 dataECDSA[i].output.aggchainData = aggchainData;
-                dataECDSA[i].output.finalAggchainVKeySelector = finalAggchainVKeySelector;
+                dataECDSA[i].output.aggchainVKeySelector = aggchainVKeySelector;
                 dataECDSA[i].output.aggchainHash = aggchainHash;
                 dataECDSA[i].output.aggchainParams = aggchainParams;
 
@@ -210,7 +209,7 @@ describe("Test vectors aggchain ECDSA", () => {
                 expect(dataECDSA[i].output.initializeBytesAggchainV0).to.be.equal(initializeBytesAggchainV0);
                 expect(dataECDSA[i].output.initializeBytesAggchainV1).to.be.equal(initializeBytesAggchainV1);
                 expect(dataECDSA[i].output.aggchainData).to.be.deep.equal(aggchainData);
-                expect(dataECDSA[i].output.finalAggchainVKeySelector).to.be.deep.equal(finalAggchainVKeySelector);
+                expect(dataECDSA[i].output.aggchainVKeySelector).to.be.deep.equal(aggchainVKeySelector);
                 expect(dataECDSA[i].output.aggchainHash).to.be.deep.equal(aggchainHash);
                 expect(dataECDSA[i].output.aggchainParams).to.be.equal(aggchainParams);
             }

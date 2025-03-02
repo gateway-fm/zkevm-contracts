@@ -300,6 +300,11 @@ interface IPolygonRollupManager {
     error StateTransitionChainsNotAllowed();
 
     /**
+     * @dev Custom chain data must be zero for pessimistic verifier type
+     */
+    error CustomChainDataMustBeZeroForPessimisticVerifierType();
+
+    /**
      * @dev Invalid Pessimistic proof
      */
     error InvalidPessimisticProof();

@@ -29,6 +29,6 @@ jobs:
             - name: linter
               run: npm run lint
             - name: Run Prettier Solidity Check
-              run: npx run prettier:contracts
+              run: npm run prettier:contracts
             - name: compile
               run: npm run compile

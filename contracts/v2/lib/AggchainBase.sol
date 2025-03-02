@@ -14,8 +14,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ////////////////////////////////////////////////////////////
     //                  Constants & Immutables                //
     ////////////////////////////////////////////////////////////
-    // Aggchain type that support generic aggchain hash
-    uint32 public constant AGGCHAIN_TYPE = 1;
+    // Consensus type that supports generic aggchain hash
+    // Naming has been kept as CONSENSUS_TYPE for consistency with the previous consensus type (PolygonPessimisticConsensus.sol)
+    uint32 public constant CONSENSUS_TYPE = 1;
 
     // AggLayerGateway address, used in case the flag `useDefaultGateway` is set to true, the aggchains keys are managed by the gateway
     IAggLayerGateway public immutable aggLayerGateway;
@@ -101,7 +102,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * @param _networkName L2 network name
      * @param _useOwnedGateway Flag to setup initial values for the owned gateway
      * @param _initOwnedAggchainVKey Initial owned aggchain verification key
-     * @param _initAggchainVKeySelector Initial aggchain selector
+     * @param _initAggchainVKeyVersion Initial aggchain selector
      * @param _vKeyManager Initial vKeyManager
      */
     function _initializeAggchainBaseAndConsensusBase(
@@ -112,9 +113,9 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         string memory _networkName,
         bool _useOwnedGateway,
         bytes32 _initOwnedAggchainVKey,
-        bytes2 _initAggchainVKeySelector,
+        bytes2 _initAggchainVKeyVersion,
         address _vKeyManager,
-        bytes2 aggchain_type_selector
+        bytes2 aggchain_type
     ) internal onlyInitializing {
         // Initialize PolygonConsensusBase
         _initializePolygonConsensusBase(
@@ -128,10 +129,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         useDefaultGateway = _useOwnedGateway;
         // set the initial aggchain keys
         ownedAggchainVKeys[
-            getFinalAggchainVKeySelectorFromType(
-                _initAggchainVKeySelector,
-                aggchain_type_selector
-            )
+            getAggchainVKeySelector(_initAggchainVKeyVersion, aggchain_type)
         ] = _initOwnedAggchainVKey;
         // set initial vKeyManager
         vKeyManager = _vKeyManager;
@@ -141,23 +139,20 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * @notice Initializer AggchainBase storage
      * @param _useOwnedGateway Flag to setup initial values for the owned gateway
      * @param _initOwnedAggchainVKey Initial owned aggchain verification key
-     * @param _initAggchainVKeySelector Initial aggchain selector
+     * @param _initAggchainVKeyVersion Initial aggchain selector
      * @param _vKeyManager Initial vKeyManager
      */
     function _initializeAggchainBase(
         bool _useOwnedGateway,
         bytes32 _initOwnedAggchainVKey,
-        bytes2 _initAggchainVKeySelector,
+        bytes2 _initAggchainVKeyVersion,
         address _vKeyManager,
-        bytes2 aggchain_type_selector
+        bytes2 aggchain_type
     ) internal onlyInitializing {
         useDefaultGateway = _useOwnedGateway;
         // set the initial aggchain keys
         ownedAggchainVKeys[
-            getFinalAggchainVKeySelectorFromType(
-                _initAggchainVKeySelector,
-                aggchain_type_selector
-            )
+            getAggchainVKeySelector(_initAggchainVKeyVersion, aggchain_type)
         ] = _initOwnedAggchainVKey;
         // set initial vKeyManager
         vKeyManager = _vKeyManager;
@@ -236,45 +231,45 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
 
     /**
      * @notice Add a new aggchain verification key to the aggchain contract.
-     * @param aggchainSelector The selector for the verification key query. This selector identifies the aggchain key
+     * @param aggchainVKeySelector The selector for the verification key query. This selector identifies the aggchain key
      * @param newAggchainVKey The new aggchain verification key to be added.
      */
     function addOwnedAggchainVKey(
-        bytes4 aggchainSelector,
+        bytes4 aggchainVKeySelector,
         bytes32 newAggchainVKey
     ) external onlyVKeyManager {
         if (newAggchainVKey == bytes32(0)) {
             revert ZeroValueAggchainVKey();
         }
         // Check if proposed selector has already a verification key assigned
-        if (ownedAggchainVKeys[aggchainSelector] != bytes32(0)) {
+        if (ownedAggchainVKeys[aggchainVKeySelector] != bytes32(0)) {
             revert OwnedAggchainVKeyAlreadyAdded();
         }
 
-        ownedAggchainVKeys[aggchainSelector] = newAggchainVKey;
+        ownedAggchainVKeys[aggchainVKeySelector] = newAggchainVKey;
 
-        emit AddAggchainVKey(aggchainSelector, newAggchainVKey);
+        emit AddAggchainVKey(aggchainVKeySelector, newAggchainVKey);
     }
 
     /**
      * @notice Update the aggchain verification key in the aggchain contract.
-     * @param aggchainSelector The selector for the verification key query. This selector identifies the aggchain key
+     * @param aggchainVKeySelector The selector for the verification key query. This selector identifies the aggchain key
      * @param updatedAggchainVKey The updated aggchain verification key value.
      */
     function updateOwnedAggchainVKey(
-        bytes4 aggchainSelector,
+        bytes4 aggchainVKeySelector,
         bytes32 updatedAggchainVKey
     ) external onlyVKeyManager {
         // Check already added
-        if (ownedAggchainVKeys[aggchainSelector] == bytes32(0)) {
+        if (ownedAggchainVKeys[aggchainVKeySelector] == bytes32(0)) {
             revert OwnedAggchainVKeyNotFound();
         }
 
-        bytes32 previousAggchainVKey = ownedAggchainVKeys[aggchainSelector];
-        ownedAggchainVKeys[aggchainSelector] = updatedAggchainVKey;
+        bytes32 previousAggchainVKey = ownedAggchainVKeys[aggchainVKeySelector];
+        ownedAggchainVKeys[aggchainVKeySelector] = updatedAggchainVKey;
 
         emit UpdateAggchainVKey(
-            aggchainSelector,
+            aggchainVKeySelector,
             previousAggchainVKey,
             updatedAggchainVKey
         );
@@ -282,13 +277,13 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
 
     /**
      * @notice returns the current aggchain verification key. If the flag `useDefaultGateway` is set to true, the gateway verification key is returned, else, the custom chain verification key is returned.
-     * @param aggchainSelector The selector for the verification key query. This selector identifies the aggchain type + sp1 verifier version
+     * @param aggchainVKeySelector The selector for the verification key query. This selector identifies the aggchain type + sp1 verifier version
      */
     function getAggchainVKey(
-        bytes4 aggchainSelector
+        bytes4 aggchainVKeySelector
     ) public view returns (bytes32 aggchainVKey) {
         if (useDefaultGateway == false) {
-            aggchainVKey = ownedAggchainVKeys[aggchainSelector];
+            aggchainVKey = ownedAggchainVKeys[aggchainVKeySelector];
 
             if (aggchainVKey == bytes32(0)) {
                 revert AggchainVKeyNotFound();
@@ -296,24 +291,24 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         } else {
             // Retrieve aggchain key from AggLayerGateway
             aggchainVKey = aggLayerGateway.getDefaultAggchainVKey(
-                aggchainSelector
+                aggchainVKeySelector
             );
         }
     }
 
     /**
-     * @notice Computes the selector for the aggchain verification key from the aggchain type and the aggchainVKeySelector.
+     * @notice Computes the selector for the aggchain verification key from the aggchain type and the aggchainVKeyVersion.
      * @dev It joins two bytes2 values into a bytes4 value.
-     * @param aggchainVKeySelector The aggchain verification key selector, used to identify the aggchain verification key.
+     * @param aggchainVKeyVersion The aggchain verification key version, used to identify the aggchain verification key.
      * @param aggchainType The aggchain type, hardcoded in the aggchain contract.
-     * [             finalAggchainVKeySelector             ]
-     * [  aggchainVKeySelector  |  AGGCHAIN_TYPE_SELECTOR ]
-     * [        2 bytes         |         2 bytes         ]
+     * [            aggchainVKeySelector         ]
+     * [  aggchainVKeyVersion   |  AGGCHAIN_TYPE ]
+     * [        2 bytes         |    2 bytes     ]
      */
-    function getFinalAggchainVKeySelectorFromType(
-        bytes2 aggchainVKeySelector,
+    function getAggchainVKeySelector(
+        bytes2 aggchainVKeyVersion,
         bytes2 aggchainType
     ) public pure returns (bytes4) {
-        return bytes4(aggchainVKeySelector) | (bytes4(aggchainType) >> 16);
+        return bytes4(aggchainVKeyVersion) | (bytes4(aggchainType) >> 16);
     }
 }

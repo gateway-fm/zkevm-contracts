@@ -20,7 +20,7 @@ contract AggchainECDSA is AggchainBase {
     //                  Constants & Immutables                //
     ////////////////////////////////////////////////////////////
     // Aggchain type selector, hardcoded value used to force the last 2 bytes of aggchain selector to retrieve  the aggchain verification key
-    bytes2 public constant AGGCHAIN_TYPE_SELECTOR = 0;
+    bytes2 public constant AGGCHAIN_TYPE = 0;
 
     ////////////////////////////////////////////////////////////
     //                       Events                           //
@@ -94,7 +94,7 @@ contract AggchainECDSA is AggchainBase {
                 // aggchainBase params
                 bool _useDefaultGateway,
                 bytes32 _initOwnedAggchainVKey,
-                bytes2 _initAggchainVKeySelector,
+                bytes2 _initAggchainVKeyVersion,
                 address _vKeyManager,
                 // PolygonConsensusBase params
                 address _admin,
@@ -125,9 +125,9 @@ contract AggchainECDSA is AggchainBase {
                 _networkName,
                 _useDefaultGateway,
                 _initOwnedAggchainVKey,
-                _initAggchainVKeySelector,
+                _initAggchainVKeyVersion,
                 _vKeyManager,
-                AGGCHAIN_TYPE_SELECTOR
+                AGGCHAIN_TYPE
             );
         } else if (_initializerVersion == 1) {
             // Only need to initialize values that are specific for ECDSA because we are performing an upgrade from a Pessimistic chain
@@ -135,7 +135,7 @@ contract AggchainECDSA is AggchainBase {
             (
                 bool _useDefaultGateway,
                 bytes32 _initOwnedAggchainVKey,
-                bytes2 _initAggchainVKeySelector,
+                bytes2 _initAggchainVKeyVersion,
                 address _vKeyManager
             ) = abi.decode(
                     initializeBytesAggchain,
@@ -145,9 +145,9 @@ contract AggchainECDSA is AggchainBase {
             _initializeAggchainBase(
                 _useDefaultGateway,
                 _initOwnedAggchainVKey,
-                _initAggchainVKeySelector,
+                _initAggchainVKeyVersion,
                 _vKeyManager,
-                AGGCHAIN_TYPE_SELECTOR
+                AGGCHAIN_TYPE
             );
         } else {
             // This case should never happen because reinitializer is 2 so initializer version is 0 or 1, but it's here to avoid any possible future issue if the reinitializer version is increased
@@ -162,9 +162,10 @@ contract AggchainECDSA is AggchainBase {
      * @notice Callback while pessimistic proof is being verified from the rollup manager
      * @dev Return the necessary aggchain information for the proof hashed
      * AggchainHash:
-     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainConfig |
-     * length (bits):   |    32         |       256      |     256       |
-     * aggchainConfig = keccak256(abi.encodePacked(trusted_sequencer))
+     * Field:           | AGGCHAIN_TYPE | aggchainVKey   | aggchainParams |
+     * length (bits):   | 32            | 256            | 256            |
+     *
+     * aggchainParams = keccak256(abi.encodePacked(trusted_sequencer))
      * @param aggChainData custom bytes provided by the chain
      * @return aggchainHash resulting aggchain hash
      */
@@ -173,20 +174,21 @@ contract AggchainECDSA is AggchainBase {
         bytes memory aggChainData
     ) external view returns (bytes32) {
         // The second param is the new state root used at onVerifyPessimistic callback but now only aggchainVKeySelector is required
-        (bytes2 aggchainVKeySelector, ) = abi.decode(
+        (bytes2 aggchainVKeyVersion, ) = abi.decode(
             aggChainData,
             (bytes2, bytes32)
         );
-        bytes4 finalAggchainVKeySelector = getFinalAggchainVKeySelectorFromType(
-            aggchainVKeySelector,
-            AGGCHAIN_TYPE_SELECTOR
+
+        bytes4 aggchainVKeySelector = getAggchainVKeySelector(
+            aggchainVKeyVersion,
+            AGGCHAIN_TYPE
         );
 
         return
             keccak256(
                 abi.encodePacked(
-                    AGGCHAIN_TYPE,
-                    getAggchainVKey(finalAggchainVKeySelector),
+                    CONSENSUS_TYPE,
+                    getAggchainVKey(aggchainVKeySelector),
                     keccak256(abi.encodePacked(trustedSequencer))
                 )
             );
