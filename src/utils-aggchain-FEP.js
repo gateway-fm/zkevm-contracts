@@ -2,16 +2,16 @@
 /* eslint-disable no-restricted-syntax */
 const ethers = require('ethers');
 
-/////////////////////////////////////
-///// Constants for Aggchain FEP ////
-/////////////////////////////////////
+/// //////////////////////////////////
+/// // Constants for Aggchain FEP ////
+/// //////////////////////////////////
 
 // aggchain type selector for FEP
 const AGGCHAIN_TYPE_FEP = '0x0001';
 
-/////////////////////////////////////
-///// Functions for Aggchain FEP ////
-/////////////////////////////////////
+/// //////////////////////////////////
+/// // Functions for Aggchain FEP ////
+/// //////////////////////////////////
 
 /**
  * Function to encode the initialize bytes for the custom chain (version 0 --> initializerVersion = 0)
@@ -37,20 +37,20 @@ function encodeInitializeBytesAggchainFEPv0(
     trustedSequencer,
     gasTokenAddress,
     trustedSequencerURL,
-    networkName
+    networkName,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
         [
-            "tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, address)",
-            "bool",
-            "bytes32",
-            "bytes2",
-            "address",
-            "address",
-            "address",
-            "address",
-            "string",
-            "string"
+            'tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, address)',
+            'bool',
+            'bytes32',
+            'bytes2',
+            'address',
+            'address',
+            'address',
+            'address',
+            'string',
+            'string',
         ],
         [
             Object.values(initParams),
@@ -62,8 +62,8 @@ function encodeInitializeBytesAggchainFEPv0(
             trustedSequencer,
             gasTokenAddress,
             trustedSequencerURL,
-            networkName
-        ]
+            networkName,
+        ],
     );
 }
 
@@ -80,23 +80,23 @@ function encodeInitializeBytesAggchainFEPv1(
     useDefaultGateway,
     initOwnedAggchainVKey,
     initAggchainVKeyVersion,
-    vKeyManager
+    vKeyManager,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
         [
-            "tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, address)",
-            "bool",
-            "bytes32",
-            "bytes2",
-            "address"
+            'tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, address)',
+            'bool',
+            'bytes32',
+            'bytes2',
+            'address',
         ],
         [
             Object.values(initParams),
             useDefaultGateway,
             initOwnedAggchainVKey,
             initAggchainVKeyVersion,
-            vKeyManager
-        ]
+            vKeyManager,
+        ],
     );
 }
 
@@ -109,8 +109,8 @@ function encodeInitializeBytesAggchainFEPv1(
  */
 function encodeAggchainDataFEP(aggchainVKeyVersion, outputRoot, l2BlockNumber) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
-        ["bytes2", "bytes32", "uint256"],
-        [aggchainVKeyVersion, outputRoot, l2BlockNumber]
+        ['bytes2', 'bytes32', 'uint256'],
+        [aggchainVKeyVersion, outputRoot, l2BlockNumber],
     );
 }
 
@@ -130,12 +130,12 @@ function computeHashAggChainParamsFEP(
     l2BlockNumber,
     rollupConfigHash,
     optimisticMode,
-    trustedSequencer
+    trustedSequencer,
 ) {
     // solidity lkeccak
     return ethers.solidityPackedKeccak256(
-        ["bytes32", "bytes32", "uint256", "uint256", "bool", "address"],
-        [oldOutputRoot, newOutputRoot, l2BlockNumber, rollupConfigHash, optimisticMode, trustedSequencer]
+        ['bytes32', 'bytes32', 'uint256', 'uint256', 'bool', 'address'],
+        [oldOutputRoot, newOutputRoot, l2BlockNumber, rollupConfigHash, optimisticMode, trustedSequencer],
     );
 }
 
@@ -144,5 +144,5 @@ module.exports = {
     encodeInitializeBytesAggchainFEPv0,
     encodeInitializeBytesAggchainFEPv1,
     encodeAggchainDataFEP,
-    computeHashAggChainParamsFEP
+    computeHashAggChainParamsFEP,
 };
