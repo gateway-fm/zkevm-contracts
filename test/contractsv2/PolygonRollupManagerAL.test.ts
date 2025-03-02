@@ -11,14 +11,14 @@ import {
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
 const {VerifierType, computeRandomBytes} = require("../../src/pessimistic-utils");
-const {AggchainType} = require("../../src/utils-common-aggchain");
+const {CONSENSUS_TYPE} = require("../../src/utils-common-aggchain");
 const {
-    AGGCHAIN_TYPE_SELECTOR_ECDSA,
+    AGGCHAIN_TYPE_ECDSA,
     encodeAggchainDataECDSA,
     encodeInitializeBytesAggchainECDSAv1,
     encodeInitializeBytesAggchainECDSAv0,
 } = require("../../src/utils-aggchain-ECDSA");
-const {getFinalAggchainVKeySelectorFromType} = require("../../src/utils-common-aggchain");
+const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
 const {encodeInitializeBytesPessimistic} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
 
@@ -276,9 +276,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         const aggchainVKey = computeRandomBytes(32);
 
         // Compose selector for generated aggchain verification key
-        const defaultAggchainSelector = getFinalAggchainVKeySelectorFromType(
+        const defaultAggchainSelector = getAggchainVKeySelector(
             AGGCHAIN_VKEY_SELECTOR,
-            AGGCHAIN_TYPE_SELECTOR_ECDSA
+            AGGCHAIN_TYPE_ECDSA
         );
         await expect(
             aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
@@ -307,7 +307,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         const precomputedAggchainHash = ethers.solidityPackedKeccak256(
             ["uint32", "bytes32", "bytes32"],
             [
-                AggchainType.GENERIC,
+                CONSENSUS_TYPE.GENERIC,
                 aggchainVKey,
                 ethers.solidityPackedKeccak256(["address"], [trustedSequencer.address]),
             ]
@@ -363,9 +363,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getFinalAggchainVKeySelectorFromType(
+        const defaultAggchainSelector = getAggchainVKeySelector(
             AGGCHAIN_VKEY_SELECTOR,
-            AGGCHAIN_TYPE_SELECTOR_ECDSA
+            AGGCHAIN_TYPE_ECDSA
         );
         await expect(
             aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
@@ -560,9 +560,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getFinalAggchainVKeySelectorFromType(
+        const defaultAggchainSelector = getAggchainVKeySelector(
             AGGCHAIN_VKEY_SELECTOR,
-            AGGCHAIN_TYPE_SELECTOR_ECDSA
+            AGGCHAIN_TYPE_ECDSA
         );
         await expect(
             aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)

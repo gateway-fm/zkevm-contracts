@@ -1184,6 +1184,11 @@ contract PolygonRollupManager is
             revert StateTransitionChainsNotAllowed();
         }
 
+        // Not customChainData for VerifierType.Pessimistic
+        if (rollup.rollupVerifierType == VerifierType.Pessimistic && customChainData.length != 0) {
+            revert CustomChainDataMustBeZeroForPessimisticVerifierType();
+        }
+
         // Check l1InfoTreeLeafCount has a valid l1InfoTreeRoot
         bytes32 l1InfoRoot = globalExitRootManager.l1InfoRootMap(
             l1InfoTreeLeafCount

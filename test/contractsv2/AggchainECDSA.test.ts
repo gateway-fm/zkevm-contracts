@@ -35,13 +35,13 @@ describe("AggchainECDSA", () => {
     // aggchain variables
     let initializeBytesAggchain: string;
     let initializeBytesAggchainError: string;
-    const AGGCHAIN_TYPE_SELECTOR = "0x0000";
-    const AGGCHAIN_TYPE = 1;
+    const AGGCHAIN_TYPE = "0x0000";
+    const CONSENSUS_TYPE = 1;
     const aggchainSelector = "0x22222222";
     const newAggChainVKey = "0x2222222222222222222222222222222222222222222222222222222222222222";
     const aggchainSelector2 = "0x11111111";
     const newAggChainVKey2 = "0x1111111111111111111111111111111111111111111111111111111111111111";
-    const aggchainVkeySelector = "0x1235";
+    const aggchainVkeyVersion = "0x1235";
     const newStateRoot = "0x1122334455667788990011223344556677889900112233445566778899001122";
 
     const useDefaultGateway = true;
@@ -151,7 +151,7 @@ describe("AggchainECDSA", () => {
         expect(await aggchainECDSAcontract.networkName()).to.be.equal(networkName);
         expect(await aggchainECDSAcontract.gasTokenAddress()).to.be.equal(gasTokenAddress);
         expect(
-            await aggchainECDSAcontract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)
+            await aggchainECDSAcontract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE.slice(2)}`)
         ).to.be.equal(ownedAggchainVKey);
 
         // initialize again
@@ -315,23 +315,23 @@ describe("AggchainECDSA", () => {
         await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // calculate aggchainHash
-        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeySelector, newStateRoot);
-        const finalAggchainSelector = ethers.concat([
-            aggchainVkeySelector,
-            ethers.zeroPadBytes(AGGCHAIN_TYPE_SELECTOR, 2),
+        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeyVersion, newStateRoot);
+        const aggchainVKeySelector = ethers.concat([
+            aggchainVkeyVersion,
+            ethers.zeroPadBytes(AGGCHAIN_TYPE, 2),
         ]);
         const aggChainConfig = ethers.solidityPackedKeccak256(["address"], [trustedSequencer.address]);
         const aggchainHash = ethers.solidityPackedKeccak256(
             ["uint32", "bytes32", "bytes32"],
-            [AGGCHAIN_TYPE, newAggChainVKey, aggChainConfig]
+            [CONSENSUS_TYPE, newAggChainVKey, aggChainConfig]
         );
 
         // new owned aggchain
         await expect(
-            aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(finalAggchainSelector, newAggChainVKey)
+            aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainVKeySelector, newAggChainVKey)
         )
             .to.emit(aggchainECDSAcontract, "AddAggchainVKey")
-            .withArgs(finalAggchainSelector, newAggChainVKey);
+            .withArgs(aggchainVKeySelector, newAggChainVKey);
 
         // disable default gateway flag
         await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
@@ -349,7 +349,7 @@ describe("AggchainECDSA", () => {
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
         await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
 
-        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeySelector, newStateRoot);
+        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeyVersion, newStateRoot);
 
         // check onlyRollupManager
         await expect(aggchainECDSAcontract.onVerifyPessimistic(aggchainData)).to.be.revertedWithCustomError(
@@ -427,7 +427,7 @@ describe("AggchainECDSA", () => {
         expect(await ppConsensusContract.networkName()).to.be.equal(networkName);
         expect(await ppConsensusContract.gasTokenAddress()).to.be.equal(gasTokenAddress);
         expect(
-            await ppConsensusContract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE_SELECTOR.slice(2)}`)
+            await ppConsensusContract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE.slice(2)}`)
         ).to.be.equal(ownedAggchainVKey);
     });
 });
