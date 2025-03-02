@@ -129,10 +129,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         useDefaultGateway = _useOwnedGateway;
         // set the initial aggchain keys
         ownedAggchainVKeys[
-            getAggchainVKeySelector(
-                _initAggchainVKeyVersion,
-                aggchain_type
-            )
+            getAggchainVKeySelector(_initAggchainVKeyVersion, aggchain_type)
         ] = _initOwnedAggchainVKey;
         // set initial vKeyManager
         vKeyManager = _vKeyManager;
@@ -155,10 +152,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         useDefaultGateway = _useOwnedGateway;
         // set the initial aggchain keys
         ownedAggchainVKeys[
-            getAggchainVKeySelector(
-                _initAggchainVKeyVersion,
-                aggchain_type
-            )
+            getAggchainVKeySelector(_initAggchainVKeyVersion, aggchain_type)
         ] = _initOwnedAggchainVKey;
         // set initial vKeyManager
         vKeyManager = _vKeyManager;

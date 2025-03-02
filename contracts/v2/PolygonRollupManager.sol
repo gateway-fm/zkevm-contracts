@@ -1185,7 +1185,10 @@ contract PolygonRollupManager is
         }
 
         // Not customChainData for VerifierType.Pessimistic
-        if (rollup.rollupVerifierType == VerifierType.Pessimistic && customChainData.length != 0) {
+        if (
+            rollup.rollupVerifierType == VerifierType.Pessimistic &&
+            customChainData.length != 0
+        ) {
             revert CustomChainDataMustBeZeroForPessimisticVerifierType();
         }
 
