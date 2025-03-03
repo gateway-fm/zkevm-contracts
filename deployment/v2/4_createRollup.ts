@@ -22,7 +22,7 @@ const dateStr = new Date().toISOString();
 const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.json`);
 import utilsECDSA from "../../src/utils-aggchain-ECDSA"
 import utilsFEP from "../../src/utils-aggchain-FEP";
-const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
+const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
 
 import {
     PolygonRollupManager,
@@ -290,7 +290,7 @@ async function main() {
         genesisFinal = ethers.ZeroHash;
         // programVKey = bytes32(0)
         programVKey = ethers.ZeroHash;
-        // verifiderAddress = address(0)
+        // verifierAddress = address(0)
         verifierAddress = ethers.ZeroAddress;
         if(consensusContract == "AggchainECDSA") {
             initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
@@ -343,7 +343,7 @@ async function main() {
             await verifierContract.waitForDeployment();
         }
         verifierAddress = verifierContract.target;
-        initializeBytesCustomChain = encodeInitializeBytesPessimistic(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
+        initializeBytesCustomChain = encodeInitializeBytesLegacy(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
         console.log("#######################\n");
         console.log("Verifier name:", verifierName);
         console.log("Verifier deployed to:", verifierAddress);

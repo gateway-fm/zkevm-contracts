@@ -18,7 +18,7 @@ cp docker/scripts/v2/create_rollup_parameters_docker.json deployment/v2/create_r
 npm run deploy:testnet:v2:localhost
 sudo rm -rf docker/deploymentOutput
 mkdir docker/deploymentOutput
-mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/create_rollup_output_FEP.json
+mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/create_rollup_output.json
 cp ./docker/scripts/v2/create_rollup_parameters_docker-v0.2.0.json ./deployment/v2/create_rollup_parameters.json
 npx hardhat run ./deployment/v2/4_createRollup.ts --network localhost
 mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/create_rollup_output_v0.2.0.json

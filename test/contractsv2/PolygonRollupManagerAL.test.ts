@@ -19,7 +19,7 @@ const {
     encodeInitializeBytesAggchainECDSAv0,
 } = require("../../src/utils-aggchain-ECDSA");
 const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
-const {encodeInitializeBytesPessimistic} = require("../../src/utils-common-aggchain");
+const {encodeInitializeBytesLegacy} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
 
 describe("Polygon rollup manager aggregation layer v3", () => {
@@ -408,7 +408,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         const urlSequencer = "https://pessimistic:8545";
         const networkName = "testPessimistic";
         const pessimisticRollupID = 1; // Already aggchainECDSA rollup created created
-        const initializeBytesPessimistic = encodeInitializeBytesPessimistic(
+        const initializeBytesPessimistic = encodeInitializeBytesLegacy(
             admin.address,
             trustedSequencer.address,
             gasTokenAddress,
@@ -634,7 +634,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             nonce: rollupManagerNonce,
         });
         // Create pessimistic rollup
-        const initializeBytesCustomChain = encodeInitializeBytesPessimistic(
+        const initializeBytesCustomChain = encodeInitializeBytesLegacy(
             admin.address,
             trustedSequencer.address,
             ethers.ZeroAddress,

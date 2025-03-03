@@ -9,6 +9,13 @@ const CONSENSUS_TYPE = {
     LEGACY: 0,
     GENERIC: 1,
 };
+
+const AggchainsContracts = {
+    AggchainECDSA: 'AggchainECDSA',
+    AggchainFEP: 'AggchainFEP',
+
+};
+
 /// //////////////////////////////
 /// // Functions for Aggchain ////
 /// //////////////////////////////
@@ -71,7 +78,7 @@ function getAggchainVKeySelector(_aggchainVKeyVersion, _aggchainType) {
  * @param {String} networkName L2 network name
  * @returns {String} encoded value in hexadecimal string
  */
-function encodeInitializeBytesPessimistic(
+function encodeInitializeBytesLegacy(
     admin,
     sequencer,
     gasTokenAddress,
@@ -92,7 +99,8 @@ function encodeInitializeBytesPessimistic(
 
 module.exports = {
     CONSENSUS_TYPE,
+    AggchainsContracts,
     computeAggchainHash,
     getAggchainVKeySelector,
-    encodeInitializeBytesPessimistic,
+    encodeInitializeBytesLegacy,
 };
