@@ -21,6 +21,7 @@ import updateVanillaGenesis from "./utils/updateVanillaGenesis";
 const dateStr = new Date().toISOString();
 const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.json`);
 import utilsECDSA from "../../src/utils-aggchain-ECDSA"
+import utilsFEP from "../../src/utils-aggchain-FEP";
 const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
 
 import {
@@ -303,8 +304,19 @@ async function main() {
                 trustedSequencerURL,
                 networkName
             )
-        } else if(consensusContract.includes("FEP")) {
-            initializeBytesCustomChain = "0x";
+        } else if(consensusContract.includes("AggchainFEP")) {
+            initializeBytesCustomChain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
+                createRollupParameters.aggchainParams.initParams,
+                createRollupParameters.aggchainParams.useDefaultGateway,
+                createRollupParameters.aggchainParams.ownedAggchainVKey,
+                createRollupParameters.aggchainParams.aggchainVKeySelector,
+                createRollupParameters.aggchainParams.vKeyManager,
+                adminZkEVM,
+                trustedSequencer,
+                gasTokenAddress,
+                trustedSequencerURL,
+                networkName
+            );
         } else {
             throw new Error(`Aggchain ${consensusContract} not supported`);
         }

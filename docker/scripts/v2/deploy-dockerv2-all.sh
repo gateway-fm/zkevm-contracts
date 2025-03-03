@@ -18,10 +18,13 @@ cp docker/scripts/v2/create_rollup_parameters_docker.json deployment/v2/create_r
 npm run deploy:testnet:v2:localhost
 sudo rm -rf docker/deploymentOutput
 mkdir docker/deploymentOutput
-mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/create_rollup_output.json
+mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/create_rollup_output_FEP.json
 cp ./docker/scripts/v2/create_rollup_parameters_docker-v0.2.0.json ./deployment/v2/create_rollup_parameters.json
 npx hardhat run ./deployment/v2/4_createRollup.ts --network localhost
-mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/
+mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/create_rollup_output_v0.2.0.json
+cp ./docker/scripts/v2/create_rollup_parameters_docker-v0.3.0-ecdsa.json ./deployment/v2/create_rollup_parameters.json
+npx hardhat run ./deployment/v2/4_createRollup.ts --network localhost
+mv ./deployment/v2/create_rollup_output_*.json ./docker/deploymentOutput/create_rollup_output_v0.3.0-ecdsa.json
 sudo mv deployment/v2/deploy_output.json docker/deploymentOutput
 sudo mv deployment/v2/genesis.json docker/deploymentOutput
 [ -f deployment/v2/genesis_sovereign.json ] && sudo mv deployment/v2/genesis_sovereign.json docker/deploymentOutput
