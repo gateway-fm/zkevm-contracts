@@ -5,7 +5,7 @@ import path = require("path");
 
 const pathTestvectors = path.join(__dirname, "../test-vectors/aggchain");
 const aggchainHashTestVectors = require(path.join(pathTestvectors, "aggchain-hash.json"));
-const finalAggchainSelectorTestVectors = require(path.join(pathTestvectors, "aggchain-vkey-selector.json"));
+const aggchainVKeySelectorTestVectors = require(path.join(pathTestvectors, "aggchain-vkey-selector.json"));
 const utilsCommon = require("../../src/utils-common-aggchain");
 
 describe("Test vectors aggchain common utils", () => {
@@ -33,11 +33,11 @@ describe("Test vectors aggchain common utils", () => {
         });
     }
 
-    for (let i = 0; i < finalAggchainSelectorTestVectors.length; i++) {
+    for (let i = 0; i < aggchainVKeySelectorTestVectors.length; i++) {
         it(`Check test-vectors getAggchainVKeySelector hash ID=${i}`, async () => {
-            const testVector = finalAggchainSelectorTestVectors[i].input;
-            const finalAggchainSelector = utilsCommon.getAggchainVKeySelector(
-                testVector.aggchainVKeySelector,
+            const testVector = aggchainVKeySelectorTestVectors[i].input;
+            const aggchainVKeySelector = utilsCommon.getAggchainVKeySelector(
+                testVector.aggchainVKeyVersion,
                 testVector.aggchainType
             );
             if (update) {
@@ -55,8 +55,8 @@ describe("Test vectors aggchain common utils", () => {
                             });
                 await aggchainContract.waitForDeployment();
 
-                finalAggchainSelectorTestVectors[i].output = {};
-                finalAggchainSelectorTestVectors[i].output.finalAggchainVKeySelector =
+                aggchainVKeySelectorTestVectors[i].output = {};
+                aggchainVKeySelectorTestVectors[i].output.aggchainVKeySelector =
                     await aggchainContract.getAggchainVKeySelector(
                         testVector.aggchainVKeySelector,
                         testVector.aggchainType
@@ -64,11 +64,11 @@ describe("Test vectors aggchain common utils", () => {
                 console.log(`WRITE: ${path.join(pathTestvectors, "aggchain-vkey-selector.json")}`);
                 fs.writeFileSync(
                     path.join(pathTestvectors, "aggchain-vkey-selector.json"),
-                    JSON.stringify(finalAggchainSelectorTestVectors, null, 2)
+                    JSON.stringify(aggchainVKeySelectorTestVectors, null, 2)
                 );
             } else {
-                expect(finalAggchainSelector.toLowerCase()).to.equal(
-                    finalAggchainSelectorTestVectors[i].output.finalAggchainVKeySelector.toLowerCase()
+                expect(aggchainVKeySelector.toLowerCase()).to.equal(
+                    aggchainVKeySelectorTestVectors[i].output.aggchainVKeySelector.toLowerCase()
                 );
             }
         });

@@ -1,0 +1,67 @@
+[
+  {
+    "input": {
+      "oldOutputRoot": "0x1122334455667788990011223344556677889900112233445566778899001122",
+      "newOutputRoot": "0x2233445566778899001122334455667788990011223344556677889900112233",
+      "l2BlockNumber": 0,
+      "rollupConfigHash": "0x3344556677889900112233445566778899001122334455667788990011223344",
+      "optimisticMode": false,
+      "trustedSequencer": "0x2222222222222222222222222222222222222222"
+    },
+    "output": {
+      "hashAggchainParams": "0xe98dff561195aeb0612b3485efa3b0f87bf47ca8a18c1f6dfef5f84766128626"
+    }
+  },
+  {
+    "input": {
+      "oldOutputRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "newOutputRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "l2BlockNumber": 0,
+      "rollupConfigHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "optimisticMode": false,
+      "trustedSequencer": "0x0000000000000000000000000000000000000000"
+    },
+    "output": {
+      "hashAggchainParams": "0x6e2e44f5607c8cf87b79133b6283c416e5cae148cdaeb7c70d1e64647aae194a"
+    }
+  },
+  {
+    "input": {
+      "oldOutputRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "newOutputRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "l2BlockNumber": 0,
+      "rollupConfigHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "optimisticMode": true,
+      "trustedSequencer": "0x0000000000000000000000000000000000000000"
+    },
+    "output": {
+      "hashAggchainParams": "0x8ce94ab51194aab071f9712dba30c2a2dd62460859c3156c1c87e305af8b6614"
+    }
+  },
+  {
+    "input": {
+      "oldOutputRoot": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "newOutputRoot": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "l2BlockNumber": 0,
+      "rollupConfigHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "optimisticMode": false,
+      "trustedSequencer": "0xffffffffffffffffffffffffffffffffffffffff"
+    },
+    "output": {
+      "hashAggchainParams": "0x8a23c594526a508518647e4f0897b86bb549afe91e6ad75a967ea69e1395fe73"
+    }
+  },
+  {
+    "input": {
+      "oldOutputRoot": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "newOutputRoot": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "l2BlockNumber": 0,
+      "rollupConfigHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "optimisticMode": true,
+      "trustedSequencer": "0xffffffffffffffffffffffffffffffffffffffff"
+    },
+    "output": {
+      "hashAggchainParams": "0x76adbaa83c4828e48bf5b5cd37e7cd85bc0f2fb96f2c302bb8e59d0112dc30f3"
+    }
+  }
+]

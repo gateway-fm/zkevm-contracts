@@ -1,7 +1,7 @@
 [
   {
     "input": {
-      "aggchainVKeySelector": "0x1234",
+      "aggchainVKeyVersion": "0x1234",
       "newStateRoot": "0x5555555555555555555555555555555555555555555555555555555555555555"
     },
     "output": {
@@ -10,7 +10,7 @@
   },
   {
     "input": {
-      "aggchainVKeySelector": "0x0000",
+      "aggchainVKeyVersion": "0x0000",
       "newStateRoot": "0x0000001111111111111111111111111111111111111110000000000000000000"
     },
     "output": {
@@ -19,7 +19,7 @@
   },
   {
     "input": {
-      "aggchainVKeySelector": "0x2222",
+      "aggchainVKeyVersion": "0x2222",
       "newStateRoot": "0x2222222222222222222222222222222222222222222222222222222222222222"
     },
     "output": {
@@ -28,7 +28,7 @@
   },
   {
     "input": {
-      "aggchainVKeySelector": "0x1234",
+      "aggchainVKeyVersion": "0x1234",
       "newStateRoot": "0x5678912345678912345678912345678912345678912345678912345678912345"
     },
     "output": {
@@ -37,7 +37,7 @@
   },
   {
     "input": {
-      "aggchainVKeySelector": "0x0000",
+      "aggchainVKeyVersion": "0x0000",
       "newStateRoot": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     "output": {
@@ -46,7 +46,7 @@
   },
   {
     "input": {
-      "aggchainVKeySelector": "0xFFFF",
+      "aggchainVKeyVersion": "0xFFFF",
       "newStateRoot": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
     },
     "output": {
