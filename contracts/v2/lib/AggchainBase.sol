@@ -100,7 +100,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * Note if a wrapped token of the bridge is used, the original network and address of this wrapped are used instead
      * @param sequencerURL Trusted sequencer URL
      * @param _networkName L2 network name
-     * @param _useOwnedGateway Flag to setup initial values for the owned gateway
+     * @param _useDefaultGateway Flag to setup initial values for the default gateway
      * @param _initOwnedAggchainVKey Initial owned aggchain verification key
      * @param _initAggchainVKeyVersion Initial aggchain selector
      * @param _vKeyManager Initial vKeyManager
@@ -111,7 +111,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         address _gasTokenAddress,
         string memory sequencerURL,
         string memory _networkName,
-        bool _useOwnedGateway,
+        bool _useDefaultGateway,
         bytes32 _initOwnedAggchainVKey,
         bytes2 _initAggchainVKeyVersion,
         address _vKeyManager,
@@ -126,7 +126,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
             _networkName
         );
 
-        useDefaultGateway = _useOwnedGateway;
+        useDefaultGateway = _useDefaultGateway;
         // set the initial aggchain keys
         ownedAggchainVKeys[
             getAggchainVKeySelector(_initAggchainVKeyVersion, aggchain_type)
@@ -137,19 +137,19 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
 
     /**
      * @notice Initializer AggchainBase storage
-     * @param _useOwnedGateway Flag to setup initial values for the owned gateway
+     * @param _useDefaultGateway Flag to setup initial values for the default gateway
      * @param _initOwnedAggchainVKey Initial owned aggchain verification key
      * @param _initAggchainVKeyVersion Initial aggchain selector
      * @param _vKeyManager Initial vKeyManager
      */
     function _initializeAggchainBase(
-        bool _useOwnedGateway,
+        bool _useDefaultGateway,
         bytes32 _initOwnedAggchainVKey,
         bytes2 _initAggchainVKeyVersion,
         address _vKeyManager,
         bytes2 aggchain_type
     ) internal onlyInitializing {
-        useDefaultGateway = _useOwnedGateway;
+        useDefaultGateway = _useDefaultGateway;
         // set the initial aggchain keys
         ownedAggchainVKeys[
             getAggchainVKeySelector(_initAggchainVKeyVersion, aggchain_type)

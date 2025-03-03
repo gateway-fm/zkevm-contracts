@@ -60,7 +60,7 @@ contract AggchainFEP is AggchainBase {
     /// @notice An array of L2 output proposals.
     /// @dev Same approach from https://github.com/succinctlabs/op-succinct/blob/main/contracts/src/validity/OPSuccinctL2OutputOracle.sol
     /// @dev This limits the ability to increase struct OutputProposal parameters in future upgrades
-    /// @dev Not cjhnaged to a mapping style to maintain same storage slots as the original contract
+    /// @dev Not changed to a mapping style to maintain same storage slots as the original contract
     OutputProposal[] internal l2Outputs;
 
     /// @notice The number of the first L2 block recorded in this contract.
@@ -444,7 +444,7 @@ contract AggchainFEP is AggchainBase {
             revert CannotProposeFutureL2Output();
         }
 
-        // check non-zero stateroot
+        // check non-zero stateRoot
         if (_outputRoot == bytes32(0)) {
             revert L2OutputRootCannotBeZero();
         }

@@ -121,6 +121,7 @@ interface IAggLayerGateway is IAggLayerGatewayEvents, IAggLayerGatewayErrors {
     /// @dev Only callable by the owner. The owner is responsible for ensuring that the specified
     /// verifier is correct with a valid VERIFIER_HASH. Once a route to a verifier is added, it
     /// cannot be removed.
+    /// @param pessimisticVKeySelector The verifier selector to add.
     /// @param verifier The address of the verifier contract. This verifier MUST implement the
     /// ISP1VerifierWithHash interface.
     /// @param pessimisticVKey The verification key to be used for verifying pessimistic proofs.
