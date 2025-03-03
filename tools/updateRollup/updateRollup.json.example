@@ -1,6 +1,6 @@
 {
     "type": "EOA",
-    "polygonRollupManagerAddress": "0xaddress",
+    "polygonRollupManagerAddress": "0x9A676e781A523b5d0C0e43731313A708CB607508",
     "timelockDelay": 0,
     "deployerPvtKey": "",
     "maxFeePerGas": "",
@@ -8,8 +8,8 @@
     "multiplierGas": "",
     "rollups": [
         {
-            "rollupAddress": "0xaddress",
-            "newRollupTypeID": 1,
+            "rollupAddress": "0x06cd7788D77332cF1156f1E327eBC090B5FF16a3",
+            "newRollupTypeID": 2,
             "upgradeData": "0x"
         }
     ]
