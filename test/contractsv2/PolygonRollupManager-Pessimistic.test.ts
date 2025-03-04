@@ -10,7 +10,7 @@ import {
     Address,
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
-const { VerifierType, computeInputPessimisticBytes, computeConsensusHashEcdsa } = require("../../src/pessimistic-utils");
+const { VerifierType, computeInputPessimisticBytes, computeConsensusHashEcdsa, computeRandomBytes } = require("../../src/pessimistic-utils");
 const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
 
 describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
@@ -420,6 +420,31 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
 
         // add existing rollup: pessimistic type
         const newCreatedRollupID = 1;
+        // Force revert with InvalidInputsForRollupType
+        await expect(
+            rollupManagerContract.connect(timelock).addExistingRollup(
+                rollupAddress,
+                verifierContract.target,
+                0, // Invalid forkID
+                chainID,
+                initLER,
+                VerifierType.Pessimistic,
+                programVKey,
+                ethers.ZeroHash // initPessimisticRoot
+            )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
+        await expect(
+            rollupManagerContract.connect(timelock).addExistingRollup(
+                rollupAddress,
+                verifierContract.target,
+                forkID,
+                chainID,
+                initLER,
+                VerifierType.Pessimistic,
+                programVKey,
+                computeRandomBytes(32) // invalid initPessimisticRoot
+            )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
 
         await expect(
             rollupManagerContract.connect(timelock).addExistingRollup(

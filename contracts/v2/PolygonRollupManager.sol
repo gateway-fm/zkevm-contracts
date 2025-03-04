@@ -744,12 +744,30 @@ contract PolygonRollupManager is
 
         // Check verifier type
         if (rollupVerifierType == VerifierType.Pessimistic) {
+            if (forkID == 0 || initPessimisticRoot != bytes32(0)) {
+                revert InvalidInputsForRollupType();
+            }
+
             rollup.programVKey = programVKey;
             rollup.lastLocalExitRoot = initRoot;
         } else if (rollupVerifierType == VerifierType.ALGateway) {
+            if (
+                verifier != address(0) ||
+                forkID != 0 ||
+                programVKey != bytes32(0)
+            ) {
+                revert InvalidInputsForRollupType();
+            }
+
             rollup.lastPessimisticRoot = initPessimisticRoot;
             rollup.lastLocalExitRoot = initRoot;
         } else {
+            if (
+                programVKey != bytes32(0) || initPessimisticRoot != bytes32(0)
+            ) {
+                revert InvalidInputsForRollupType();
+            }
+
             rollup.batchNumToStateRoot[0] = initRoot;
         }
 

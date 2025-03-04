@@ -15,6 +15,7 @@ import {
 } from "../../typechain-types";
 import { takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
 import { processorUtils, contractUtils, MTBridge, mtBridgeUtils, utils } from "@0xpolygonhermez/zkevm-commonjs";
+const { computeRandomBytes } = require("../../src/pessimistic-utils");
 
 type BatchDataStructEtrog = PolygonRollupBaseEtrog.BatchDataStruct;
 
@@ -1246,7 +1247,6 @@ describe("Polygon Rollup Manager", () => {
         const rollupVerifierType = 0;
         const description = "zkevm test";
         const programVKey = "0x0000000000000000000000000000000000000000000000000000000000000000";
-        const lastPessimisticRoot = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
         // Native token will be ether
 
@@ -2995,6 +2995,35 @@ describe("Polygon Rollup Manager", () => {
         ).to.be.revertedWithCustomError(rollupManagerContract, "SenderMustBeRollup");
 
         // Only admin can create new zkEVMs
+        // Should revert with InvalidInputsForRollupType
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    PolygonZKEVMV2Contract.target,
+                    verifierContract.target,
+                    forkID,
+                    chainID,
+                    genesisRandom,
+                    rollupVerifierType,
+                    programVKey,
+                    computeRandomBytes(32) // invalid initPessimisticRoot, should be zero
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    PolygonZKEVMV2Contract.target,
+                    verifierContract.target,
+                    forkID,
+                    chainID,
+                    genesisRandom,
+                    rollupVerifierType,
+                    computeRandomBytes(32), // invalid programVKey, should be zero
+                    ethers.ZeroHash 
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
         await expect(
             rollupManagerContract.addExistingRollup(
                 PolygonZKEVMV2Contract.target,
