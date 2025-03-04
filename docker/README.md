@@ -68,7 +68,7 @@ You can change the deployment `mnemonic` creating a `.env` file in the project r
         - `startingBlockNumber`: The number of the first L2 block
         - `startingTimestamp`:  The timestamp of the first L2 block
         - `submissionInterval`: The minimum interval in L2 blocks at which checkpoints must be submitted
-        - `aggChainManager`: Address that manages all the functionalities related to the aggchain
+        - `aggchainManager`: Address that manages all the functionalities related to the aggchain
         - `optimisticModeManager`: Address that can trigger the optimistic mode
     - `useDefaultGateway`: bool, flag to setup initial values for the owned gateway
     - `ownedAggchainVKey`: bytes32, Initial owned aggchain verification key

@@ -243,7 +243,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const urlSequencer = "https://pessimistic:8545";
         const networkName = "testPessimistic";
         const pessimisticRollupID = inputProof["pp-inputs"]["origin-network"];
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer, gasTokenAddress, urlSequencer, networkName);
         // create new pessimistic
         const newZKEVMAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
@@ -255,7 +255,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             .attachAggchainToAL(
                 rollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             );
 
         // select not existent global exit root
@@ -272,7 +272,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 newLER,
                 newPPRoot,
                 proofPP,
-                "0x" // customChainData
+                "0x" // aggchainData
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
@@ -286,7 +286,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                     newLER,
                     newPPRoot,
                     proofPP,
-                    "0x" // customChainData
+                    "0x" // aggchainData
                 )
         ).to.be.revertedWithCustomError(rollupManagerContract, "L1InfoTreeLeafCountInvalid");
 
@@ -297,7 +297,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             l1InfoRoot,
             inputProof["pp-inputs"]["new-local-exit-root"],
             inputProof["pp-inputs"]["new-pessimistic-root"],
-            "0x" // customChainData
+            "0x" // aggchainData
         );
 
         const infoRollup = await rollupManagerContract.rollupIDToRollupDataV2(pessimisticRollupID);
@@ -328,7 +328,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                     newLER,
                     newPPRoot,
                     proofPP,
-                    "0x" // customChainData
+                    "0x" // aggchainData
                 )
         )
             .to.emit(rollupManagerContract, "VerifyBatchesTrustedAggregator")

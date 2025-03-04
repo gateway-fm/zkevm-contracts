@@ -280,7 +280,7 @@ async function main() {
     let programVKey;
     let verifierAddress;
     let verifierName;
-    let initializeBytesCustomChain;
+    let initializeBytesAggchain;
 
     if (arraySupportedAggchains.includes(consensusContract)) {
         // If Aggchain
@@ -293,7 +293,7 @@ async function main() {
         // verifierAddress = address(0)
         verifierAddress = ethers.ZeroAddress;
         if(consensusContract == "AggchainECDSA") {
-            initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
+            initializeBytesAggchain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 createRollupParameters.aggchainParams.useDefaultGateway,
                 createRollupParameters.aggchainParams.ownedAggchainVKey,
                 createRollupParameters.aggchainParams.aggchainVKeySelector,
@@ -305,7 +305,7 @@ async function main() {
                 networkName
             )
         } else if(consensusContract.includes("AggchainFEP")) {
-            initializeBytesCustomChain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
+            initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
                 createRollupParameters.aggchainParams.initParams,
                 createRollupParameters.aggchainParams.useDefaultGateway,
                 createRollupParameters.aggchainParams.ownedAggchainVKey,
@@ -343,7 +343,7 @@ async function main() {
             await verifierContract.waitForDeployment();
         }
         verifierAddress = verifierContract.target;
-        initializeBytesCustomChain = encodeInitializeBytesLegacy(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
+        initializeBytesAggchain = encodeInitializeBytesLegacy(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
         console.log("#######################\n");
         console.log("Verifier name:", verifierName);
         console.log("Verifier deployed to:", verifierAddress);
@@ -398,7 +398,7 @@ async function main() {
     const txDeployRollup = await rollupManagerContract.attachAggchainToAL(
         newRollupTypeID,
         chainID,
-        initializeBytesCustomChain
+        initializeBytesAggchain
     );
     const receipt = (await txDeployRollup.wait()) as any;
     const blockDeploymentRollup = await receipt?.getBlock();

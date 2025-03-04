@@ -14,7 +14,7 @@ describe("AggLayerGateway tests", () => {
     let deployer: any;
     let defaultAdmin: any;
     let aggLayerAdmin: any;
-    let aggChainVKey: any;
+    let aggchainVKey: any;
     let addPPRoute: any;
     let freezePPRoute: any;
 
@@ -29,7 +29,7 @@ describe("AggLayerGateway tests", () => {
 
     beforeEach("Deploy contracts", async () => {
         // load signers
-        [deployer, defaultAdmin, aggLayerAdmin, aggChainVKey, addPPRoute, freezePPRoute] = await ethers.getSigners();
+        [deployer, defaultAdmin, aggLayerAdmin, aggchainVKey, addPPRoute, freezePPRoute] = await ethers.getSigners();
 
         // deploy AggLayerGateway
         const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway");
@@ -42,7 +42,7 @@ describe("AggLayerGateway tests", () => {
         await expect(
             aggLayerGatewayContract.initialize(
                 defaultAdmin.address,
-                aggChainVKey.address,
+                aggchainVKey.address,
                 addPPRoute.address,
                 freezePPRoute.address
             )
@@ -64,7 +64,7 @@ describe("AggLayerGateway tests", () => {
         await expect(
             aggLayerGatewayContract.initialize(
                 defaultAdmin.address,
-                aggChainVKey.address,
+                aggchainVKey.address,
                 addPPRoute.address,
                 freezePPRoute.address
             )

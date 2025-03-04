@@ -124,7 +124,7 @@ function encodeAggchainDataFEP(aggchainVKeyVersion, outputRoot, l2BlockNumber) {
  * @param {String} trustedSequencer trusted sequencer address
  * @returns aggchain param hash
  */
-function computeHashAggChainParamsFEP(
+function computeHashAggchainParamsFEP(
     oldOutputRoot,
     newOutputRoot,
     l2BlockNumber,
@@ -144,5 +144,5 @@ module.exports = {
     encodeInitializeBytesAggchainFEPv0,
     encodeInitializeBytesAggchainFEPv1,
     encodeAggchainDataFEP,
-    computeHashAggChainParamsFEP,
+    computeHashAggchainParamsFEP,
 };

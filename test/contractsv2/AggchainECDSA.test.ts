@@ -10,7 +10,7 @@ describe("AggchainECDSA", () => {
     let admin: any;
     let defaultAdminAgglayer: any;
     let vKeyManager: any;
-    let aggChainVKey: any;
+    let aggchainVKey: any;
     let addPPRoute: any;
     let freezePPRoute: any;
 
@@ -38,9 +38,9 @@ describe("AggchainECDSA", () => {
     const AGGCHAIN_TYPE = "0x0000";
     const CONSENSUS_TYPE = 1;
     const aggchainSelector = "0x22222222";
-    const newAggChainVKey = "0x2222222222222222222222222222222222222222222222222222222222222222";
+    const newAggchainVKey = "0x2222222222222222222222222222222222222222222222222222222222222222";
     const aggchainSelector2 = "0x11111111";
-    const newAggChainVKey2 = "0x1111111111111111111111111111111111111111111111111111111111111111";
+    const newAggchainVKey2 = "0x1111111111111111111111111111111111111111111111111111111111111111";
     const aggchainVkeyVersion = "0x1235";
     const newStateRoot = "0x1122334455667788990011223344556677889900112233445566778899001122";
 
@@ -58,7 +58,7 @@ describe("AggchainECDSA", () => {
             admin,
             defaultAdminAgglayer,
             vKeyManager,
-            aggChainVKey,
+            aggchainVKey,
             addPPRoute,
             freezePPRoute,
         ] = await ethers.getSigners();
@@ -86,7 +86,7 @@ describe("AggchainECDSA", () => {
         await expect(
             aggLayerGatewayContract.initialize(
                 defaultAdminAgglayer.address,
-                aggChainVKey.address,
+                aggchainVKey.address,
                 addPPRoute.address,
                 freezePPRoute.address
             )
@@ -109,10 +109,10 @@ describe("AggchainECDSA", () => {
         await expect(
             aggLayerGatewayContract
                 .connect(defaultAdminAgglayer)
-                .addDefaultAggchainVKey(aggchainSelector, newAggChainVKey)
+                .addDefaultAggchainVKey(aggchainSelector, newAggchainVKey)
         )
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
-            .withArgs(aggchainSelector, newAggChainVKey);
+            .withArgs(aggchainSelector, newAggchainVKey);
 
         // deploy aggchain
         // create aggchainECDSA implementation
@@ -243,38 +243,38 @@ describe("AggchainECDSA", () => {
 
         // addOwnedAggchainVKey
         await expect(
-            aggchainECDSAcontract.addOwnedAggchainVKey(aggchainSelector, newAggChainVKey)
+            aggchainECDSAcontract.addOwnedAggchainVKey(aggchainSelector, newAggchainVKey)
         ).to.be.revertedWithCustomError(aggchainECDSAcontract, "OnlyVKeyManager");
 
         await expect(
             aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, ethers.ZeroHash)
         ).to.be.revertedWithCustomError(aggchainECDSAcontract, "ZeroValueAggchainVKey");
 
-        await expect(aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, newAggChainVKey))
+        await expect(aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, newAggchainVKey))
             .to.emit(aggchainECDSAcontract, "AddAggchainVKey")
-            .withArgs(aggchainSelector, newAggChainVKey);
+            .withArgs(aggchainSelector, newAggchainVKey);
 
         await expect(
-            aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, newAggChainVKey)
+            aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainSelector, newAggchainVKey)
         ).to.be.revertedWithCustomError(aggchainECDSAcontract, "OwnedAggchainVKeyAlreadyAdded");
 
         // updateOwnedAggchainVKey
         await expect(
-            aggchainECDSAcontract.updateOwnedAggchainVKey(aggchainSelector2, newAggChainVKey2)
+            aggchainECDSAcontract.updateOwnedAggchainVKey(aggchainSelector2, newAggchainVKey2)
         ).to.be.revertedWithCustomError(aggchainECDSAcontract, "OnlyVKeyManager");
 
         await expect(
-            aggchainECDSAcontract.connect(vKeyManager).updateOwnedAggchainVKey(aggchainSelector2, newAggChainVKey2)
+            aggchainECDSAcontract.connect(vKeyManager).updateOwnedAggchainVKey(aggchainSelector2, newAggchainVKey2)
         ).to.be.revertedWithCustomError(aggchainECDSAcontract, "OwnedAggchainVKeyNotFound");
 
         await expect(
-            aggchainECDSAcontract.connect(vKeyManager).updateOwnedAggchainVKey(aggchainSelector, newAggChainVKey2)
+            aggchainECDSAcontract.connect(vKeyManager).updateOwnedAggchainVKey(aggchainSelector, newAggchainVKey2)
         )
             .to.emit(aggchainECDSAcontract, "UpdateAggchainVKey")
-            .withArgs(aggchainSelector, newAggChainVKey, newAggChainVKey2);
+            .withArgs(aggchainSelector, newAggchainVKey, newAggchainVKey2);
 
         // getAggchainVKey useDefaultGateway === true
-        expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey);
+        expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggchainVKey);
 
         await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
             aggchainECDSAcontract,
@@ -282,7 +282,7 @@ describe("AggchainECDSA", () => {
         );
 
         // getAggchainVKey useDefaultGateway === false
-        expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggChainVKey2);
+        expect(await aggchainECDSAcontract.getAggchainVKey(aggchainSelector)).to.be.equal(newAggchainVKey2);
 
         // transferVKeyManagerRole
         await expect(aggchainECDSAcontract.transferVKeyManagerRole(admin.address)).to.be.revertedWithCustomError(
@@ -320,18 +320,18 @@ describe("AggchainECDSA", () => {
             aggchainVkeyVersion,
             ethers.zeroPadBytes(AGGCHAIN_TYPE, 2),
         ]);
-        const aggChainConfig = ethers.solidityPackedKeccak256(["address"], [trustedSequencer.address]);
+        const aggchainParams = ethers.solidityPackedKeccak256(["address"], [trustedSequencer.address]);
         const aggchainHash = ethers.solidityPackedKeccak256(
             ["uint32", "bytes32", "bytes32"],
-            [CONSENSUS_TYPE, newAggChainVKey, aggChainConfig]
+            [CONSENSUS_TYPE, newAggchainVKey, aggchainParams]
         );
 
         // new owned aggchain
         await expect(
-            aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainVKeySelector, newAggChainVKey)
+            aggchainECDSAcontract.connect(vKeyManager).addOwnedAggchainVKey(aggchainVKeySelector, newAggchainVKey)
         )
             .to.emit(aggchainECDSAcontract, "AddAggchainVKey")
-            .withArgs(aggchainVKeySelector, newAggChainVKey);
+            .withArgs(aggchainVKeySelector, newAggchainVKey);
 
         // disable default gateway flag
         await expect(aggchainECDSAcontract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
