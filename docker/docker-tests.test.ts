@@ -13,20 +13,20 @@ import {
     PolygonRollupManager,
     PolygonZkEVMGlobalExitRootV2,
     PolygonZkEVMBridgeV2,
-    PolygonZkEVMEtrog,
+    AggchainFEP,
     AggLayerGateway,
 } from "../typechain-types";
 
 describe("Docker build tests Contract", () => {
-    it("should check PolygonZkEVMEtrog", async () => {
-        const PolygonZkEVMEtrogFactory = await ethers.getContractFactory("PolygonZkEVMEtrog");
-        const PolygonZkEVMEtrogContract = PolygonZkEVMEtrogFactory.attach(rollupAddress) as PolygonZkEVMEtrog;
-        expect(PolygonZkEVMEtrogContract.target).to.equal(rollupAddress);
-        expect(await PolygonZkEVMEtrogContract.globalExitRootManager()).to.equal(polygonZkEVMGlobalExitRootAddress);
-        expect(await PolygonZkEVMEtrogContract.pol()).to.equal(polTokenAddress);
-        expect(await PolygonZkEVMEtrogContract.bridgeAddress()).to.equal(polygonZkEVMBridgeAddress);
-        expect(await PolygonZkEVMEtrogContract.rollupManager()).to.equal(polygonRollupManagerAddress);
-        const admin = await PolygonZkEVMEtrogContract.admin();
+    it("should check AggchainFEP", async () => {
+        const AggchainFEPFactory = await ethers.getContractFactory("AggchainFEP");
+        const AggchainFEPContract = AggchainFEPFactory.attach(rollupAddress) as AggchainFEP;
+        expect(AggchainFEPContract.target).to.equal(rollupAddress);
+        expect(await AggchainFEPContract.globalExitRootManager()).to.equal(polygonZkEVMGlobalExitRootAddress);
+        expect(await AggchainFEPContract.pol()).to.equal(polTokenAddress);
+        expect(await AggchainFEPContract.bridgeAddress()).to.equal(polygonZkEVMBridgeAddress);
+        expect(await AggchainFEPContract.rollupManager()).to.equal(polygonRollupManagerAddress);
+        const admin = await AggchainFEPContract.admin();
         // If admin is not zero address, means the contract is already initialized
         expect(admin).to.not.equal(ethers.ZeroAddress);
     });
