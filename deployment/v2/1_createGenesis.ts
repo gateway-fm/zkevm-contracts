@@ -226,6 +226,15 @@ async function main() {
     let polygonZkEVMGlobalExitRootL2;
     for (let i = 0; i < attemptsDeployProxy; i++) {
         try {
+            // ProxyAdmin:
+            //  - it uses the already deployed ProxyAdmin (added into the manifest file)
+            //  - 'proxyAdminAddress' will be used a the ProxyAdmin
+            // TransparentUpgradeableProxy:
+            //   - internally it uses the following artifact when deploying the 'TransparentUpgradeableProxy'
+            //   - artifact: @openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json
+            //   - build-info: @openzeppelin/upgrades-core/artifacts/build-info.json
+            //      - "solcVersion": "0.8.9",
+            //      - "solcLongVersion": "0.8.9+commit.e5eed63a",
             polygonZkEVMGlobalExitRootL2 = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootL2Factory, [], {
                 initializer: false,
                 constructorArgs: [finalBridgeProxyAddress],

@@ -87,24 +87,36 @@ const config: HardhatUserConfig = {
             },
         ],
         overrides: {
-            "contracts/v2/sovereignChains/BridgeL2SovereignChain.sol": {
+            // Set all contracts on L2 to use 'evmVersion: Shangai' to be compatible with clients not supporting Cancun opcodes
+            "contracts/v2/utils/ClaimCompressor.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 20,
+                        runs: 999999,
+                    },
+                    evmVersion: "shanghai",
+                    //viaIR: true,
+                },
+            },
+            "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999,
                     },
                     evmVersion: "shanghai",
                 }, // try yul optimizer
             },
-            "contracts/v2/PolygonRollupManager.sol": {
+            "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 500, // Should have the same optimizations as PolygonTransparentProxy
+                        runs: 999999,
                     },
-                    evmVersion: "cancun",
+                    evmVersion: "shanghai",
                 }, // try yul optimizer
             },
             "contracts/v2/PolygonZkEVMBridgeV2.sol": {
@@ -117,6 +129,48 @@ const config: HardhatUserConfig = {
                     evmVersion: "shanghai",
                 },
             },
+            "contracts/v2/sovereignChains/BridgeL2SovereignChain.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                    evmVersion: "shanghai",
+                }, // try yul optimizer
+            },
+            "contracts/PolygonZkEVMGlobalExitRootL2.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999,
+                    },
+                    evmVersion: "shanghai",
+                }, // try yul optimizer
+            },
+            "contracts/v2/sovereignChains/GlobalExitRootManagerL2SovereignChain.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999,
+                    },
+                    evmVersion: "shanghai",
+                }, // try yul optimizer
+            },
+            // low runs to avoid bytecode max size
+            "contracts/v2/PolygonRollupManager.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 500, // Should have the same optimizations as PolygonTransparentProxy
+                    },
+                    evmVersion: "cancun",
+                }, // try yul optimizer
+            },
+            // low runs to avoid bytecode max size
             "contracts/v2/newDeployments/PolygonRollupManagerNotUpgraded.sol": {
                 version: "0.8.28",
                 settings: {
@@ -127,6 +181,7 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 }, // try yul optimizer
             },
+            // low runs to avoid bytecode max size
             "contracts/v2/mocks/PolygonRollupManagerMock.sol": {
                 version: "0.8.28",
                 settings: {
@@ -145,20 +200,9 @@ const config: HardhatUserConfig = {
                         enabled: true,
                         runs: 500,
                     },
-                    evmVersion: "shanghai",
+                    evmVersion: "cancun",
                 }, // try yul optimizer
-            },
-            "contracts/v2/utils/ClaimCompressor.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 999999,
-                    },
-                    evmVersion: "shanghai",
-                    //viaIR: true,
-                },
-            },
+            }
         },
     },
     networks: {
