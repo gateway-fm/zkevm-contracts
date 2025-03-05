@@ -173,7 +173,7 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     }
 
     ////////////////////////////////////////////////////////////
-    //            Functions: defaultAggChainVkey              //
+    //            Functions: defaultAggchainVkey              //
     ////////////////////////////////////////////////////////////
     /**
      * @notice Function to add an aggchain verification key

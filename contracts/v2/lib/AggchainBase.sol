@@ -104,6 +104,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * @param _initOwnedAggchainVKey Initial owned aggchain verification key
      * @param _initAggchainVKeyVersion Initial aggchain selector
      * @param _vKeyManager Initial vKeyManager
+     * @param aggchain_type Aggchain type
      */
     function _initializeAggchainBaseAndConsensusBase(
         address _admin,
@@ -141,6 +142,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * @param _initOwnedAggchainVKey Initial owned aggchain verification key
      * @param _initAggchainVKeyVersion Initial aggchain selector
      * @param _vKeyManager Initial vKeyManager
+     * @param aggchain_type Aggchain type
      */
     function _initializeAggchainBase(
         bool _useDefaultGateway,

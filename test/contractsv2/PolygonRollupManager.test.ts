@@ -387,12 +387,12 @@ describe("Polygon Rollup Manager", () => {
         expect(expectedRollupType).to.be.deep.equal(await rollupManagerContract.rollupTypeMap(newRollupTypeID));
 
         // Only admin can create new zkEVMs
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await expect(
             rollupManagerContract.attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
@@ -401,7 +401,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 4294967296, // 2**32,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "ChainIDOutOfRange");
 
@@ -410,7 +410,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 0,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeDoesNotExist");
 
@@ -424,7 +424,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeObsolete");
         await snapshot2.restore();
@@ -442,7 +442,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -470,7 +470,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "ChainIDAlreadyExist");
 
@@ -1364,12 +1364,12 @@ describe("Polygon Rollup Manager", () => {
         expect(expectedRollupType).to.be.deep.equal(await rollupManagerContract.rollupTypeMap(newRollupTypeID));
 
         // Only admin can create new zkEVMs
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await expect(
             rollupManagerContract.attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
@@ -1378,7 +1378,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 4294967296, // 2**32,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
 
         ).to.be.revertedWithCustomError(rollupManagerContract, "ChainIDOutOfRange");
@@ -1388,7 +1388,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 0,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeDoesNotExist");
 
@@ -1402,7 +1402,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeObsolete");
         await snapshot2.restore();
@@ -1420,7 +1420,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -1444,7 +1444,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "ChainIDAlreadyExist");
 
@@ -1965,12 +1965,12 @@ describe("Polygon Rollup Manager", () => {
         // Create a
 
         // Only admin can create new zkEVMs
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await expect(
             rollupManagerContract.attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
@@ -1979,7 +1979,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 4294967296, // 2**32
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "ChainIDOutOfRange");
 
@@ -1988,7 +1988,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 0,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeDoesNotExist");
 
@@ -2002,7 +2002,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeObsolete");
         await snapshot2.restore();
@@ -2020,7 +2020,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -2044,7 +2044,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "ChainIDAlreadyExist");
 
@@ -2705,13 +2705,13 @@ describe("Polygon Rollup Manager", () => {
         const newZkEVMContract = PolygonValidiumPreviousVersion.attach(newZKEVMAddress) as PolygonValidiumEtrogPrevious;
         const newSequencedBatch = 1;
 
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
 
         await expect(
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")

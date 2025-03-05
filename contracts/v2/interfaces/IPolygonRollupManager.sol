@@ -302,7 +302,7 @@ interface IPolygonRollupManager {
     /**
      * @dev Custom chain data must be zero for pessimistic verifier type
      */
-    error CustomChainDataMustBeZeroForPessimisticVerifierType();
+    error AggchainDataMustBeZeroForPessimisticVerifierType();
 
     /**
      * @dev Invalid Pessimistic proof
@@ -345,7 +345,7 @@ interface IPolygonRollupManager {
     function attachAggchainToAL(
         uint32 rollupTypeID,
         uint64 chainID,
-        bytes memory initializeBytesCustomChain
+        bytes memory initializeBytesAggchain
     ) external;
 
     function addExistingRollup(
@@ -397,7 +397,7 @@ interface IPolygonRollupManager {
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot,
         bytes calldata proof,
-        bytes memory customChainData
+        bytes memory aggchainData
     ) external;
 
     function activateEmergencyState() external;
@@ -423,7 +423,7 @@ interface IPolygonRollupManager {
         bytes32 selectedGlobalExitRoot,
         bytes32 newLocalExitRoot,
         bytes32 newPessimisticRoot,
-        bytes memory customChainData
+        bytes memory aggchainData
     ) external view returns (bytes memory);
 
     function getInputSnarkBytes(

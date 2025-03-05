@@ -166,16 +166,16 @@ contract AggchainECDSA is AggchainBase {
      * length (bits):   | 32            | 256            | 256            |
      *
      * aggchainParams = keccak256(abi.encodePacked(trusted_sequencer))
-     * @param aggChainData custom bytes provided by the chain
+     * @param aggchainData custom bytes provided by the chain
      * @return aggchainHash resulting aggchain hash
      */
     /// @inheritdoc IAggchainBase
     function getAggchainHash(
-        bytes memory aggChainData
+        bytes memory aggchainData
     ) external view returns (bytes32) {
         // The second param is the new state root used at onVerifyPessimistic callback but now only aggchainVKeySelector is required
         (bytes2 aggchainVKeyVersion, ) = abi.decode(
-            aggChainData,
+            aggchainData,
             (bytes2, bytes32)
         );
 
@@ -200,9 +200,9 @@ contract AggchainECDSA is AggchainBase {
 
     /// @inheritdoc IAggchainBase
     function onVerifyPessimistic(
-        bytes calldata aggChainData
+        bytes calldata aggchainData
     ) external onlyRollupManager {
-        (, bytes32 newStateRoot) = abi.decode(aggChainData, (bytes2, bytes32));
+        (, bytes32 newStateRoot) = abi.decode(aggchainData, (bytes2, bytes32));
 
         // Emit event
         emit OnVerifyPessimisticECDSA(newStateRoot);

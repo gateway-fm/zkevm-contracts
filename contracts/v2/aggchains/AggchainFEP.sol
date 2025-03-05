@@ -5,7 +5,7 @@ pragma solidity 0.8.28;
 import "../lib/AggchainBase.sol";
 
 /// @custom:implementation
-/// @title AggChainFEP
+/// @title AggchainFEP
 /// @notice Heavily based on https://github.com/succinctlabs/op-succinct/blob/main/contracts/src/validity/OPSuccinctL2OutputOracle.sol
 /// @dev this contract aims to be the implementation of a FEP chain that is attached to the aggLayer
 ///       contract is responsible for managing the states and the updates of a L2 network
@@ -14,7 +14,7 @@ contract AggchainFEP is AggchainBase {
     //                       Structs                          //
     ////////////////////////////////////////////////////////////
 
-    /// @notice Parameters to initialize the AggChainFEP contract.
+    /// @notice Parameters to initialize the AggchainFEP contract.
     struct InitParams {
         uint256 l2BlockTime;
         bytes32 rollupConfigHash;
@@ -22,7 +22,7 @@ contract AggchainFEP is AggchainBase {
         uint256 startingBlockNumber;
         uint256 startingTimestamp;
         uint256 submissionInterval;
-        address aggChainManager;
+        address aggchainManager;
         address optimisticModeManager;
     }
 
@@ -82,11 +82,11 @@ contract AggchainFEP is AggchainBase {
     ///         and a trustedSequencer signature is needed to do a state transition.
     bool public optimisticMode;
 
-    /// @notice Address that manages all the functionalities related to the aggChain
-    address public aggChainManager;
+    /// @notice Address that manages all the functionalities related to the aggchain
+    address public aggchainManager;
 
-    /// @notice This account will be able to accept the aggChainManager role
-    address public pendingAggChainManager;
+    /// @notice This account will be able to accept the aggchainManager role
+    address public pendingAggchainManager;
 
     /// @notice Address that can trigger the optimistic mode
     ///         This mode should be used when the chain is in a state that is not possible to verify and it should be treated as an emergency mode
@@ -133,20 +133,20 @@ contract AggchainFEP is AggchainBase {
     /// @notice Emitted when the optimistic mode is disabled.
     event DisableOptimisticMode();
 
-    /// @dev Emitted when the aggChainManager starts the two-step transfer role setting a new pending newAggChainManager
-    /// @param currentAggChainManager The current pending aggChainManager
-    /// @param newPendingAggChainManager The new pending aggChainManager
-    event TransferAggChainManagerRole(
-        address currentAggChainManager,
-        address newPendingAggChainManager
+    /// @dev Emitted when the aggchainManager starts the two-step transfer role setting a new pending newAggchainManager
+    /// @param currentAggchainManager The current pending aggchainManager
+    /// @param newPendingAggchainManager The new pending aggchainManager
+    event TransferAggchainManagerRole(
+        address currentAggchainManager,
+        address newPendingAggchainManager
     );
 
-    /// @notice Emitted when the pending aggChainManager accepts the aggChainManager role
-    /// @param oldAggChainManager The old aggChainManager
-    /// @param newAggChainManager The new aggChainManager
-    event AcceptAggChainManagerRole(
-        address oldAggChainManager,
-        address newAggChainManager
+    /// @notice Emitted when the pending aggchainManager accepts the aggchainManager role
+    /// @param oldAggchainManager The old aggchainManager
+    /// @param newAggchainManager The new aggchainManager
+    event AcceptAggchainManagerRole(
+        address oldAggchainManager,
+        address newAggchainManager
     );
 
     /// @dev Emitted when the optimisticModeManager starts the two-step transfer role setting a new pending optimisticModeManager
@@ -196,11 +196,11 @@ contract AggchainFEP is AggchainBase {
     /// @notice L2 output proposal cannot be the zero hash
     error L2OutputRootCannotBeZero();
 
-    /// @notice Thrown when the caller is not the aggChain manager
-    error OnlyAggChainManager();
+    /// @notice Thrown when the caller is not the aggchain manager
+    error OnlyAggchainManager();
 
-    /// @notice Thrown when the caller is not the pending aggChain manager
-    error OnlyPendingAggChainManager();
+    /// @notice Thrown when the caller is not the pending aggchain manager
+    error OnlyPendingAggchainManager();
 
     /// @notice Thrown when the caller is not the optimistic mode manager
     error OnlyOptimisticModeManager();
@@ -222,9 +222,9 @@ contract AggchainFEP is AggchainBase {
     }
 
     /// @dev Only allows a function to be callable if the message sender is the aggchain manager
-    modifier onlyAggChainManager() {
-        if (aggChainManager != msg.sender) {
-            revert OnlyAggChainManager();
+    modifier onlyAggchainManager() {
+        if (aggchainManager != msg.sender) {
+            revert OnlyAggchainManager();
         }
         _;
     }
@@ -241,7 +241,7 @@ contract AggchainFEP is AggchainBase {
     //                       Constructor                      //
     ////////////////////////////////////////////////////////////
 
-    /// @notice Constructor AggChainFEP contract
+    /// @notice Constructor AggchainFEP contract
     /// @param _globalExitRootManager Global exit root manager address
     /// @param _pol POL token address
     /// @param _bridgeAddress Bridge address
@@ -326,7 +326,7 @@ contract AggchainFEP is AggchainBase {
             );
         } else if (_initializerVersion == 1) {
             // contract has been previously initialized with all parameters in the PolygonConsensusBase.sol
-            // Only initialize the FEP and AggChainBase params
+            // Only initialize the FEP and AggchainBase params
             (
                 // chain custom params
                 InitParams memory _initParams,
@@ -357,7 +357,7 @@ contract AggchainFEP is AggchainBase {
         }
     }
 
-    /// @notice Initializer AggChainFEP storage
+    /// @notice Initializer AggchainFEP storage
     /// @param _initParams The initialization parameters for the contract.
     function _initializeAggchain(InitParams memory _initParams) internal {
         if (_initParams.submissionInterval == 0) {
@@ -395,7 +395,7 @@ contract AggchainFEP is AggchainBase {
         }
 
         rollupConfigHash = _initParams.rollupConfigHash;
-        aggChainManager = _initParams.aggChainManager;
+        aggchainManager = _initParams.aggchainManager;
         optimisticModeManager = _initParams.optimisticModeManager;
     }
 
@@ -427,7 +427,7 @@ contract AggchainFEP is AggchainBase {
     function getAggchainHash(
         bytes memory aggchainData
     ) external view returns (bytes32) {
-        // decode the customChainData
+        // decode the aggchainData
         (
             bytes2 _aggchainVKeyVersion,
             bytes32 _outputRoot,
@@ -549,7 +549,7 @@ contract AggchainFEP is AggchainBase {
     function onVerifyPessimistic(
         bytes memory aggchainData
     ) external onlyRollupManager {
-        // decode the customChainData
+        // decode the aggchainData
         (, bytes32 _outputRoot, uint256 _l2BlockNumber) = abi.decode(
             aggchainData,
             (bytes2, bytes32, uint256)
@@ -579,7 +579,7 @@ contract AggchainFEP is AggchainBase {
     /// @param _submissionInterval The new submission interval.
     function updateSubmissionInterval(
         uint256 _submissionInterval
-    ) external onlyAggChainManager {
+    ) external onlyAggchainManager {
         if (_submissionInterval == 0) {
             revert SubmissionIntervalMustBeGreaterThanZero();
         }
@@ -592,7 +592,7 @@ contract AggchainFEP is AggchainBase {
     /// @param _rollupConfigHash The new rollup config hash.
     function updateRollupConfigHash(
         bytes32 _rollupConfigHash
-    ) external onlyAggChainManager {
+    ) external onlyAggchainManager {
         if (_rollupConfigHash == bytes32(0)) {
             revert RollupConfigHashMustBeDifferentThanZero();
         }
@@ -625,26 +625,26 @@ contract AggchainFEP is AggchainBase {
     //          Functions: manage admin addresses             //
     ////////////////////////////////////////////////////////////
 
-    /// @notice Starts the aggChainManager role transfer
-    ///         This is a two step process, the pending aggChainManager must accept to finalize the process
-    /// @param newAggChainManager Address of the new aggChainManager
-    function transferAggChainManagerRole(
-        address newAggChainManager
-    ) external onlyAggChainManager {
-        pendingAggChainManager = newAggChainManager;
-        emit TransferAggChainManagerRole(aggChainManager, newAggChainManager);
+    /// @notice Starts the aggchainManager role transfer
+    ///         This is a two step process, the pending aggchainManager must accept to finalize the process
+    /// @param newAggchainManager Address of the new aggchainManager
+    function transferAggchainManagerRole(
+        address newAggchainManager
+    ) external onlyAggchainManager {
+        pendingAggchainManager = newAggchainManager;
+        emit TransferAggchainManagerRole(aggchainManager, newAggchainManager);
     }
 
-    /// @notice Allow the current pending aggChainManager to accept the aggChainManager role
-    function acceptAggChainManagerRole() external {
-        if (pendingAggChainManager != msg.sender) {
-            revert OnlyPendingAggChainManager();
+    /// @notice Allow the current pending aggchainManager to accept the aggchainManager role
+    function acceptAggchainManagerRole() external {
+        if (pendingAggchainManager != msg.sender) {
+            revert OnlyPendingAggchainManager();
         }
 
-        emit AcceptAggChainManagerRole(aggChainManager, pendingAggChainManager);
-        aggChainManager = pendingAggChainManager;
+        emit AcceptAggchainManagerRole(aggchainManager, pendingAggchainManager);
+        aggchainManager = pendingAggchainManager;
 
-        delete pendingAggChainManager;
+        delete pendingAggchainManager;
     }
 
     /// @notice Starts the optimisticModeManager role transfer

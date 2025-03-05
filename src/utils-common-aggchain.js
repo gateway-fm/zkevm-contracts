@@ -54,18 +54,18 @@ function getAggchainVKeySelector(_aggchainVKeyVersion, _aggchainType) {
     const aggchainVKeySelector = _aggchainVKeyVersion.startsWith('0x') ? _aggchainVKeyVersion.slice(2) : _aggchainVKeyVersion;
 
     // remove "0x" if ot exist on _aggchainType with startWith method
-    const aggChainType = _aggchainType.startsWith('0x') ? _aggchainType.slice(2) : _aggchainType;
+    const aggchainType = _aggchainType.startsWith('0x') ? _aggchainType.slice(2) : _aggchainType;
 
     // check lenght ois 2 bytes
-    if (aggChainType.length !== 4) {
-        throw new Error('aggChainType must be 2 bytes long');
+    if (aggchainType.length !== 4) {
+        throw new Error('aggchainType must be 2 bytes long');
     }
 
     if (aggchainVKeySelector.length !== 4) {
         throw new Error('aggchainVKeySelector must be 2 bytes long');
     }
 
-    return `0x${aggchainVKeySelector}${aggChainType}`;
+    return `0x${aggchainVKeySelector}${aggchainType}`;
 }
 
 /**

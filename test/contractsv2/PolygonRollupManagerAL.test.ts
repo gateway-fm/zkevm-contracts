@@ -33,7 +33,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     let aggLayerAdmin: any;
     let tester: any;
     let vKeyManager: any;
-    let aggChainVKey: any;
+    let aggchainVKey: any;
     let addPPRoute: any;
     let freezePPRoute: any;
 
@@ -74,7 +74,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             aggLayerAdmin,
             tester,
             vKeyManager,
-            aggChainVKey,
+            aggchainVKey,
             addPPRoute,
             freezePPRoute,
         ] = await ethers.getSigners();
@@ -104,7 +104,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         });
         await aggLayerGatewayContract.initialize(
             admin.address,
-            aggChainVKey.address,
+            aggchainVKey.address,
             addPPRoute.address,
             freezePPRoute.address
         );
@@ -192,7 +192,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         await expect(
             aggLayerGatewayContract.initialize(
                 timelock.address,
-                aggChainVKey.address,
+                aggchainVKey.address,
                 addPPRoute.address,
                 freezePPRoute.address
             )
@@ -454,7 +454,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 newLER,
                 newPPRoot,
                 proofPP,
-                "0x" // customChainData
+                "0x" // aggchainData
             )
         )
             .to.emit(rollupManagerContract, "VerifyBatchesTrustedAggregator")
@@ -471,14 +471,14 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         // Update the rollup to ECDSA and initialize the new rollup type
         // Compute initialize upgrade data
         const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
-        const initializeBytesCustomChain = encodeInitializeBytesAggchainECDSAv1(
+        const initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv1(
             true, //useDefaultGateway
             ethers.ZeroHash, //ownedAggchainVKey
             "0x0000", // aggchainVkeySelector
             vKeyManager.address
         );
         const upgradeData = aggchainECDSAFactory.interface.encodeFunctionData("initialize(bytes)", [
-            initializeBytesCustomChain,
+            initializeBytesAggchain,
         ]);
 
         await expect(
@@ -634,7 +634,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             nonce: rollupManagerNonce,
         });
         // Create pessimistic rollup
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(
             admin.address,
             trustedSequencer.address,
             ethers.ZeroAddress,
@@ -644,7 +644,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         await rollupManagerContract.connect(admin).attachAggchainToAL(
             pessimisticRollupTypeID2,
             2, // chainID
-            initializeBytesCustomChain
+            initializeBytesAggchain
         );
         expect(await rollupManagerContract.rollupAddressToID(pessimisticRollupAddress)).to.be.equal(1);
 
@@ -736,7 +736,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     }
 
     async function createECDSARollup(rollupTypeIdECDSA: number) {
-        const initializeBytesCustomChain = encodeInitializeBytesAggchainECDSAv0(
+        const initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv0(
             true, // useDefaultGateway
             ethers.ZeroHash, // ownedAggchainVKeys
             "0x0000", //aggchainVKeysSelectors
@@ -757,7 +757,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 rollupTypeIdECDSA, // rollupTypeID
                 1001, // chainID
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")

@@ -348,12 +348,12 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const nonExistentRollupID = 4;
 
         // Only admin can create new zkEVMs
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await expect(
             rollupManagerContract.attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
@@ -362,7 +362,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 nonExistentRollupID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "RollupTypeDoesNotExist");
 
@@ -377,7 +377,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 newRollupTypeID,
                 chainID,
-                initializeBytesCustomChain
+                initializeBytesAggchain
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -486,12 +486,12 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const pessimisticRollupID = 1;
 
         // create new pessimistic
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
 
         rollupManagerContract.connect(admin).attachAggchainToAL(
             newRollupTypeID,
             chainID,
-            initializeBytesCustomChain
+            initializeBytesAggchain
         );
 
         // Create zkEVM implementation
@@ -544,7 +544,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         await rollupManagerContract.connect(admin).attachAggchainToAL(
             newRollupTypeID2,
             chainID2,
-            initializeBytesCustomChain
+            initializeBytesAggchain
         );
 
         // get rollup data
@@ -623,11 +623,11 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             nonce: 1,
         });
 
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await rollupManagerContract.connect(admin).attachAggchainToAL(
             rollupTypeID,
             chainID,
-            initializeBytesCustomChain
+            initializeBytesAggchain
         );
 
         // Try to add a new rollup type
@@ -718,12 +718,12 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const pessimisticRollupID = 1;
 
         // create new pessimistic
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
 
         await rollupManagerContract.connect(admin).attachAggchainToAL(
             rollupTypeID,
             chainID,
-            initializeBytesCustomChain
+            initializeBytesAggchain
         );
 
         // get rollup data
@@ -780,11 +780,11 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             nonce: 1,
         });
 
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await rollupManagerContract.connect(admin).attachAggchainToAL(
             rollupTypeID,
             chainID,
-            initializeBytesCustomChain
+            initializeBytesAggchain
         );
 
         // select unexistent global exit root
@@ -801,7 +801,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 newLER,
                 newPPRoot,
                 proofPP,
-                "0x" // customChainData
+                "0x" // aggchainData
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
@@ -813,7 +813,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 newLER,
                 newPPRoot,
                 proofPP,
-                "0x" // customChainData
+                "0x" // aggchainData
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "L1InfoTreeLeafCountInvalid");
 
@@ -842,7 +842,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             lastL1InfoTreeRoot,
             newLER,
             newPPRoot,
-            "0x" // customChainData
+            "0x" // aggchainData
         );
 
         const infoRollup = await rollupManagerContract.rollupIDToRollupDataV2(pessimisticRollupID);
@@ -869,7 +869,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 newLER,
                 newPPRoot,
                 proofPP,
-                "0x" // customChainData
+                "0x" // aggchainData
             )
         )
             .to.emit(rollupManagerContract, "VerifyBatchesTrustedAggregator")
@@ -965,11 +965,11 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             );
 
         // create new rollup
-        const initializeBytesCustomChain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
+        const initializeBytesAggchain = encodeInitializeBytesLegacy(admin.address, trustedSequencer.address, gasTokenAddress, urlSequencer, networkName);
         await rollupManagerContract.connect(admin).attachAggchainToAL(
             newRollupTypeID,
             chainID,
-            initializeBytesCustomChain
+            initializeBytesAggchain
         );
 
         // try to verify
@@ -985,7 +985,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 newLER,
                 newPPRoot,
                 proofPP,
-                "0x" // customChainData
+                "0x" // aggchainData
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "StateTransitionChainsNotAllowed");
     });
