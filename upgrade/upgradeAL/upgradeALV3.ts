@@ -43,7 +43,7 @@ async function main() {
 
     // Load deployer
     const deployer = await getDeployerFromParameters(currentProvider, upgradeParameters, ethers);
-    console.log("deploying with: ", deployer.address);
+    console.log("deploying implementation with: ", deployer.address);
 
     const proxyAdmin = await upgrades.admin.getInstance();
 

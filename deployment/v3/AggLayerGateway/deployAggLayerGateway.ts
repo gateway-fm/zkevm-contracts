@@ -33,7 +33,6 @@ async function main() {
      * Deployment of AggLayerGateway
      */
     const aggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
-
     const aggLayerGatewayContract = await upgrades.deployProxy(aggLayerGatewayFactory, [defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
@@ -48,11 +47,8 @@ async function main() {
 
     const proxyAdmin = await upgrades.admin.getInstance();
     expect(await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string)).to.be.equal(proxyAdmin.target);
-
-    await verifyContractEtherscan(aggLayerGatewayContract.target as string, [defaultAdminAddress,
-        aggchainDefaultVKeyRoleAddress,
-        addRouteRoleAddress,
-        freezeRouteRoleAddress]);
+    const proxyOwnerAddress = await proxyAdmin.owner();
+    await verifyContractEtherscan(aggLayerGatewayContract.target as string, []);
 
     // Check deployment
     const aggLayerGateway = aggLayerGatewayFactory.attach(aggLayerGatewayContract.target) as AggLayerGateway;
@@ -78,8 +74,8 @@ async function main() {
     const outputJson = {
         aggLayerGatewayAddress: aggLayerGatewayContract.target,
         deployer: deployer.address,
-        proxyAdminAddress: proxyAdminAddress,
-        proxyOwnerAddress,
+        proxyAdminAddress: proxyAdmin.target,
+        proxyOwnerAddress: proxyOwnerAddress,
         defaultAdminRoleAddress: defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
