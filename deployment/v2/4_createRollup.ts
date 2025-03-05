@@ -21,7 +21,8 @@ import updateVanillaGenesis from "./utils/updateVanillaGenesis";
 const dateStr = new Date().toISOString();
 const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.json`);
 import utilsECDSA from "../../src/utils-aggchain-ECDSA"
-const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
+import utilsFEP from "../../src/utils-aggchain-FEP";
+const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
 
 import {
     PolygonRollupManager,
@@ -289,7 +290,7 @@ async function main() {
         genesisFinal = ethers.ZeroHash;
         // programVKey = bytes32(0)
         programVKey = ethers.ZeroHash;
-        // verifiderAddress = address(0)
+        // verifierAddress = address(0)
         verifierAddress = ethers.ZeroAddress;
         if(consensusContract == "AggchainECDSA") {
             initializeBytesCustomChain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
@@ -303,8 +304,19 @@ async function main() {
                 trustedSequencerURL,
                 networkName
             )
-        } else if(consensusContract.includes("FEP")) {
-            initializeBytesCustomChain = "0x";
+        } else if(consensusContract.includes("AggchainFEP")) {
+            initializeBytesCustomChain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
+                createRollupParameters.aggchainParams.initParams,
+                createRollupParameters.aggchainParams.useDefaultGateway,
+                createRollupParameters.aggchainParams.ownedAggchainVKey,
+                createRollupParameters.aggchainParams.aggchainVKeySelector,
+                createRollupParameters.aggchainParams.vKeyManager,
+                adminZkEVM,
+                trustedSequencer,
+                gasTokenAddress,
+                trustedSequencerURL,
+                networkName
+            );
         } else {
             throw new Error(`Aggchain ${consensusContract} not supported`);
         }
@@ -331,7 +343,7 @@ async function main() {
             await verifierContract.waitForDeployment();
         }
         verifierAddress = verifierContract.target;
-        initializeBytesCustomChain = encodeInitializeBytesPessimistic(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
+        initializeBytesCustomChain = encodeInitializeBytesLegacy(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
         console.log("#######################\n");
         console.log("Verifier name:", verifierName);
         console.log("Verifier deployed to:", verifierAddress);

@@ -16,7 +16,7 @@ describe("Test vectors aggchain ECDSA utils", () => {
         it(`Check test-vectors compute aggchain data ID=${i}`, async () => {
             const testVector = aggchainDataTestvectors[i].input;
             const aggchainData = utilsECDSA.encodeAggchainDataECDSA(
-                testVector.aggchainVKeySelector,
+                testVector.aggchainVKeyVersion,
                 testVector.newStateRoot
             );
             if (update) {
@@ -39,7 +39,7 @@ describe("Test vectors aggchain ECDSA utils", () => {
             const initBytesAggchainECDSAv0 = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 testVector.useDefaultGateway,
                 testVector.initOwnedAggchainVKey,
-                testVector.initAggchainVKeySelector,
+                testVector.initAggchainVKeyVersion,
                 testVector.vKeyManager,
                 testVector.admin,
                 testVector.trustedSequencer,
@@ -67,7 +67,7 @@ describe("Test vectors aggchain ECDSA utils", () => {
             const initBytesAggchainECDSAv1 = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
                 testVector.useDefaultGateway,
                 testVector.initOwnedAggchainVKey,
-                testVector.initAggchainVKeySelector,
+                testVector.initAggchainVKeyVersion,
                 testVector.vKeyManager
             );
             if (update) {

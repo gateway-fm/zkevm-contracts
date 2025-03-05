@@ -39,13 +39,13 @@ describe("Test vectors aggchain ECDSA", () => {
             [vKeyManager, admin] = await ethers.getSigners();
 
             aggchainVKeySelector = utilsCommon.getAggchainVKeySelector(
-                data.initAggchainVKeySelector,
+                data.initAggchainVKeyVersion,
                 utilsECDSA.AGGCHAIN_TYPE_ECDSA
             );
 
             // check final aggchainSelector
             expect(aggchainVKeySelector).to.be.equal(
-                `${data.initAggchainVKeySelector}${utilsECDSA.AGGCHAIN_TYPE_ECDSA.slice(2)}`
+                `${data.initAggchainVKeyVersion}${utilsECDSA.AGGCHAIN_TYPE_ECDSA.slice(2)}`
             );
 
             // deploy aggchain
@@ -68,7 +68,7 @@ describe("Test vectors aggchain ECDSA", () => {
             initializeBytesAggchainV0 = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 data.useDefaultGateway,
                 data.initOwnedAggchainVKey,
-                data.initAggchainVKeySelector,
+                data.initAggchainVKeyVersion,
                 vKeyManager.address,
                 admin.address,
                 data.trustedSequencer,
@@ -107,7 +107,7 @@ describe("Test vectors aggchain ECDSA", () => {
             }
 
             // encode aggchainData
-            aggchainData = utilsECDSA.encodeAggchainDataECDSA(data.initAggchainVKeySelector, data.newStateRoot);
+            aggchainData = utilsECDSA.encodeAggchainDataECDSA(data.initAggchainVKeyVersion, data.newStateRoot);
             // get aggchainHash
             aggchainHash = utilsCommon.computeAggchainHash(
                 utilsCommon.CONSENSUS_TYPE.GENERIC,
@@ -171,7 +171,7 @@ describe("Test vectors aggchain ECDSA", () => {
             initializeBytesAggchainV1 = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
                 data.useDefaultGateway,
                 data.initOwnedAggchainVKey,
-                data.initAggchainVKeySelector,
+                data.initAggchainVKeyVersion,
                 vKeyManager.address
             );
 

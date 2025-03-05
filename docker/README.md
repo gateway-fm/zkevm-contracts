@@ -61,6 +61,15 @@ You can change the deployment `mnemonic` creating a `.env` file in the project r
     -   `globalExitRootUpdater`: Address of globalExitRootUpdater for sovereign chains
     -   `globalExitRootRemover`: Address of globalExitRootRemover for sovereign chains
 - `aggchainParams`: Only mandatory if consensusContract is AggchainECDSA or AggchainFEP
+    - `initParams`: Only mandatory if consensusContract is AggchainFEP
+        - `l2BlockTime`: The time between L2 blocks in seconds
+        - `rollupConfigHash`: The hash of the chain's rollup configuration
+        - `startingOutputRoot`: Init output root
+        - `startingBlockNumber`: The number of the first L2 block
+        - `startingTimestamp`:  The timestamp of the first L2 block
+        - `submissionInterval`: The minimum interval in L2 blocks at which checkpoints must be submitted
+        - `aggChainManager`: Address that manages all the functionalities related to the aggchain
+        - `optimisticModeManager`: Address that can trigger the optimistic mode
     - `useDefaultGateway`: bool, flag to setup initial values for the owned gateway
     - `ownedAggchainVKey`: bytes32, Initial owned aggchain verification key
     - `aggchainVKeySelector`: bytes2, Initial aggchain selector

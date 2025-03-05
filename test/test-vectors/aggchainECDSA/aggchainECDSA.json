@@ -8,7 +8,7 @@
       "trustedSequencerURL": "trustedSequencerURL.com",
       "networkName": "namename",
       "newStateRoot": "0x5555555555555555555555555555555555555555555555555555555555555555",
-      "initAggchainVKeySelector": "0x1234",
+      "initAggchainVKeyVersion": "0x1234",
       "initOwnedAggchainVKey": "0x6666666666666666666666666666666666666666666666666666666666666666"
     },
     "output": {
@@ -31,7 +31,7 @@
       "trustedSequencerURL": "urlurl.com",
       "networkName": "namename",
       "newStateRoot": "0x6666666666666666666666666666666666666666666666666666666666666666",
-      "initAggchainVKeySelector": "0x4321",
+      "initAggchainVKeyVersion": "0x4321",
       "initOwnedAggchainVKey": "0x7777777777777777777777777777777777777777777777777777777777777777",
       "output": {}
     },
