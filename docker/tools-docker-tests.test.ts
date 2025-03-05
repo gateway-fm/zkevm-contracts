@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import shelljs from "shelljs";
 import {ConsensusContracts} from "../src/pessimistic-utils";
-import {AggchainsContracts} from "../src/utils-common-aggchain";
+import {AGGCHAIN_CONTRACT_NAMES} from "../src/utils-common-aggchain";
 
 import {
     PolygonRollupManager,
@@ -72,10 +72,10 @@ describe("Tooling docker build tests Contract", () => {
             case ConsensusContracts.PolygonPessimisticConsensus:
                 rollupContract = rollupFactory.attach(createRollupOutput.rollupAddress) as PolygonPessimisticConsensus;
                 break;
-            case AggchainsContracts.AggchainECDSA:
+            case AGGCHAIN_CONTRACT_NAMES.ECDSA:
                 rollupContract = rollupFactory.attach(createRollupOutput.rollupAddress) as AggchainECDSA;
                 break;
-            case AggchainsContracts.AggchainFEP:
+            case AGGCHAIN_CONTRACT_NAMES.FEP:
                 rollupContract = rollupFactory.attach(createRollupOutput.rollupAddress) as AggchainFEP;
                 break;
             default:
@@ -107,7 +107,7 @@ describe("Tooling docker build tests Contract", () => {
         if (dockerCreateRollupOutput.consensusContract === ConsensusContracts.PolygonPessimisticConsensus) {
             createRollupTypeConfig.genesisRoot = ethers.ZeroHash;
             createRollupTypeConfig.programVKey = dockerCreateRollupOutput.programVKey;
-        } else if(Object.values(AggchainsContracts).includes(dockerCreateRollupOutput.consensusContract)) {
+        } else if(Object.values(AGGCHAIN_CONTRACT_NAMES).includes(dockerCreateRollupOutput.consensusContract)) {
             createRollupTypeConfig.genesisRoot = ethers.ZeroHash;
             createRollupTypeConfig.programVKey = ethers.ZeroHash;
             createRollupTypeConfig.verifierAddress = ethers.ZeroAddress;

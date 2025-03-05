@@ -19,11 +19,12 @@ const pathOutputJson = addRollupTypeParameters.outputPath
 import {PolygonRollupManager} from "../../typechain-types";
 import "../../deployment/helpers/utils";
 import {supportedBridgeContracts, transactionTypes, genOperation} from "../utils";
-import {AggchainsContracts} from "../../src/utils-common-aggchain";
-import {ConsensusContracts} from "../../src/pessimistic-utils";
+import {AGGCHAIN_CONTRACT_NAMES} from "../../src/utils-common-aggchain";
+import {ConsensusContracts, VerifierType} from "../../src/pessimistic-utils";
 
 async function main() {
     const outputJson = {} as any;
+    const AggchainContracts = Object.values(AGGCHAIN_CONTRACT_NAMES);
 
     /*
      * Check deploy parameters
@@ -32,12 +33,10 @@ async function main() {
     const mandatoryDeploymentParameters = [
         "type",
         "description",
-        "forkID",
         "consensusContract",
-        "polygonRollupManagerAddress",
-        "genesisRoot",
-        "programVKey",
+        "polygonRollupManagerAddress"
     ];
+
     // check add new rollup type
     switch (addRollupTypeParameters.type) {
         case transactionTypes.EOA:
@@ -66,7 +65,7 @@ async function main() {
         programVKey
     } = addRollupTypeParameters;
 
-    const supportedConsensus = Object.values(ConsensusContracts).concat(Object.values(AggchainsContracts));
+    const supportedConsensus = Object.values(ConsensusContracts).concat(AggchainContracts);
     const isPessimistic = consensusContract === "PolygonPessimisticConsensus";
 
     if (!supportedConsensus.includes(consensusContract)) {
@@ -145,7 +144,13 @@ async function main() {
     const polTokenAddress = await rollupManagerContract.pol();
     const aggLayerGatewayAddress = await rollupManagerContract.aggLayerGateway();
 
-    if (!isPessimistic && !Object.values(AggchainsContracts).includes(consensusContract)) {
+    // check all those address are not zero
+    expect(polygonZkEVMBridgeAddress).to.not.equal(ethers.ZeroAddress);
+    expect(polygonZkEVMGlobalExitRootAddress).to.not.equal(ethers.ZeroAddress);
+    expect(polTokenAddress).to.not.equal(ethers.ZeroAddress);
+    expect(aggLayerGatewayAddress).to.not.equal(ethers.ZeroAddress);
+
+    if (!isPessimistic && !AggchainContracts.includes(consensusContract)) {
         // checks for rollups
         // Sanity checks genesisRoot
         if (genesisRoot !== genesis.root) {
@@ -170,7 +175,7 @@ async function main() {
         }
     }
 
-    if(type !== "Timelock") {
+    if(type !== transactionTypes.TIMELOCK) {
         // Check roles
         const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
         if ((await rollupManagerContract.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)) == false) {
@@ -200,7 +205,7 @@ async function main() {
         let PolygonConsensusContract;
 
         // Create consensus/aggchain implementation
-        if(!consensusContract.toLowerCase().includes("aggchain")) {
+        if(!AggchainContracts.includes(consensusContract)) {
             PolygonConsensusContract = await PolygonConsensusFactory.deploy(
                 polygonZkEVMGlobalExitRootAddress,
                 polTokenAddress,
@@ -211,7 +216,7 @@ async function main() {
 
             console.log("#######################\n");
             console.log(`new consensus name: ${consensusContract}`);
-            console.log(`new PolygonConsensusContract impl: ${PolygonConsensusContract.target}`);
+            console.log(`new ${consensusContract} impl: ${PolygonConsensusContract.target}`);
 
             try {
                 console.log("Verifying contract...");
@@ -248,8 +253,8 @@ async function main() {
             await PolygonConsensusContract.waitForDeployment();
 
             console.log("#######################\n");
-            console.log(`new consensus name: ${consensusContract}`);
-            console.log(`new PolygonConsensusContract impl: ${PolygonConsensusContract.target}`);
+            console.log(`new aggchain name: ${consensusContract}`);
+            console.log(`new ${consensusContract} impl: ${PolygonConsensusContract.target}`);
 
             try {
                 console.log("Verifying contract...");
@@ -287,28 +292,28 @@ async function main() {
     let genesisFinal;
     let programVKeyFinal;
 
-    if (consensusContract.includes("Aggchain")) {
+    if (AggchainContracts.includes(consensusContract)) {
         // rollupVerifierType = VerifierType.ALGateway = 2
-        rollupVerifierType = 2;
+        rollupVerifierType = VerifierType.ALGateway;
         // genesis = bytes32(0)
         genesisFinal = ethers.ZeroHash;
         // programVKey = bytes32(0)
         programVKeyFinal = ethers.ZeroHash;
-    } else if (consensusContract == "PolygonPessimisticConsensus") {
+    } else if (isPessimistic) {
         // rollupVerifierType = VerifierType.Pessimistic = 1
-        rollupVerifierType = 1;
+        rollupVerifierType = VerifierType.Pessimistic;
         // genesis = bytes32(0)
         genesisFinal = ethers.ZeroHash;
         programVKeyFinal = programVKey || ethers.ZeroHash;
     } else {
         // rollupVerifierType = VerifierType.StateTransition = 0
-        rollupVerifierType = 0;
+        rollupVerifierType = VerifierType.StateTransition;
         genesisFinal = genesis.root;
         // programVKey = bytes32(0)
         programVKeyFinal = ethers.ZeroHash;
     }
 
-    if(type === "EOA") {
+    if(type === transactionTypes.EOA) {
         console.log(
             await (
                 await rollupManagerContract.addNewRollupType(
@@ -324,7 +329,7 @@ async function main() {
         );
 
         console.log("#######################\n");
-        console.log("Added new Rollup Type deployed");
+        console.log("New Rollup Type deployed");
         const newRollupTypeID = await rollupManagerContract.rollupTypeCount();
 
         outputJson.genesis = genesis.root;

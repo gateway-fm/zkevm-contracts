@@ -10,10 +10,9 @@ const CONSENSUS_TYPE = {
     GENERIC: 1,
 };
 
-const AggchainsContracts = {
-    AggchainECDSA: 'AggchainECDSA',
-    AggchainFEP: 'AggchainFEP',
-
+const AGGCHAIN_CONTRACT_NAMES = {
+    ECDSA: 'AggchainECDSA',
+    FEP: 'AggchainFEP',
 };
 
 /// //////////////////////////////
@@ -99,7 +98,7 @@ function encodeInitializeBytesLegacy(
 
 module.exports = {
     CONSENSUS_TYPE,
-    AggchainsContracts,
+    AGGCHAIN_CONTRACT_NAMES,
     computeAggchainHash,
     getAggchainVKeySelector,
     encodeInitializeBytesLegacy,

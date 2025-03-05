@@ -4,6 +4,7 @@ set -e
 # Run docker tests
 # Run container
 docker run -p 8545:8545 -d --name docker_test hermeznetwork/geth-zkevm-contracts
+# copy genesis.json (it is necessary because createNewRollup tooling uses it)
 cp docker/deploymentOutput/genesis.json tools/createNewRollup/genesis.json
 # Run docker tests
 npx hardhat test docker/docker-tests.test.ts --network localhost

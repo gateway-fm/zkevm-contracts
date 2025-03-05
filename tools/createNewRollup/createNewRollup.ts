@@ -11,7 +11,7 @@ import { VerifierType, ConsensusContracts } from "../../src/pessimistic-utils";
 const createRollupParameters = require("./create_new_rollup.json");
 import { genOperation, transactionTypes, convertBigIntsToNumbers } from "../utils";
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
-import { AggchainsContracts, encodeInitializeBytesLegacy } from "../../src/utils-common-aggchain"
+import { AGGCHAIN_CONTRACT_NAMES, encodeInitializeBytesLegacy } from "../../src/utils-common-aggchain"
 import utilsECDSA from "../../src/utils-aggchain-ECDSA";
 import utilsFEP from "../../src/utils-aggchain-FEP";
 
@@ -77,7 +77,7 @@ async function main() {
 
     // Check supported consensus is correct
     const supportedConsensusArray = Object.values(ConsensusContracts);
-    const supportedAggchainsArray = Object.values(AggchainsContracts);
+    const supportedAggchainsArray = Object.values(AGGCHAIN_CONTRACT_NAMES);
     const supportedConsensus = supportedConsensusArray.concat(supportedAggchainsArray);
 
     if (!supportedConsensus.includes(consensusContractName)) {
@@ -88,7 +88,7 @@ async function main() {
 
     // Check consensus compatibility
     if (isVanillaClient) {
-        if (consensusContractName !== "PolygonPessimisticConsensus" && !supportedAggchainsArray.includes(consensusContractName)) {
+        if (consensusContractName !== ConsensusContracts.PolygonPessimisticConsensus && !supportedAggchainsArray.includes(consensusContractName)) {
             throw new Error(`Vanilla client only supports PolygonPessimisticConsensus and Aggchain contracts`);
         }
         // Check sovereign params
@@ -283,7 +283,7 @@ async function main() {
     if(supportedConsensusArray.includes(consensusContractName)) {
         // if consensusContractName is a consensus
         initializeBytes = encodeInitializeBytesLegacy(rollupAdminAddress, trustedSequencer, createRollupParameters.gasTokenAddress, trustedSequencerURL, networkName);
-    } else if(consensusContractName === AggchainsContracts.AggchainECDSA){
+    } else if(consensusContractName === AGGCHAIN_CONTRACT_NAMES.ECDSA){
         // if consensusContractName is a AggchainECDSA
         initializeBytes = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
             createRollupParameters.aggchainParams.useDefaultGateway,
@@ -296,7 +296,7 @@ async function main() {
             trustedSequencerURL,
             networkName
         )
-    } else if(consensusContractName === AggchainsContracts.AggchainFEP){
+    } else if(consensusContractName === AGGCHAIN_CONTRACT_NAMES.FEP){
         // if consensusContractName is a AggchainECDSA
         initializeBytes = utilsFEP.encodeInitializeBytesAggchainFEPv0(
             createRollupParameters.aggchainParams.initParams,
