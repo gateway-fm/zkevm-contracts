@@ -7,9 +7,9 @@ dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 import { ethers, upgrades } from "hardhat";
 const deployParameters = require("./deploy_parameters.json");
 const pathOutput = path.join(__dirname, `./deploy_output.json`);
-import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../../src/utils";
-import { verifyContractEtherscan } from "../../../upgrade/utils";
-import { AggLayerGateway } from "../../../typechain-types";
+import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
+import { verifyContractEtherscan } from "../../upgrade/utils";
+import { AggLayerGateway } from "../../typechain-types";
 
 async function main() {
 
@@ -56,7 +56,7 @@ async function main() {
     await expect(aggLayerGateway.initialize(defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress)).to.be.revertedWith("Initializable: contract is already initialized");
+        freezeRouteRoleAddress)).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
 
     // Check initializer params (ROLES)
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");

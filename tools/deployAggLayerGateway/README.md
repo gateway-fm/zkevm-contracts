@@ -21,7 +21,7 @@ Fill `.env` with your `ETHERSCAN_API_KEY`
 - Copy configuration files:
 
 ```
-cp ./deployment/v3/AggLayerGateway/deploy_parameters.json.example ./deployment/v3/AggLayerGateway/deploy_parameters.json
+cp ./tools/deployAggLayerGateway/deploy_parameters.json.example ./tools/deployAggLayerGateway/deploy_parameters.json
 ```
 
 - Fill configuration file
@@ -35,7 +35,7 @@ cp ./deployment/v3/AggLayerGateway/deploy_parameters.json.example ./deployment/v
 - Run tool:
 
 ```
-npx hardhat run ./deployment/v3/AggLayerGateway/deployAggLayerGateway.ts --network sepolia
+npx hardhat run ./tools/deployAggLayerGateway/deployAggLayerGateway.ts --network sepolia
 ```
 
 - OutputFile: `deploy_output.json`
