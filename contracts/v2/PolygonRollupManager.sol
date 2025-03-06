@@ -1267,18 +1267,16 @@ contract PolygonRollupManager is
             msg.sender
         );
 
-        // If rollup verifier type is not state transition but ALGateway or pessimistic, emit specific event
-        if (rollup.rollupVerifierType != VerifierType.StateTransition) {
-            emit VerifyPessimisticStateTransition(
-                rollupID,
-                prevPessimisticRoot,
-                newPessimisticRoot,
-                prevLocalExitRoot,
-                newLocalExitRootAux,
-                l1InfoRoot,
-                msg.sender
-            );
-        }
+        /// @dev emit a second event with more data, not updated/removed the other one for backwards compatibility reasons
+        emit VerifyPessimisticStateTransition(
+            rollupID,
+            prevPessimisticRoot,
+            newPessimisticRoot,
+            prevLocalExitRoot,
+            newLocalExitRootAux,
+            l1InfoRoot,
+            msg.sender
+        );
 
         if (rollup.rollupVerifierType == VerifierType.ALGateway) {
             // Allow chains to manage customData
