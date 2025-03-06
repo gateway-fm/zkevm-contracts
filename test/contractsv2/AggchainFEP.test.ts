@@ -143,7 +143,26 @@ describe("AggchainFEP", () => {
             aggchainFEPcontract,
             "L2BlockTimeMustBeGreaterThanZero"
         );
+        // initializeAggchain: rollupConfigHash = 0
+        initParamsCp = Object.assign({}, initParams);
+        initParamsCp.rollupConfigHash = ethers.ZeroHash;
+        initializeBytesCustomChain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
+            initParamsCp,
+            useDefaultGateway,
+            newAggChainVKey,
+            aggchainVKeyVersion,
+            vKeyManager.address,
+            admin.address,
+            trustedSequencer.address,
+            gasTokenAddress,
+            urlSequencer,
+            networkName
+        );
 
+        await expect(aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesCustomChain, {gasPrice: 0})).to.be.revertedWithCustomError(
+            aggchainFEPcontract,
+            "RollupConfigHashMustBeDifferentThanZero"
+        );
         // initializeAggchain: startingTimestamp > block.timestamp
         initParamsCp = Object.assign({}, initParams);
         initParamsCp.startingTimestamp = Math.floor(Date.now() / 1000) + 1000;
@@ -582,7 +601,10 @@ describe("AggchainFEP", () => {
             aggchainFEPcontract,
             "OnlyAggchainManager"
         );
-
+        await expect(aggchainFEPcontract.connect(aggchainManager).updateSubmissionInterval(0)).to.be.revertedWithCustomError(
+            aggchainFEPcontract,
+            "SubmissionIntervalMustBeGreaterThanZero"
+        );
         await expect(aggchainFEPcontract.connect(aggchainManager).updateSubmissionInterval(newSubmissionInterval))
             .to.emit(aggchainFEPcontract, "SubmissionIntervalUpdated")
             .withArgs(oldSubmissionInterval, newSubmissionInterval);
@@ -598,7 +620,10 @@ describe("AggchainFEP", () => {
             aggchainFEPcontract,
             "OnlyAggchainManager"
         );
-
+        await expect(aggchainFEPcontract.connect(aggchainManager).updateRollupConfigHash(ethers.ZeroHash)).to.be.revertedWithCustomError(
+            aggchainFEPcontract,
+            "RollupConfigHashMustBeDifferentThanZero"
+        );
         await expect(aggchainFEPcontract.connect(aggchainManager).updateRollupConfigHash(newRollupConfigHash))
             .to.emit(aggchainFEPcontract, "RollupConfigHashUpdated")
             .withArgs(oldRollupConfigHash, newRollupConfigHash);
