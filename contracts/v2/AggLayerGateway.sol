@@ -2,7 +2,8 @@
 pragma solidity 0.8.28;
 import {ISP1Verifier} from "./interfaces/ISP1Verifier.sol";
 import {IAggLayerGateway} from "./interfaces/IAggLayerGateway.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+/// @dev same contract as contracts-upgradable -> https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/master/contracts/proxy/utils/Initializable.sol
+import "@openzeppelin/contracts52/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts52/access/AccessControl.sol";
 
 // Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/SP1VerifierGateway.sol

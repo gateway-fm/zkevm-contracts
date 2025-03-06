@@ -66,7 +66,7 @@ async function main() {
     });
 
     console.log("#######################\n");
-    console.log(`Polygon rollup manager: ${implRollupManager}`);
+    console.log(`Polygon rollup manager implementation deployed at: ${implRollupManager}`);
     await verifyContractEtherscan(implRollupManager as string, [globalExitRootManagerAddress, polAddress, bridgeAddress, aggLayerGatewayAddress]);
 
     const operationRollupManager = genTimelockOperation(

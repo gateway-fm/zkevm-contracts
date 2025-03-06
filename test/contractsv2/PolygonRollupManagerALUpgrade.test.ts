@@ -219,7 +219,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
                 addPPRoute.address,
                 freezePPRoute.address
             )
-        ).to.be.revertedWith("Initializable: contract is already initialized");
+        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
     });
 
     it("should create a ECDSA rollup type", async () => {

@@ -18,15 +18,10 @@ const {
     encodeInitializeBytesAggchainECDSAv1,
     encodeInitializeBytesAggchainECDSAv0,
 } = require("../../src/utils-aggchain-ECDSA");
-<<<<<<< Updated upstream
+
 const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
 const {encodeInitializeBytesLegacy} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
-=======
-const { getAggchainVKeySelector } = require("../../src/utils-common-aggchain");
-const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
-const { NO_ADDRESS } = require("../../src/constants");
->>>>>>> Stashed changes
 
 describe("Polygon rollup manager aggregation layer v3", () => {
     // SIGNERS
@@ -202,7 +197,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 addPPRoute.address,
                 freezePPRoute.address
             )
-        ).to.be.revertedWith("Initializable: contract is already initialized");
+        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
 
         // Check non zero constructor parameters for rollupManager
         const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManagerMock");
