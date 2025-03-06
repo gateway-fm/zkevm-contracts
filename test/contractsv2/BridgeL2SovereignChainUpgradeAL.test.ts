@@ -521,8 +521,6 @@ describe("BridgeL2SovereignChain Contract", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -553,8 +551,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.removeGlobalExitRoots([computedGlobalExitRoot]))
-            .to.emit(sovereignChainGlobalExitRootContract, "RemoveLastGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateRemovalHashChainValue")
             .withArgs(computedGlobalExitRoot, removalHashChainValue);
 
@@ -564,8 +560,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [hashChainValue, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
         const computedGlobalExitRoot2 = "0x5946741ff5ff7732e1c7614ae327543a1d9f5870fcb8afbf146bd5ea75d6d519"; // Random 32 bytes
@@ -574,8 +568,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [hashChainValue, computedGlobalExitRoot2]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot2))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot2)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot2, hashChainValue);
         const lastBlock2 = (await ethers.provider.getBlock("latest")) as any;
@@ -596,12 +588,8 @@ describe("BridgeL2SovereignChain Contract", () => {
                 computedGlobalExitRoot,
             ])
         )
-            .to.emit(sovereignChainGlobalExitRootContract, "RemoveLastGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot2)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateRemovalHashChainValue")
             .withArgs(computedGlobalExitRoot2, removalHashChainValue)
-            .to.emit(sovereignChainGlobalExitRootContract, "RemoveLastGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateRemovalHashChainValue")
             .withArgs(computedGlobalExitRoot, removalHashChainValue2);
 
@@ -614,8 +602,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [hashChainValue, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
         // Check GER has value in mapping
@@ -805,8 +791,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -948,8 +932,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -1026,8 +1008,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -1114,8 +1094,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -1224,8 +1202,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -1369,8 +1345,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -1619,8 +1593,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [hashChainValue, computedGlobalExitRoot2]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot2))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot2)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot2, hashChainValue);
 
@@ -1636,15 +1608,12 @@ describe("BridgeL2SovereignChain Contract", () => {
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(index2, indexRollup + 1));
 
-        await expect(
-            sovereignChainBridgeContract
-                .connect(bridgeManager)
-                .unsetMultipleClaimedBitmap([indexLocal, index2], [indexRollup + 1])
-        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InputArraysLengthMismatch");
-
         await sovereignChainBridgeContract
             .connect(bridgeManager)
-            .unsetMultipleClaimedBitmap([indexLocal, index2], [indexRollup + 1, indexRollup + 1]);
+            .unsetMultipleClaims([
+                computeGlobalIndex(indexLocal, indexRollup, false),
+                computeGlobalIndex(index2, indexRollup, false),
+            ]);
 
         expect(false).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
         expect(false).to.be.equal(await sovereignChainBridgeContract.isClaimed(index2, indexRollup + 1));
@@ -1653,7 +1622,10 @@ describe("BridgeL2SovereignChain Contract", () => {
         await expect(
             sovereignChainBridgeContract
                 .connect(bridgeManager)
-                .unsetMultipleClaimedBitmap([indexLocal, index2], [indexRollup + 1, indexRollup + 1])
+                .unsetMultipleClaims([
+                    computeGlobalIndex(indexLocal, indexRollup + 1, false),
+                    computeGlobalIndex(index2, indexRollup, false),
+                ])
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "ClaimNotSet");
     });
 
@@ -1716,8 +1688,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -1948,8 +1918,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -2111,8 +2079,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -2273,8 +2239,6 @@ describe("BridgeL2SovereignChain Contract", () => {
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 

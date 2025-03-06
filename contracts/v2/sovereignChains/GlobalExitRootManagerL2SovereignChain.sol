@@ -32,20 +32,10 @@ contract GlobalExitRootManagerL2SovereignChain is
     /**
      * @dev Emitted when a new global exit root is inserted and added to the hash chain
      */
-    event InsertGlobalExitRoot(bytes32 indexed newGlobalExitRoot);
-
-    /**
-     * @dev Emitted when a new global exit root is inserted and added to the hash chain
-     */
     event UpdateHashChainValue(
         bytes32 indexed newGlobalExitRoot,
         bytes32 indexed newHashChainValue
     );
-
-    /**
-     * @dev Emitted when the global exit root is removed and added to the removal hash chain
-     */
-    event RemoveLastGlobalExitRoot(bytes32 indexed removedGlobalExitRoot);
 
     /**
      * @dev Emitted when the global exit root is removed and added to the removal hash chain
@@ -128,8 +118,8 @@ contract GlobalExitRootManagerL2SovereignChain is
                 insertedGERHashChain,
                 _newRoot
             );
-            // @dev we are emitting two events for backwards compatibility, should deprecate InsertGlobalExitRoot event in the future
-            emit InsertGlobalExitRoot(_newRoot);
+
+            // Emit update event
             emit UpdateHashChainValue(_newRoot, insertedGERHashChain);
         } else {
             revert GlobalExitRootAlreadySet();
@@ -163,8 +153,6 @@ contract GlobalExitRootManagerL2SovereignChain is
             delete globalExitRootMap[gerToRemove];
 
             // Emit the removal event
-            // @dev we are emitting to events for backwards compatibility, should deprecate RemoveLastGlobalExitRoot event in the future
-            emit RemoveLastGlobalExitRoot(gerToRemove);
             emit UpdateRemovalHashChainValue(
                 gerToRemove,
                 nextRemovalHashChainValue

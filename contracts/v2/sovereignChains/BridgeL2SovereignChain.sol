@@ -23,18 +23,19 @@ contract BridgeL2SovereignChain is
     // Bridge manager address; can set custom mapping for any token. It's highly recommend to set a timelock at this address after bootstrapping phase
     address public bridgeManager;
 
-    // Value of the global indexes hash chain, updated for every bridge claim
-    bytes32 public globalIndexHashChain;
+    // Claimed global index hash chain, updated for every bridge claim as follows
+    // newHashChain = Keccak256(currentHashChain,bytes32(claimedGlobalIndex));
+    bytes32 public claimedGlobalIndexHashChain;
+
+    // Unset global index hash chain, updated every time the bridge manager unset a claim
+    // This should be use only in edge-case/emergency circumstances
+    // newHashChain = Keccak256(currentHashChain,bytes32(removedGlobalIndex));
+    bytes32 public unsetGlobalIndexHashChain;
 
     /**
      * @dev Emitted when a bridge manager is updated
      */
     event SetBridgeManager(address bridgeManager);
-
-    /**
-     * @dev Emitted when a claim is unset
-     */
-    event UnsetClaim(uint32 leafIndex, uint32 sourceBridgeNetwork);
 
     /**
      * @dev Emitted when a token address is remapped by a sovereign token address
@@ -70,13 +71,23 @@ contract BridgeL2SovereignChain is
     );
 
     /**
-     * @dev Emitted when the global index hash chain is updated (new claim)
-     * @param insertedGloblIndex Global index added to the hash chain
-     * @param newGlobalIndexHashChain New global index hash chain value
+     * @dev Emitted when the claimed global index hash chain is updated (new claim)
+     * @param claimedGlobalIndex Global index added to the hash chain
+     * @param newClaimedGlobalIndexHashChain New global index hash chain value
      */
-    event UpdatedGlobalIndexHashChain(
-        bytes32 insertedGloblIndex,
-        bytes32 newGlobalIndexHashChain
+    event UpdatedClaimedGlobalIndexHashChain(
+        bytes32 claimedGlobalIndex,
+        bytes32 newClaimedGlobalIndexHashChain
+    );
+
+    /**
+     * @dev Emitted when the unset global index hash chain is updated
+     * @param unsetGlobalIndex Global index added to the hash chain
+     * @param newUnsetGlobalIndexHashChain New global index hash chain value
+     */
+    event UpdatedUnsetGlobalIndexHashChain(
+        bytes32 unsetGlobalIndex,
+        bytes32 newUnsetGlobalIndexHashChain
     );
 
     /**
@@ -376,21 +387,50 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @notice unset multiple claims from the claimedBitmap
+     * @notice Unset multiple claims from the claimedBitmap
      * @dev This function is a "multi/batch call" to `unsetClaimedBitmap`
-     * @param leafIndexes Array of Index
-     * @param sourceBridgeNetworks Array of Origin networks
+     * @param globalIndexes Global index is defined as:
+     * | 191 bits |    1 bit     |   32 bits   |     32 bits    |
+     * |    0     |  mainnetFlag | rollupIndex | localRootIndex |
      */
-    function unsetMultipleClaimedBitmap(
-        uint32[] memory leafIndexes,
-        uint32[] memory sourceBridgeNetworks
+    function unsetMultipleClaims(
+        uint256[] memory globalIndexes
     ) external onlyBridgeManager {
-        if (leafIndexes.length != sourceBridgeNetworks.length) {
-            revert InputArraysLengthMismatch();
-        }
+        for (uint256 i = 0; i < globalIndexes.length; i++) {
+            uint256 globalIndex = globalIndexes[i];
 
-        for (uint256 i = 0; i < leafIndexes.length; i++) {
-            _unsetClaimedBitmap(leafIndexes[i], sourceBridgeNetworks[i]);
+            // Compute leaf index and sourceBridgeNetwork from global index
+            uint32 leafIndex;
+            uint32 sourceBridgeNetwork;
+
+            // Get origin network from global index
+            if (globalIndex & _GLOBAL_INDEX_MAINNET_FLAG != 0) {
+                // The network is mainnet, therefore sourceBridgeNetwork is 0
+
+                // Last 32 bits are leafIndex
+                leafIndex = uint32(globalIndex);
+            } else {
+                // The network is a rollup, therefore sourceBridgeNetwork must be decoded
+                uint32 indexRollup = uint32(globalIndex >> 32);
+                sourceBridgeNetwork = indexRollup + 1;
+
+                // Last 32 bits are leafIndex
+                leafIndex = uint32(globalIndex);
+            }
+
+            // Unset the claim
+            _unsetClaimedBitmap(leafIndex, sourceBridgeNetwork);
+
+            // Update globalIndexHashChain
+            unsetGlobalIndexHashChain = Hashes.efficientKeccak256(
+                unsetGlobalIndexHashChain,
+                bytes32(globalIndex)
+            );
+
+            emit UpdatedUnsetGlobalIndexHashChain(
+                bytes32(globalIndex),
+                unsetGlobalIndexHashChain
+            );
         }
     }
 
@@ -455,7 +495,7 @@ contract BridgeL2SovereignChain is
         }
     }
 
-    /*
+    /**
      * @notice unset a claim from the claimedBitmap
      * @param leafIndex Index
      * @param sourceBridgeNetwork Origin network
@@ -473,7 +513,6 @@ contract BridgeL2SovereignChain is
         if (flipped & mask != 0) {
             revert ClaimNotSet();
         }
-        emit UnsetClaim(leafIndex, sourceBridgeNetwork);
     }
 
     /**
@@ -493,6 +532,27 @@ contract BridgeL2SovereignChain is
         (uint256 wordPos, uint256 bitPos) = _bitmapPositions(globalIndex);
         uint256 mask = (1 << bitPos);
         return (claimedBitMap[wordPos] & mask) == mask;
+    }
+
+    /**
+     * @notice Function to check that an index is not claimed and set it as claimed
+     * @dev function overridden to improve a bit the performance and bytecode not checking unnecessary conditions for sovereign chains context
+     * @param leafIndex Index
+     * @param sourceBridgeNetwork Origin network
+     */
+    function _setAndCheckClaimed(
+        uint32 leafIndex,
+        uint32 sourceBridgeNetwork
+    ) internal override {
+        uint256 globalIndex = uint256(leafIndex) +
+            uint256(sourceBridgeNetwork) *
+            _MAX_LEAFS_PER_NETWORK;
+        (uint256 wordPos, uint256 bitPos) = _bitmapPositions(globalIndex);
+        uint256 mask = 1 << bitPos;
+        uint256 flipped = claimedBitMap[wordPos] ^= mask;
+        if (flipped & mask == 0) {
+            revert AlreadyClaimed();
+        }
     }
 
     /**
@@ -522,37 +582,16 @@ contract BridgeL2SovereignChain is
             leafValue
         );
 
-        // Update globalIndexHashChain
-        globalIndexHashChain = Hashes.efficientKeccak256(
-            globalIndexHashChain,
+        // Update claimedGlobalIndexHashChain
+        claimedGlobalIndexHashChain = Hashes.efficientKeccak256(
+            claimedGlobalIndexHashChain,
             bytes32(globalIndex)
         );
 
-        emit UpdatedGlobalIndexHashChain(
+        emit UpdatedClaimedGlobalIndexHashChain(
             bytes32(globalIndex),
-            globalIndexHashChain
+            claimedGlobalIndexHashChain
         );
-    }
-
-    /**
-     * @notice Function to check that an index is not claimed and set it as claimed
-     * @dev function overridden to improve a bit the performance and bytecode not checking unnecessary conditions for sovereign chains context
-     * @param leafIndex Index
-     * @param sourceBridgeNetwork Origin network
-     */
-    function _setAndCheckClaimed(
-        uint32 leafIndex,
-        uint32 sourceBridgeNetwork
-    ) internal override {
-        uint256 globalIndex = uint256(leafIndex) +
-            uint256(sourceBridgeNetwork) *
-            _MAX_LEAFS_PER_NETWORK;
-        (uint256 wordPos, uint256 bitPos) = _bitmapPositions(globalIndex);
-        uint256 mask = 1 << bitPos;
-        uint256 flipped = claimedBitMap[wordPos] ^= mask;
-        if (flipped & mask == 0) {
-            revert AlreadyClaimed();
-        }
     }
 
     /**
