@@ -1,5 +1,5 @@
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     AggLayerGateway,
     ERC20PermitMock,
@@ -10,17 +10,23 @@ import {
     VerifierRollupHelperMock,
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
-const {VerifierType, computeRandomBytes} = require("../../src/pessimistic-utils");
-const {CONSENSUS_TYPE} = require("../../src/utils-common-aggchain");
+const { VerifierType, computeRandomBytes } = require("../../src/pessimistic-utils");
+const { CONSENSUS_TYPE } = require("../../src/utils-common-aggchain");
 const {
     AGGCHAIN_TYPE_ECDSA,
     encodeAggchainDataECDSA,
     encodeInitializeBytesAggchainECDSAv1,
     encodeInitializeBytesAggchainECDSAv0,
 } = require("../../src/utils-aggchain-ECDSA");
+<<<<<<< Updated upstream
 const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
 const {encodeInitializeBytesLegacy} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
+=======
+const { getAggchainVKeySelector } = require("../../src/utils-common-aggchain");
+const { encodeInitializeBytesPessimistic } = require("../../src/utils-common-aggchain");
+const { NO_ADDRESS } = require("../../src/constants");
+>>>>>>> Stashed changes
 
 describe("Polygon rollup manager aggregation layer v3", () => {
     // SIGNERS
@@ -197,6 +203,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 freezePPRoute.address
             )
         ).to.be.revertedWith("Initializable: contract is already initialized");
+
         // Check non zero constructor parameters for rollupManager
         const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManagerMock");
         await expect(PolygonRollupManagerFactory.deploy(
@@ -223,6 +230,17 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             polygonZkEVMBridgeContract.target,
             aggLayerGatewayContract.target,
         )).to.be.revertedWithCustomError(rollupManagerContract, "InvalidConstructorInputs");
+
+        // Should revert with error InvalidAggLayerGatewayAddress
+        const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+        await expect(aggchainECDSAFactory.deploy(
+            polygonZkEVMGlobalExitRoot.target,
+            polTokenContract.target,
+            polygonZkEVMBridgeContract.target,
+            rollupManagerContract.target,
+            ethers.ZeroAddress // invalid zero address fo aggLayerGateway
+        )).to.be.revertedWithCustomError(aggchainECDSAFactory, "InvalidAggLayerGatewayAddress");
+
     });
 
     it("should create a ECDSA rollup type", async () => {
