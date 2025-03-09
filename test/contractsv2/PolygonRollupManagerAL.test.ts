@@ -259,7 +259,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         ).to.be.revertedWithCustomError(aggchainECDSAContract, "OnlyVKeyManager");
         await expect(aggchainECDSAContract.connect(vKeyManager).transferVKeyManagerRole(admin.address))
             .to.emit(aggchainECDSAContract, "TransferVKeyManagerRole")
-            .withArgs(admin.address);
+            .withArgs(vKeyManager, admin.address);
         //Accept vKeyManager role
         // Trigger onlyPendingVKeyManager
         await expect(aggchainECDSAContract.connect(vKeyManager).acceptVKeyManagerRole()).to.be.revertedWithCustomError(

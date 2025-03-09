@@ -292,13 +292,16 @@ describe("AggchainECDSA", () => {
 
         await expect(aggchainECDSAcontract.connect(vKeyManager).transferVKeyManagerRole(admin.address))
             .to.emit(aggchainECDSAcontract, "TransferVKeyManagerRole")
-            .withArgs(admin.address);
+            .withArgs(vKeyManager, admin.address);
 
         // acceptVKeyManagerRole
         await expect(aggchainECDSAcontract.connect(vKeyManager).acceptVKeyManagerRole()).to.be.revertedWithCustomError(
             aggchainECDSAcontract,
             "OnlyPendingVKeyManager"
         );
+
+        const res = await aggchainECDSAcontract.connect(admin).acceptVKeyManagerRole.estimateGas()
+        console.log("Gas used for acceptVKeyManagerRole: ", res.toString());
 
         await expect(aggchainECDSAcontract.connect(admin).acceptVKeyManagerRole())
             .to.emit(aggchainECDSAcontract, "AcceptVKeyManagerRole")

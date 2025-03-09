@@ -713,6 +713,11 @@ describe("AggchainFEP", () => {
             "OnlyPendingOptimisticModeManager"
         );
 
+        // estima gas
+        const gasEstimate = await aggchainFEPcontract.acceptOptimisticModeManagerRole.estimateGas();
+        console.log("Gas estimate: ", gasEstimate.toString());
+
+
         await expect(aggchainFEPcontract.acceptOptimisticModeManagerRole())
             .to.emit(aggchainFEPcontract, "AcceptOptimisticModeManagerRole")
             .withArgs(optModeManager, deployer.address);
