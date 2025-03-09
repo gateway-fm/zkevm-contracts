@@ -24,12 +24,12 @@ contract BridgeL2SovereignChain is
     address public bridgeManager;
 
     // Claimed global index hash chain, updated for every bridge claim as follows
-    // newHashChain = Keccak256(currentHashChain,bytes32(claimedGlobalIndex));
+    // newClaimedGlobalIndexHashChain = Keccak256(oldClaimedGlobalIndexHashChain,bytes32(claimedGlobalIndex));
     bytes32 public claimedGlobalIndexHashChain;
 
     // Unset global index hash chain, updated every time the bridge manager unset a claim
     // This should be use only in edge-case/emergency circumstances
-    // newHashChain = Keccak256(currentHashChain,bytes32(removedGlobalIndex));
+    // newUnsetGlobalIndexHashChain = Keccak256(oldUnsetGlobalIndexHashChain,bytes32(removedGlobalIndex));
     bytes32 public unsetGlobalIndexHashChain;
 
     /**
