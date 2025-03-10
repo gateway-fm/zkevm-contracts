@@ -487,7 +487,10 @@ contract PolygonZkEVMBridgeV2 is
         );
 
         // Transfer funds
-        if (originTokenAddress == address(0)) {
+        if (
+            originTokenAddress == address(0) &&
+            originNetwork == _MAINNET_NETWORK_ID
+        ) {
             if (address(WETHToken) == address(0)) {
                 // Ether is the native token
                 /* solhint-disable avoid-low-level-calls */
