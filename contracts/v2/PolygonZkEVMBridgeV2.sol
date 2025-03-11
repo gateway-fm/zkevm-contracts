@@ -51,7 +51,7 @@ contract PolygonZkEVMBridgeV2 is
     uint256 internal constant _MAX_LEAFS_PER_NETWORK = 2 ** 32;
 
     // Indicate where's the mainnet flag bit in the global index
-    uint256 private constant _GLOBAL_INDEX_MAINNET_FLAG = 2 ** 64;
+    uint256 internal constant _GLOBAL_INDEX_MAINNET_FLAG = 2 ** 64;
 
     // Init code of the erc20 wrapped token, to deploy a wrapped token the constructor parameters must be appended
     bytes public constant BASE_INIT_BYTECODE_WRAPPED_TOKEN =

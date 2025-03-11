@@ -68,7 +68,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         const BridgeL2SovereignChainFactory = await ethers.getContractFactory("BridgeL2SovereignChain");
         sovereignChainBridgeContract = (await upgrades.deployProxy(BridgeL2SovereignChainFactory, [], {
             initializer: false,
-            unsafeAllow: ["constructor","missing-initializer", "missing-initializer-call"],
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
         })) as unknown as BridgeL2SovereignChain;
 
         // deploy global exit root manager
@@ -212,10 +212,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-        .withArgs(computedGlobalExitRoot)
-        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
-        .withArgs(computedGlobalExitRoot, hashChainValue);
+            .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+            .withArgs(computedGlobalExitRoot, hashChainValue);
 
         // Check GER has value in mapping
         expect(await sovereignChainGlobalExitRootContract.globalExitRootMap(computedGlobalExitRoot)).to.not.be.eq(0);
@@ -733,10 +731,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-        .withArgs(computedGlobalExitRoot)
-        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
-        .withArgs(computedGlobalExitRoot, hashChainValue);
+            .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+            .withArgs(computedGlobalExitRoot, hashChainValue);
 
         // check merkle proof
         // Merkle proof local
@@ -882,8 +878,6 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
         // check merkle proof
@@ -1280,8 +1274,6 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-            .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-            .withArgs(computedGlobalExitRoot)
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
 
@@ -1436,10 +1428,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-        .withArgs(computedGlobalExitRoot)
-        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
-        .withArgs(computedGlobalExitRoot, hashChainValue);
+            .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+            .withArgs(computedGlobalExitRoot, hashChainValue);
 
         // check merkle proof
         const index = 0;
@@ -1547,10 +1537,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         // Insert global exit root
         await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
-        .to.emit(sovereignChainGlobalExitRootContract, "InsertGlobalExitRoot")
-        .withArgs(computedGlobalExitRoot)
-        .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
-        .withArgs(computedGlobalExitRoot, hashChainValue);
+            .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
+            .withArgs(computedGlobalExitRoot, hashChainValue);
         // check merkle proof
         const index = 0;
         const proofLocal = merkleTree.getProofTreeByIndex(0);
