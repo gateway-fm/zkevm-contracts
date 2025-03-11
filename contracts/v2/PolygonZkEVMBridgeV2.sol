@@ -256,7 +256,7 @@ contract PolygonZkEVMBridgeV2 is
                 ];
 
                 if (
-                    tokenInfo.originTokenAddress != address(0) &&
+                    tokenInfo.originTokenAddress != address(0) ||
                     tokenInfo.originNetwork != _MAINNET_NETWORK_ID
                 ) {
                     // The token is a wrapped token from another network
