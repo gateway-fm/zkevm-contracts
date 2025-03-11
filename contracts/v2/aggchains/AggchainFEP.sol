@@ -632,6 +632,7 @@ contract AggchainFEP is AggchainBase {
         address newAggchainManager
     ) external onlyAggchainManager {
         pendingAggchainManager = newAggchainManager;
+
         emit TransferAggchainManagerRole(aggchainManager, newAggchainManager);
     }
 
@@ -641,10 +642,11 @@ contract AggchainFEP is AggchainBase {
             revert OnlyPendingAggchainManager();
         }
 
-        emit AcceptAggchainManagerRole(aggchainManager, pendingAggchainManager);
+        address oldAggchainManager = aggchainManager;
         aggchainManager = pendingAggchainManager;
-
         delete pendingAggchainManager;
+
+        emit AcceptAggchainManagerRole(oldAggchainManager, aggchainManager);
     }
 
     /// @notice Starts the optimisticModeManager role transfer
@@ -654,6 +656,7 @@ contract AggchainFEP is AggchainBase {
         address newOptimisticModeManager
     ) external onlyOptimisticModeManager {
         pendingOptimisticModeManager = newOptimisticModeManager;
+
         emit TransferOptimisticModeManagerRole(
             optimisticModeManager,
             newOptimisticModeManager
@@ -666,12 +669,13 @@ contract AggchainFEP is AggchainBase {
             revert OnlyPendingOptimisticModeManager();
         }
 
-        emit AcceptOptimisticModeManagerRole(
-            optimisticModeManager,
-            pendingOptimisticModeManager
-        );
+        address oldOptimisticModeManager = optimisticModeManager;
         optimisticModeManager = pendingOptimisticModeManager;
-
         delete pendingOptimisticModeManager;
+
+        emit AcceptOptimisticModeManagerRole(
+            oldOptimisticModeManager,
+            optimisticModeManager
+        );
     }
 }

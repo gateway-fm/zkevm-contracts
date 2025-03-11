@@ -32,9 +32,14 @@ interface IAggchainBaseEvents {
 
     /**
      * @notice Emitted when the vKeyManager starts the two-step transfer role setting a new pending vKeyManager.
-     * @param newVKeyManager The new vKeyManager.
+     * @param currentVKeyManager The current vKeyManager.
+     * @param newPendingVKeyManager The new pending vKeyManager.
      */
-    event TransferVKeyManagerRole(address newVKeyManager);
+    event TransferVKeyManagerRole(
+        address currentVKeyManager,
+        address newPendingVKeyManager
+    );
+
     /**
      * @notice Emitted when the pending vKeyManager accepts the vKeyManager role.
      * @param newVKeyManager The new vKeyManager.

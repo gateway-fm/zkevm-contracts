@@ -292,7 +292,7 @@ describe("AggchainECDSA", () => {
 
         await expect(aggchainECDSAcontract.connect(vKeyManager).transferVKeyManagerRole(admin.address))
             .to.emit(aggchainECDSAcontract, "TransferVKeyManagerRole")
-            .withArgs(admin.address);
+            .withArgs(vKeyManager, admin.address);
 
         // acceptVKeyManagerRole
         await expect(aggchainECDSAcontract.connect(vKeyManager).acceptVKeyManagerRole()).to.be.revertedWithCustomError(

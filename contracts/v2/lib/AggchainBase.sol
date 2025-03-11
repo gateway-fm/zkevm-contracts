@@ -189,7 +189,7 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ) external onlyVKeyManager {
         pendingVKeyManager = newVKeyManager;
 
-        emit TransferVKeyManagerRole(newVKeyManager);
+        emit TransferVKeyManagerRole(vKeyManager, newVKeyManager);
     }
 
     /**
@@ -280,6 +280,10 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
             updatedAggchainVKey
         );
     }
+
+    //////////////////////////
+    //    view functions    //
+    /////////////////////////
 
     /**
      * @notice returns the current aggchain verification key. If the flag `useDefaultGateway` is set to true, the gateway verification key is returned, else, the custom chain verification key is returned.
