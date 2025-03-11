@@ -255,7 +255,10 @@ contract PolygonZkEVMBridgeV2 is
                     token
                 ];
 
-                if (tokenInfo.originTokenAddress != address(0)) {
+                if (
+                    tokenInfo.originTokenAddress != address(0) ||
+                    tokenInfo.originNetwork != _MAINNET_NETWORK_ID
+                ) {
                     // The token is a wrapped token from another network
 
                     _bridgeWrappedAsset(TokenWrapped(token), amount);
@@ -487,7 +490,10 @@ contract PolygonZkEVMBridgeV2 is
         );
 
         // Transfer funds
-        if (originTokenAddress == address(0)) {
+        if (
+            originTokenAddress == address(0) &&
+            originNetwork == _MAINNET_NETWORK_ID
+        ) {
             if (address(WETHToken) == address(0)) {
                 // Ether is the native token
                 /* solhint-disable avoid-low-level-calls */
