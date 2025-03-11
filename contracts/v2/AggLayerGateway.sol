@@ -2,8 +2,11 @@
 pragma solidity 0.8.28;
 import {ISP1Verifier} from "./interfaces/ISP1Verifier.sol";
 import {IAggLayerGateway} from "./interfaces/IAggLayerGateway.sol";
-/// @dev same contract as contracts-upgradable -> https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v5.2.0/contracts/proxy/utils/Initializable.sol
+/// @dev same contract as contracts-upgradable(v5.2.0) -> https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v5.2.0/contracts/proxy/utils/Initializable.sol
 import "@openzeppelin/contracts52/proxy/utils/Initializable.sol";
+/// @dev AccessControl.sol in @openzeppelin/contracts52: @openzeppelin/contracts52/access/AccessControl.sol
+/// has a different storage layout in comparison with the AccessControlUpgradeable.sol in contracts-upgradeable(v5.2.0): https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/v5.2.0/contracts/access/AccessControlUpgradeable.sol
+/// Warning to emphasize that AccessControl.sol (@openzeppelin/contracts52) cannot be upgraded to AccessControlUpgradeable.sol(contracts-upgradeable(v5.2.0))
 import "@openzeppelin/contracts52/access/AccessControl.sol";
 
 // Based on https://github.com/succinctlabs/sp1-contracts/blob/main/contracts/src/SP1VerifierGateway.sol
