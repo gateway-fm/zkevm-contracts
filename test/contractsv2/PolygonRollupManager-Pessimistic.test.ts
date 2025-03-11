@@ -818,7 +818,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "L1InfoTreeLeafCountInvalid");
 
-        // Check CustomChainDataMustBeZeroForPessimisticVerifierType
+        // Check AggchainDataMustBeZeroForPessimisticVerifierType
         await expect(
             rollupManagerContract.connect(trustedAggregator).verifyPessimisticTrustedAggregator(
                 pessimisticRollupID,
@@ -828,7 +828,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 proofPP,
                 computeRandomBytes(32) // customChainData random bytes, invalid
             )
-        ).to.be.revertedWithCustomError(rollupManagerContract, "CustomChainDataMustBeZeroForPessimisticVerifierType");
+        ).to.be.revertedWithCustomError(rollupManagerContract, "AggchainDataMustBeZeroForPessimisticVerifierType");
 
         // create a bridge to generate a new GER and add another value in the l1IfoRootMap
         const tokenAddress = ethers.ZeroAddress;

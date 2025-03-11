@@ -146,10 +146,10 @@ describe("AggchainFEP", () => {
         // initializeAggchain: rollupConfigHash = 0
         initParamsCp = Object.assign({}, initParams);
         initParamsCp.rollupConfigHash = ethers.ZeroHash;
-        initializeBytesCustomChain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
+        initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
             initParamsCp,
             useDefaultGateway,
-            newAggChainVKey,
+            newAggchainVKey,
             aggchainVKeyVersion,
             vKeyManager.address,
             admin.address,
@@ -159,7 +159,7 @@ describe("AggchainFEP", () => {
             networkName
         );
 
-        await expect(aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesCustomChain, {gasPrice: 0})).to.be.revertedWithCustomError(
+        await expect(aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
             aggchainFEPcontract,
             "RollupConfigHashMustBeDifferentThanZero"
         );
