@@ -417,34 +417,10 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const chainID = 1;
         const initLER = "0xff000000000000000000000000000000000000000000000000000000000000ff";
         const programVKey = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        const initPessimisticRoot = ethers.id("initPessimisticRoot");
 
         // add existing rollup: pessimistic type
         const newCreatedRollupID = 1;
-        // Force revert with InvalidInputsForRollupType
-        await expect(
-            rollupManagerContract.connect(timelock).addExistingRollup(
-                rollupAddress,
-                verifierContract.target,
-                0, // Invalid forkID
-                chainID,
-                initLER,
-                VerifierType.Pessimistic,
-                programVKey,
-                ethers.ZeroHash // initPessimisticRoot
-            )
-        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
-        await expect(
-            rollupManagerContract.connect(timelock).addExistingRollup(
-                rollupAddress,
-                verifierContract.target,
-                forkID,
-                chainID,
-                initLER,
-                VerifierType.Pessimistic,
-                programVKey,
-                computeRandomBytes(32) // invalid initPessimisticRoot
-            )
-        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
 
         await expect(
             rollupManagerContract.connect(timelock).addExistingRollup(
@@ -455,7 +431,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 initLER,
                 VerifierType.Pessimistic,
                 programVKey,
-                ethers.ZeroHash // initPessimisticRoot
+                initPessimisticRoot // initPessimisticRoot
             )
         )
             .to.emit(rollupManagerContract, "AddExistingRollup")
@@ -467,7 +443,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 VerifierType.Pessimistic,
                 0,
                 programVKey,
-                ethers.ZeroHash
+                initPessimisticRoot
             );
     });
 

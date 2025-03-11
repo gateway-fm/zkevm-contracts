@@ -744,11 +744,8 @@ contract PolygonRollupManager is
 
         // Check verifier type
         if (rollupVerifierType == VerifierType.Pessimistic) {
-            if (forkID == 0 || initPessimisticRoot != bytes32(0)) {
-                revert InvalidInputsForRollupType();
-            }
-
             rollup.programVKey = programVKey;
+            rollup.lastPessimisticRoot = initPessimisticRoot;
             rollup.lastLocalExitRoot = initRoot;
         } else if (rollupVerifierType == VerifierType.ALGateway) {
             if (
@@ -771,7 +768,6 @@ contract PolygonRollupManager is
             rollup.batchNumToStateRoot[0] = initRoot;
         }
 
-        // rollup type is 0, since it does not follow any rollup type
         emit AddExistingRollup(
             rollupID,
             forkID,
