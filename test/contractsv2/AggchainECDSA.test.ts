@@ -300,9 +300,6 @@ describe("AggchainECDSA", () => {
             "OnlyPendingVKeyManager"
         );
 
-        const res = await aggchainECDSAcontract.connect(admin).acceptVKeyManagerRole.estimateGas()
-        console.log("Gas used for acceptVKeyManagerRole: ", res.toString());
-
         await expect(aggchainECDSAcontract.connect(admin).acceptVKeyManagerRole())
             .to.emit(aggchainECDSAcontract, "AcceptVKeyManagerRole")
             .withArgs(vKeyManager.address, admin.address);
