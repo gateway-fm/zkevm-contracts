@@ -806,14 +806,15 @@ contract PolygonRollupManager is
         }
 
         // Only allowed to update to an older rollup type id if the destination rollup type is ALGateway
+        // Rollups added via 'addExistingRollup' has rollupTypeID = 0
         if (rollup.rollupTypeID >= newRollupTypeID) {
             revert UpdateToOldRollupTypeID();
         }
 
-        uint32 rollupID = rollupAddressToID[address(rollupContract)];
-        // Admin can't update to different rollup type
+        // note that for rollups via 'addExistingRollup', the rollupTypeID is set to 0
+        // Admin can't update to a different rollup type
         if (
-            rollupTypeMap[rollupID].rollupVerifierType !=
+            rollup.rollupVerifierType !=
             rollupTypeMap[newRollupTypeID].rollupVerifierType
         ) {
             revert UpdateNotCompatible();
