@@ -745,15 +745,29 @@ contract PolygonRollupManager is
         // Check verifier type
         if (rollupVerifierType == VerifierType.Pessimistic) {
             rollup.programVKey = programVKey;
+            rollup.lastPessimisticRoot = initPessimisticRoot;
             rollup.lastLocalExitRoot = initRoot;
         } else if (rollupVerifierType == VerifierType.ALGateway) {
+            if (
+                verifier != address(0) ||
+                forkID != 0 ||
+                programVKey != bytes32(0)
+            ) {
+                revert InvalidInputsForRollupType();
+            }
+
             rollup.lastPessimisticRoot = initPessimisticRoot;
             rollup.lastLocalExitRoot = initRoot;
         } else {
+            if (
+                programVKey != bytes32(0) || initPessimisticRoot != bytes32(0)
+            ) {
+                revert InvalidInputsForRollupType();
+            }
+
             rollup.batchNumToStateRoot[0] = initRoot;
         }
 
-        // rollup type is 0, since it does not follow any rollup type
         emit AddExistingRollup(
             rollupID,
             forkID,
@@ -1249,18 +1263,16 @@ contract PolygonRollupManager is
             msg.sender
         );
 
-        // If rollup verifier type is not state transition but ALGateway or pessimistic, emit specific event
-        if (rollup.rollupVerifierType != VerifierType.StateTransition) {
-            emit VerifyPessimisticStateTransition(
-                rollupID,
-                prevPessimisticRoot,
-                newPessimisticRoot,
-                prevLocalExitRoot,
-                newLocalExitRootAux,
-                l1InfoRoot,
-                msg.sender
-            );
-        }
+        /// @dev emit a second event with more data, not updated/removed the other one for backwards compatibility reasons
+        emit VerifyPessimisticStateTransition(
+            rollupID,
+            prevPessimisticRoot,
+            newPessimisticRoot,
+            prevLocalExitRoot,
+            newLocalExitRootAux,
+            l1InfoRoot,
+            msg.sender
+        );
 
         if (rollup.rollupVerifierType == VerifierType.ALGateway) {
             // Allow chains to manage customData

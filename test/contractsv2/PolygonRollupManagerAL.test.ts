@@ -1,5 +1,5 @@
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     AggLayerGateway,
     ERC20PermitMock,
@@ -10,14 +10,15 @@ import {
     VerifierRollupHelperMock,
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
-const {VerifierType, computeRandomBytes} = require("../../src/pessimistic-utils");
-const {CONSENSUS_TYPE} = require("../../src/utils-common-aggchain");
+const { VerifierType, computeRandomBytes } = require("../../src/pessimistic-utils");
+const { CONSENSUS_TYPE } = require("../../src/utils-common-aggchain");
 const {
     AGGCHAIN_TYPE_ECDSA,
     encodeAggchainDataECDSA,
     encodeInitializeBytesAggchainECDSAv1,
     encodeInitializeBytesAggchainECDSAv0,
 } = require("../../src/utils-aggchain-ECDSA");
+
 const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
 const {encodeInitializeBytesLegacy} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
@@ -196,7 +197,45 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 addPPRoute.address,
                 freezePPRoute.address
             )
-        ).to.be.revertedWith("Initializable: contract is already initialized");
+        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
+
+        // Check non zero constructor parameters for rollupManager
+        const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManagerMock");
+        await expect(PolygonRollupManagerFactory.deploy(
+            polygonZkEVMGlobalExitRoot.target,
+            polTokenContract.target,
+            polygonZkEVMBridgeContract.target,
+            ethers.ZeroAddress, // zero for aggLayerGateway, invalid
+        )).to.be.revertedWithCustomError(rollupManagerContract, "InvalidConstructorInputs");
+        await expect(PolygonRollupManagerFactory.deploy(
+            polygonZkEVMGlobalExitRoot.target,
+            polTokenContract.target,
+            ethers.ZeroAddress, // zero for polygonZkEVMBridgeContract, invalid
+            aggLayerGatewayContract.target,
+        )).to.be.revertedWithCustomError(rollupManagerContract, "InvalidConstructorInputs");
+        await expect(PolygonRollupManagerFactory.deploy(
+            polygonZkEVMGlobalExitRoot.target,
+            ethers.ZeroAddress, // zero for polTokenContract, invalid
+            polygonZkEVMBridgeContract.target,
+            aggLayerGatewayContract.target,
+        )).to.be.revertedWithCustomError(rollupManagerContract, "InvalidConstructorInputs");
+        await expect(PolygonRollupManagerFactory.deploy(
+            ethers.ZeroAddress, // zero for polygonZkEVMGlobalExitRoot, invalid
+            polTokenContract.target,
+            polygonZkEVMBridgeContract.target,
+            aggLayerGatewayContract.target,
+        )).to.be.revertedWithCustomError(rollupManagerContract, "InvalidConstructorInputs");
+
+        // Should revert with error InvalidAggLayerGatewayAddress
+        const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+        await expect(aggchainECDSAFactory.deploy(
+            polygonZkEVMGlobalExitRoot.target,
+            polTokenContract.target,
+            polygonZkEVMBridgeContract.target,
+            rollupManagerContract.target,
+            ethers.ZeroAddress // invalid zero address fo aggLayerGateway
+        )).to.be.revertedWithCustomError(aggchainECDSAFactory, "InvalidAggLayerGatewayAddress");
+
     });
 
     it("should create a ECDSA rollup type", async () => {
@@ -210,6 +249,39 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 ethers.ZeroHash, // genesis
                 "", // description
                 ethers.ZeroHash // programVKey
+            )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidRollupType");
+        await expect(
+            rollupManagerContract.connect(timelock).addNewRollupType(
+                aggchainECDSAImplementationContract.target,
+                ethers.ZeroAddress, // verifier
+                1, // fork is not zero, invalid
+                VerifierType.ALGateway,
+                ethers.ZeroHash, // genesis
+                "", // description
+                ethers.ZeroHash // programVKey
+            )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidRollupType");
+        await expect(
+            rollupManagerContract.connect(timelock).addNewRollupType(
+                aggchainECDSAImplementationContract.target,
+                ethers.ZeroAddress, // verifier
+                0, // forkID
+                VerifierType.ALGateway,
+                computeRandomBytes(32), // genesis should be zero, invalid
+                "", // description
+                ethers.ZeroHash // programVKey
+            )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidRollupType");
+        await expect(
+            rollupManagerContract.connect(timelock).addNewRollupType(
+                aggchainECDSAImplementationContract.target,
+                ethers.ZeroAddress, // verifier
+                0, // forkID
+                VerifierType.ALGateway,
+                ethers.ZeroHash, // genesis
+                "", // description
+                computeRandomBytes(32) // programVKey should be zero, invalid
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidRollupType");
 
@@ -588,20 +660,63 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     it("should add existing rollup to ECDSA", async () => {
         // add existing rollup
         const rollupAddress = "0xAa000000000000000000000000000000000000Bb";
-        const forkID = 1;
+        const forkID = 0;
         const chainID = 2;
         const initLER = "0xff000000000000000000000000000000000000000000000000000000000000ff";
         const programVKey = ethers.ZeroHash;
         const initPessimisticRoot = computeRandomBytes(32);
         // add existing rollup: pessimistic type
         const newCreatedRollupID = 1;
+        // Should revert with InvalidInputsForRollupType
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    rollupAddress,
+                    ethers.ZeroAddress, // Zero address verifier contract for aggchains
+                    forkID + 1, // Invalid
+                    chainID,
+                    initLER,
+                    VerifierType.ALGateway,
+                    programVKey,
+                    initPessimisticRoot
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    rollupAddress,
+                    computeRandomBytes(20), // invalid non zero address at verifier param
+                    forkID,
+                    chainID,
+                    initLER,
+                    VerifierType.ALGateway,
+                    programVKey,
+                    initPessimisticRoot
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    rollupAddress,
+                    ethers.ZeroAddress,
+                    forkID,
+                    chainID,
+                    initLER,
+                    VerifierType.ALGateway,
+                    computeRandomBytes(32), // invalid programVKey, should be zero
+                    initPessimisticRoot
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
 
         await expect(
             rollupManagerContract
                 .connect(timelock)
                 .addExistingRollup(
                     rollupAddress,
-                    verifierContract.target,
+                    ethers.ZeroAddress, // Zero address verifier contract for aggchains
                     forkID,
                     chainID,
                     initLER,

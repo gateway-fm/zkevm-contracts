@@ -43,7 +43,7 @@ async function main() {
 
     // Load deployer
     const deployer = await getDeployerFromParameters(currentProvider, upgradeParameters, ethers);
-    console.log("deploying with: ", deployer.address);
+    console.log("deploying implementation with: ", deployer.address);
 
     const proxyAdmin = await upgrades.admin.getInstance();
 
@@ -66,7 +66,7 @@ async function main() {
     });
 
     console.log("#######################\n");
-    console.log(`Polygon rollup manager: ${implRollupManager}`);
+    console.log(`Polygon rollup manager implementation deployed at: ${implRollupManager}`);
     await verifyContractEtherscan(implRollupManager as string, [globalExitRootManagerAddress, polAddress, bridgeAddress, aggLayerGatewayAddress]);
 
     const operationRollupManager = genTimelockOperation(

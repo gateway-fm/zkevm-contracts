@@ -10,7 +10,7 @@ import {
     Address,
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
-const { VerifierType, computeInputPessimisticBytes, computeConsensusHashEcdsa } = require("../../src/pessimistic-utils");
+const { VerifierType, computeInputPessimisticBytes, computeConsensusHashEcdsa, computeRandomBytes } = require("../../src/pessimistic-utils");
 const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
 
 describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
@@ -417,6 +417,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
         const chainID = 1;
         const initLER = "0xff000000000000000000000000000000000000000000000000000000000000ff";
         const programVKey = "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        const initPessimisticRoot = ethers.id("initPessimisticRoot");
 
         // add existing rollup: pessimistic type
         const newCreatedRollupID = 1;
@@ -430,7 +431,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 initLER,
                 VerifierType.Pessimistic,
                 programVKey,
-                ethers.ZeroHash // initPessimisticRoot
+                initPessimisticRoot // initPessimisticRoot
             )
         )
             .to.emit(rollupManagerContract, "AddExistingRollup")
@@ -442,7 +443,7 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
                 VerifierType.Pessimistic,
                 0,
                 programVKey,
-                ethers.ZeroHash
+                initPessimisticRoot
             );
     });
 

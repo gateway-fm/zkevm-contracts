@@ -35,7 +35,9 @@ async function verifyContractEtherscan(implementationAddress: string, constructo
     try {
         console.log(`Trying to verify implementation contract ${implementationAddress} with arguments ${constructorArguments}`);
         // wait a few seconds before trying etherscan verification
-        await new Promise((r) => setTimeout(r, 5000));
+        console.log("Waiting 1 minute before verifying on Etherscan");
+        await new Promise((r) => setTimeout(r, 60000));
+        console.log("Verifying...")
         // verify
         await run("verify:verify", {
             address: implementationAddress,

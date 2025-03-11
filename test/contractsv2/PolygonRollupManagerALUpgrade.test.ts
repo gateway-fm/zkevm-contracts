@@ -219,7 +219,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
                 addPPRoute.address,
                 freezePPRoute.address
             )
-        ).to.be.revertedWith("Initializable: contract is already initialized");
+        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
     });
 
     it("should create a ECDSA rollup type", async () => {
@@ -559,7 +559,7 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     it("should add existing rollup to ECDSA", async () => {
         // add existing rollup
         const rollupAddress = "0xAa000000000000000000000000000000000000Bb";
-        const forkID = 1;
+        const forkID = 0;
         const chainID = 2;
         const initLER = "0xff000000000000000000000000000000000000000000000000000000000000ff";
         const programVKey = ethers.ZeroHash;
@@ -572,7 +572,22 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
                 .connect(timelock)
                 .addExistingRollup(
                     rollupAddress,
-                    verifierContract.target,
+                    ethers.ZeroAddress, // Zero address verifier contract for aggchains
+                    forkID + 1, // Invalid
+                    chainID,
+                    initLER,
+                    VerifierType.ALGateway,
+                    programVKey,
+                    initPessimisticRoot
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
+        // Should revert with InvalidInputsForRollupType
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    rollupAddress,
+                    ethers.ZeroAddress, // Zero address verifier contract for aggchains
                     forkID,
                     chainID,
                     initLER,

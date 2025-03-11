@@ -7,9 +7,9 @@ dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 import { ethers, upgrades } from "hardhat";
 const deployParameters = require("./deploy_parameters.json");
 const pathOutput = path.join(__dirname, `./deploy_output.json`);
-import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../../src/utils";
-import { verifyContractEtherscan } from "../../../upgrade/utils";
-import { AggLayerGateway } from "../../../typechain-types";
+import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
+import { verifyContractEtherscan } from "../../upgrade/utils";
+import { AggLayerGateway } from "../../typechain-types";
 
 async function main() {
 
@@ -33,7 +33,6 @@ async function main() {
      * Deployment of AggLayerGateway
      */
     const aggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
-
     const aggLayerGatewayContract = await upgrades.deployProxy(aggLayerGatewayFactory, [defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
@@ -48,11 +47,8 @@ async function main() {
 
     const proxyAdmin = await upgrades.admin.getInstance();
     expect(await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string)).to.be.equal(proxyAdmin.target);
-
-    await verifyContractEtherscan(aggLayerGatewayContract.target as string, [defaultAdminAddress,
-        aggchainDefaultVKeyRoleAddress,
-        addRouteRoleAddress,
-        freezeRouteRoleAddress]);
+    const proxyOwnerAddress = await proxyAdmin.owner();
+    await verifyContractEtherscan(aggLayerGatewayContract.target as string, []);
 
     // Check deployment
     const aggLayerGateway = aggLayerGatewayFactory.attach(aggLayerGatewayContract.target) as AggLayerGateway;
@@ -60,7 +56,7 @@ async function main() {
     await expect(aggLayerGateway.initialize(defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress)).to.be.revertedWith("Initializable: contract is already initialized");
+        freezeRouteRoleAddress)).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
 
     // Check initializer params (ROLES)
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
@@ -78,8 +74,8 @@ async function main() {
     const outputJson = {
         aggLayerGatewayAddress: aggLayerGatewayContract.target,
         deployer: deployer.address,
-        proxyAdminAddress: proxyAdminAddress,
-        proxyOwnerAddress,
+        proxyAdminAddress: proxyAdmin.target,
+        proxyOwnerAddress: proxyOwnerAddress,
         defaultAdminRoleAddress: defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,

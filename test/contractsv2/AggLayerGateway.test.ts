@@ -68,7 +68,7 @@ describe("AggLayerGateway tests", () => {
                 addPPRoute.address,
                 freezePPRoute.address
             )
-        ).to.be.revertedWith("Initializable: contract is already initialized");
+        ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
     });
 
     it("addPessimisticVKeyRoute", async () => {
