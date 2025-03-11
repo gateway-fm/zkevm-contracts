@@ -60,8 +60,8 @@
         "winston": "^3.17.0"
     },
     "scripts": {
-        "saveDeployment:goerli": "mkdir -p deployments/goerli_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/goerli_$(date +%s) && cp .openzeppelin/goerli.json deployments/goerli_$(date +%s) && cp deployment/v2/genesis.json deployments/goerli_$(date +%s) && cp deployment/v2/create_rollup_output.json deployments/goerli_$(date +%s)",
-        "saveDeployment:mainnet": "mkdir -p deployments/mainnet_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/mainnet_$(date +%s) && cp .openzeppelin/mainnet.json deployments/mainnet_$(date +%s) && cp deployment/v2/genesis.json deployments/mainnet_$(date +%s) && cp deployment/v2/create_rollup_output.json deployments/mainnet_$(date +%s)",
+        "saveDeployment:goerli": "mkdir -p deployments/goerli_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/goerli_$(date +%s) && cp .openzeppelin/goerli.json deployments/goerli_$(date +%s) && cp deployment/v2/genesis.json deployments/goerli_$(date +%s) && cp deployment/v2/create_rollup_output_*.json deployments/goerli_$(date +%s)",
+        "saveDeployment:mainnet": "mkdir -p deployments/mainnet_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/mainnet_$(date +%s) && cp .openzeppelin/mainnet.json deployments/mainnet_$(date +%s) && cp deployment/v2/genesis.json deployments/mainnet_$(date +%s) && cp deployment/v2/create_rollup_output_*.json deployments/mainnet_$(date +%s)",
         "test": "npx hardhat test test/contractsv2/*ts test/contractsv2/real-prover-sp1/*.ts test/src/*.ts",
         "docgen": "npx solidity-docgen --solc-module solc-0.8 -t ./docs/templates -e ./contracts/verifiers,./contracts/mocks",
         "prepare:testnet:ZkEVM:localhost": "npx hardhat run deployment/testnet/prepareTestnet.ts --network localhost",
@@ -103,7 +103,7 @@
         "deploy:testnet:v2:sepolia": "npx hardhat compile && rm -f deployment/v2/deploy_ongoing.json && npm run prepare:testnet:ZkEVM:sepolia && npm run deploy:v2:sepolia",
         "verify:v2:sepolia": "npx hardhat run deployment/v2/verifyContracts.js --network sepolia",
         "deploy:testnet:testV1ToV2:localhost": "npx hardhat compile && rm -f deployment/testV1ToV2/deploy_ongoing.json && npm run prepare:testV1ToV2:ZkEVM:localhost && npm run deploy:testV1ToV2:localhost",
-        "saveDeployment:sepolia": "mkdir -p deployments/sepolia_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/sepolia_$(date +%s) && cp .openzeppelin/sepolia.json deployments/sepolia_$(date +%s) && cp deployment/v2/genesis.json deployments/sepolia_$(date +%s) && cp deployment/v2/create_rollup_output.json deployments/sepolia_$(date +%s)",
+        "saveDeployment:sepolia": "mkdir -p deployments/sepolia_$(date +%s) && cp -r deployment/v2/deploy_*.json deployments/sepolia_$(date +%s) && cp .openzeppelin/sepolia.json deployments/sepolia_$(date +%s) && cp deployment/v2/genesis.json deployments/sepolia_$(date +%s) && cp deployment/v2/create_rollup_output_*.json deployments/sepolia_$(date +%s)",
         "testnetPol:upgradeV2:sepolia": "npx hardhat run upgrade/upgradeToV2/testnet/deployTestnetPol.ts --network sepolia",
         "testnetPol:upgradeV2:goerli": "npx hardhat run upgrade/upgradeToV2/testnet/deployTestnetPol.ts --network goerli",
         "upgradev2:timelock:goerli": "npx hardhat run upgrade/upgradeToV2/upgradeToV2.ts --network goerli && npm run saveUpgradeV2:goerli",
