@@ -1,9 +1,9 @@
 /* eslint-disable no-plusplus, no-await-in-loop */
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
-import {AggLayerGateway, SP1VerifierPlonk} from "../../typechain-types";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
+import { AggLayerGateway, SP1VerifierPlonk } from "../../typechain-types";
 import input from "./real-prover-sp1/test-inputs/input.json";
-import {pessimistic} from "../../typechain-types/contracts/v2/consensus";
+import { pessimistic } from "../../typechain-types/contracts/v2/consensus";
 
 describe("AggLayerGateway tests", () => {
     upgrades.silenceWarnings();
@@ -79,7 +79,6 @@ describe("AggLayerGateway tests", () => {
         )
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "AccessControlUnauthorizedAccount")
             .withArgs(deployer.address, AL_ADD_PP_ROUTE_ROLE);
-
         // grantRole AL_ADD_PP_ROUTE_ROLE --> aggLayerAdmin
         await expect(
             aggLayerGatewayContract.connect(defaultAdmin).grantRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address)
@@ -95,7 +94,11 @@ describe("AggLayerGateway tests", () => {
                 .connect(aggLayerAdmin)
                 .addPessimisticVKeyRoute("0x00000000", verifierContract.target, pessimisticVKey)
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "PPSelectorCannotBeZero");
-
+        // check VKeyCannotBeZero
+        await expect(
+            aggLayerGatewayContract.connect(aggLayerAdmin).addPessimisticVKeyRoute(selector, verifierContract.target, ethers.ZeroHash)
+        )
+            .to.be.revertedWithCustomError(aggLayerGatewayContract, "VKeyCannotBeZero")
         // check RouteAdded
         await expect(
             aggLayerGatewayContract
@@ -169,6 +172,7 @@ describe("AggLayerGateway tests", () => {
 
     it("addDefaultAggchainVKey", async () => {
         // add pessimistic vkey route
+
         // check onlyRole
         await expect(aggLayerGatewayContract.addDefaultAggchainVKey(selector, pessimisticVKey))
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "AccessControlUnauthorizedAccount")
@@ -182,7 +186,11 @@ describe("AggLayerGateway tests", () => {
             .withArgs(AGGCHAIN_DEFAULT_VKEY_ROLE, aggLayerAdmin.address, defaultAdmin.address);
 
         expect(await aggLayerGatewayContract.hasRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggLayerAdmin.address)).to.be.true;
-
+        // check VKeyCannotBeZero
+        await expect(
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(selector, ethers.ZeroHash)
+        )
+            .to.be.revertedWithCustomError(aggLayerGatewayContract, "VKeyCannotBeZero")
         // check AddDefaultAggchainVKey
         await expect(aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(selector, pessimisticVKey))
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
