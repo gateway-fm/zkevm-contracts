@@ -550,6 +550,16 @@ describe("BridgeL2SovereignChain Contract", () => {
             sovereignChainGlobalExitRootContract.connect(rollupManager).removeGlobalExitRoots([metadataHash])
         ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "OnlyGlobalExitRootRemover");
 
+        // Trigger OnlyGlobalExitRootRemover
+        await expect(
+            sovereignChainGlobalExitRootContract.connect(rollupManager).setGlobalExitRootRemover(deployer.address)
+        ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "OnlyGlobalExitRootRemover");
+
+        // Trigger OnlyGlobalExitRootRemover
+        await expect(
+            sovereignChainGlobalExitRootContract.connect(rollupManager).setGlobalExitRootUpdater(deployer.address)
+        ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "OnlyGlobalExitRootUpdater");
+
         // Update globalExitRootRemover
         await sovereignChainGlobalExitRootContract.setGlobalExitRootRemover(deployer.address);
         // Update globalExitRootUpdater
@@ -616,6 +626,11 @@ describe("BridgeL2SovereignChain Contract", () => {
             .withArgs(computedGlobalExitRoot, hashChainValue);
         // Check GER has value in mapping
         expect(await sovereignChainGlobalExitRootContract.globalExitRootMap(computedGlobalExitRoot)).to.not.be.eq(0);
+
+        // Remove unmapped sovereign token address, should revert onlyBridgeManager
+        await expect(
+            sovereignChainBridgeContract.connect(deployer).removeLegacySovereignTokenAddress(tokenAddress)
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
 
         // Remove unmapped sovereign token address, should revert
         await expect(
@@ -707,6 +722,11 @@ describe("BridgeL2SovereignChain Contract", () => {
                 .connect(rollupManager)
                 .setMultipleSovereignTokenAddress([networkIDMainnet], [tokenAddress], [sovereignToken.target], [false])
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
+
+        // Set rollupManager as bridge manager, revert OnlyBridgeManager
+        await expect(sovereignChainBridgeContract.connect(deployer).setBridgeManager(rollupManager.address))
+            .to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
+
         // Set rollupManager as bridge manager
         await expect(sovereignChainBridgeContract.connect(bridgeManager).setBridgeManager(rollupManager.address))
             .to.emit(sovereignChainBridgeContract, "SetBridgeManager")
@@ -839,6 +859,10 @@ describe("BridgeL2SovereignChain Contract", () => {
         await expect(
             sovereignChainBridgeContract.bridgeMessageWETH(networkIDMainnet, deployer.address, 0, true, "0x")
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "NativeTokenIsEther");
+
+        await expect(
+            sovereignChainBridgeContract.connect(deployer).setSovereignWETHAddress(deployer.address, true)
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
 
         await expect(
             sovereignChainBridgeContract.connect(bridgeManager).setSovereignWETHAddress(deployer.address, true)
@@ -1645,6 +1669,15 @@ describe("BridgeL2SovereignChain Contract", () => {
         // Unset claims in bulk
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(index2, indexRollup + 1));
+
+        await expect(
+        sovereignChainBridgeContract
+            .connect(deployer)
+            .unsetMultipleClaims([
+                computeGlobalIndex(indexLocal, indexRollup, false),
+                computeGlobalIndex(index2, indexRollup, false),
+            ])
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
 
         await sovereignChainBridgeContract
             .connect(bridgeManager)
