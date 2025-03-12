@@ -520,6 +520,7 @@ contract PolygonRollupManager is
             // No programVKey on state transition rollups
             if (programVKey != bytes32(0)) revert InvalidRollupType();
         } else {
+            // unreachable code since solidity enforces the enum input rollupVerifierType to be one of the enum values
             revert InvalidRollupType();
         }
 
