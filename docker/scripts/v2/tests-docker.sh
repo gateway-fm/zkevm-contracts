@@ -10,6 +10,8 @@ cp docker/deploymentOutput/genesis.json tools/createNewRollup/genesis.json
 npx hardhat test docker/docker-tests.test.ts --network localhost
 # Run tooling tests to docker
 npx hardhat test docker/tools-docker-tests.test.ts --network localhost
+# Run verify tests to docker
+npx hardhat test docker/docker-verify.test.ts --network localhost
 # stop container
 docker stop docker_test
 # remove container

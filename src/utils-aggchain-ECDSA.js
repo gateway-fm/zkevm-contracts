@@ -17,7 +17,7 @@ const AGGCHAIN_TYPE_ECDSA = '0x0000';
  * Function to encode the initialize bytes for the custom chain (version 0 --> initializerVersion = 0)
  * @param {String} useDefaultGateway Indicates if the default gateway is used
  * @param {String} ownedAggchainVKey Owned aggchain vkey
- * @param {String} aggchainVKeySelectors Aggchain vkey selectors
+ * @param {String} aggchainVKeyVersion Aggchain vkey selectors
  * @param {String} vKeyManager vkey manager address
  * @param {String} admin Admin address
  * @param {String} trustedSequencer Trusted sequencer address
@@ -29,7 +29,7 @@ const AGGCHAIN_TYPE_ECDSA = '0x0000';
 function encodeInitializeBytesAggchainECDSAv0(
     useDefaultGateway,
     ownedAggchainVKey,
-    aggchainVKeySelector,
+    aggchainVKeyVersion,
     vKeyManager,
     admin,
     trustedSequencer,
@@ -42,7 +42,7 @@ function encodeInitializeBytesAggchainECDSAv0(
         [
             useDefaultGateway,
             ownedAggchainVKey,
-            aggchainVKeySelector,
+            aggchainVKeyVersion,
             vKeyManager,
             admin,
             trustedSequencer,
@@ -57,14 +57,14 @@ function encodeInitializeBytesAggchainECDSAv0(
  * Function to encode the initialize bytes for the custom chain (version 1 --> initializerVersion = 1)
  * @param {String} useDefaultGateway Indicates if the default gateway is used
  * @param {String} ownedAggchainVKey Owned aggchain vkey
- * @param {String} aggchainVKeySelectors Aggchain vkey selectors
+ * @param {String} aggchainVKeyVersion Aggchain vkey selectors
  * @param {String} vKeyManager vkey manager address
  * @returns {String} encoded value in hexadecimal string
  */
 function encodeInitializeBytesAggchainECDSAv1(
     useDefaultGateway,
     ownedAggchainVKey,
-    aggchainVKeySelector,
+    aggchainVKeyVersion,
     vKeyManager,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
@@ -72,7 +72,7 @@ function encodeInitializeBytesAggchainECDSAv1(
         [
             useDefaultGateway,
             ownedAggchainVKey,
-            aggchainVKeySelector,
+            aggchainVKeyVersion,
             vKeyManager,
         ],
     );
@@ -84,8 +84,8 @@ function encodeInitializeBytesAggchainECDSAv1(
  * @param {String} newStateRoot new state root
  * @returns {String} encoded value in hexadecimal string
  */
-function encodeAggchainDataECDSA(aggchainVKeySelector, newStateRoot) {
-    return ethers.AbiCoder.defaultAbiCoder().encode(['bytes2', 'bytes32'], [aggchainVKeySelector, newStateRoot]);
+function encodeAggchainDataECDSA(aggchainVKeyVersion, newStateRoot) {
+    return ethers.AbiCoder.defaultAbiCoder().encode(['bytes2', 'bytes32'], [aggchainVKeyVersion, newStateRoot]);
 }
 
 /**

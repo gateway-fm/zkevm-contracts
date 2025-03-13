@@ -96,6 +96,8 @@ The deployment output can be found in:
 - `docker/deploymentOutput/create_rollup_output.json`
 - `docker/deploymentOutput/deploy_output.json`
 - `docker/deploymentOutput/genesis.json`
+- `docker/deploymentOutput/genesis_sovereign.json`
+
 To run the docker you can use: `docker run -p 8545:8545 geth-zkevm-contracts:latest`
 
 or

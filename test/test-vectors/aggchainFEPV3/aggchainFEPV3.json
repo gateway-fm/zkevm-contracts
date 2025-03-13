@@ -12,7 +12,7 @@
         "aggChainManager": "0x2222222222222222222222222222222222222222",
         "optimisticModeManager": "0x2222222222222222222222222222222222222222"
       },
-      "useOwnedGateway": false,
+      "useDefaultGateway": false,
       "initOwnedAggchainVKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
       "initAggchainVKeyVersion": "0x1234",
       "trustedSequencer": "0x2222222222222222222222222222222222222222",
@@ -48,7 +48,7 @@
         "aggChainManager": "0x2222222222222222222222222222222222222222",
         "optimisticModeManager": "0x2222222222222222222222222222222222222222"
       },
-      "useOwnedGateway": true,
+      "useDefaultGateway": true,
       "initOwnedAggchainVKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
       "initAggchainVKeyVersion": "0x1234",
       "trustedSequencer": "0x2222222222222222222222222222222222222222",

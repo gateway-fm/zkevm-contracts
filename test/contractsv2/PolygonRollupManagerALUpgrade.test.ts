@@ -21,6 +21,7 @@ const { CONSENSUS_TYPE } = require("../../src/utils-common-aggchain");
 const { getAggchainVKeySelector } = require("../../src/utils-common-aggchain");
 const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
+const randomPessimisticVKey = computeRandomBytes(32);
 
 describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
     // SIGNERS
@@ -101,11 +102,20 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
             initializer: false,
             unsafeAllow: ["constructor", "missing-initializer"],
         });
+
+        // deploy mock verifier
+        const VerifierRollupHelperFactory = await ethers.getContractFactory("VerifierRollupHelperMock");
+        verifierContract = await VerifierRollupHelperFactory.deploy();
+
+        // Initialize aggLayerGateway
         await aggLayerGatewayContract.initialize(
             admin.address,
             aggchainVKey.address,
             addPPRoute.address,
-            freezePPRoute.address
+            freezePPRoute.address,
+            PESSIMISTIC_SELECTOR,
+            verifierContract.target,
+            randomPessimisticVKey
         );
         // Grant role to agglayer admin
         await aggLayerGatewayContract.connect(admin).grantRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address);
@@ -187,10 +197,6 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         // fund sequencer address with Matic tokens
         await polTokenContract.transfer(trustedSequencer.address, ethers.parseEther("1000"));
 
-        // deploy mock verifier
-        const VerifierRollupHelperFactory = await ethers.getContractFactory("VerifierRollupHelperMock");
-        verifierContract = await VerifierRollupHelperFactory.deploy();
-
         // deploy ECDSA implementation contract
         const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
         aggchainECDSAImplementationContract = await aggchainECDSAFactory.deploy(
@@ -217,7 +223,10 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
                 timelock.address,
                 aggchainVKey.address,
                 addPPRoute.address,
-                freezePPRoute.address
+                freezePPRoute.address,
+                PESSIMISTIC_SELECTOR,
+                verifierContract.target,
+                randomPessimisticVKey
             )
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
     });
@@ -326,16 +335,6 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
             .to.emit(polygonZkEVMGlobalExitRoot, "UpdateL1InfoTreeV2");
 
         expect(await polygonZkEVMBridgeContract.depositCount()).to.be.equal(1);
-
-        // Add route with verifier to the gateway
-        const randomPessimisticVKey = computeRandomBytes(32);
-        await expect(
-            aggLayerGatewayContract
-                .connect(aggLayerAdmin)
-                .addPessimisticVKeyRoute(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey)
-        )
-            .to.emit(aggLayerGatewayContract, "RouteAdded")
-            .withArgs(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey);
 
         // call rollup manager verify function
         // Compute random values for proof generation
@@ -501,16 +500,6 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         ];
 
         expect(expectedRollupData).to.be.deep.equal(resRollupData);
-
-        // Add route with verifier to the gateway
-        const randomPessimisticVKey = computeRandomBytes(32);
-        await expect(
-            aggLayerGatewayContract
-                .connect(aggLayerAdmin)
-                .addPessimisticVKeyRoute(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey)
-        )
-            .to.emit(aggLayerGatewayContract, "RouteAdded")
-            .withArgs(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey);
 
         // Verify pessimist proof with the new ECDSA rollup
         const randomNewLocalExitRoot = computeRandomBytes(32);

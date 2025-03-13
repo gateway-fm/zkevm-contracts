@@ -13,15 +13,25 @@ import { AggLayerGateway } from "../../typechain-types";
 
 async function main() {
 
-    const mandatoryUpgradeParameters = ["defaultAdminAddress",
+    const mandatoryUpgradeParameters = [
+        "defaultAdminAddress",
         "aggchainDefaultVKeyRoleAddress",
         "addRouteRoleAddress",
-        "freezeRouteRoleAddress"];
+        "freezeRouteRoleAddress",
+        "realVerifier",
+        "ppVKey",
+        "ppVKeySelector",
+    ];
     checkParams(deployParameters, mandatoryUpgradeParameters);
-    const { defaultAdminAddress,
+    const {
+        defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress } = deployParameters;
+        freezeRouteRoleAddress,
+        realVerifier,
+        ppVKey,
+        ppVKeySelector
+    } = deployParameters;
     // Load provider
     const currentProvider = getProviderAdjustingMultiplierGas(deployParameters, ethers);
 
@@ -29,14 +39,35 @@ async function main() {
     const deployer = await getDeployerFromParameters(currentProvider, deployParameters, ethers);
     console.log("deploying with: ", deployer.address);
 
+    // Deploy verifier
+    let verifierName;
+    if (realVerifier === true) {
+        verifierName = "SP1VerifierPlonk";
+    } else {
+        verifierName = "VerifierRollupHelperMock";
+    }
+    const VerifierRollupFactory = await ethers.getContractFactory(verifierName, deployer);
+    const verifierContract = await VerifierRollupFactory.deploy();
+    await verifierContract.waitForDeployment();
+
+    console.log("#######################\n");
+    console.log("Verifier name:", verifierName);
+    console.log("Verifier deployed to:", verifierContract.target);
+    console.log("#######################\n");
+
     /*
      * Deployment of AggLayerGateway
      */
     const aggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
-    const aggLayerGatewayContract = await upgrades.deployProxy(aggLayerGatewayFactory, [defaultAdminAddress,
+    const aggLayerGatewayContract = await upgrades.deployProxy(aggLayerGatewayFactory, [
+        defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress], {
+        freezeRouteRoleAddress,
+        ppVKeySelector,
+        verifierContract.target,
+        ppVKey,
+    ], {
         unsafeAllow: ["constructor"],
     });
     await aggLayerGatewayContract.waitForDeployment();
@@ -53,10 +84,15 @@ async function main() {
     // Check deployment
     const aggLayerGateway = aggLayerGatewayFactory.attach(aggLayerGatewayContract.target) as AggLayerGateway;
     // Check already initialized
-    await expect(aggLayerGateway.initialize(defaultAdminAddress,
+    await expect(aggLayerGateway.initialize(
+        defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress)).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
+        freezeRouteRoleAddress,
+        ppVKeySelector,
+        verifierContract.target,
+        ppVKey
+    )).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
 
     // Check initializer params (ROLES)
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
@@ -80,6 +116,9 @@ async function main() {
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
         freezeRouteRoleAddress,
+        ppVKey,
+        ppVKeySelector,
+        verifierAddress: verifierContract.target,
     };
 
     fs.writeFileSync(pathOutput, JSON.stringify(outputJson, null, 1));

@@ -1,5 +1,4 @@
 {
-    "realVerifier": false,
     "trustedSequencerURL": "http://zkevm-json-rpc:8123",
     "networkName": "zkevm",
     "description": "0.0.1",
@@ -13,7 +12,7 @@
     "maxFeePerGas": "",
     "maxPriorityFeePerGas": "",
     "multiplierGas": "",
-    "programVKey": "0xac51a6a2e513d02e4f39ea51d4d133cec200b940805f1054eabbb6d6412c959f",
+    "programVKey": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "isVanillaClient": true,
     "sovereignParams": {
         "bridgeManager": "0xC7899Ff6A3aC2FF59261bD960A8C880DF06E1041",
@@ -34,8 +33,8 @@
             "optimisticModeManager": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
         },
         "useDefaultGateway": true,
-        "ownedAggchainVKey": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-        "aggchainVKeySelector": "0x1234",
+        "initOwnedAggchainVKey": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+        "initAggchainVKeyVersion": "0x1234",
         "vKeyManager": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     }
 }
