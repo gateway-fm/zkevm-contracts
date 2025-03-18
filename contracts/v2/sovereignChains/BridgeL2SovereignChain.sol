@@ -27,6 +27,9 @@ contract BridgeL2SovereignChain is
     // Bridge manager address; can set custom mapping for any token. It's highly recommend to set a timelock at this address after bootstrapping phase
     address public bridgeManager;
 
+    // Emergency bridge pauser address: can pause the bridge in case of emergency, both bridges and claims
+    address public emergencyBridgePauser;
+
     // Claimed global index hash chain, updated for every bridge claim as follows
     // newClaimedGlobalIndexHashChain = Keccak256(oldClaimedGlobalIndexHashChain,bytes32(claimedGlobalIndex));
     bytes32 public claimedGlobalIndexHashChain;
