@@ -69,7 +69,7 @@ describe("Docker verifyProof test", () => {
         const randomNewPessimisticRoot = computeRandomBytes(32);
         const randomProof = computeRandomBytes(128);
         // append first 4 bytes to the proof to select the pessimistic vkey
-        const proofWithSelector = `${dockerDeploymentOutput.ppVKeySelector}${randomProof.slice(2)}`;
+        const proofWithSelector = `${dockerDeploymentOutput.pessimisticVKeyRouteALGateway.pessimisticVKeySelector}${randomProof.slice(2)}`;
 
         const CUSTOM_DATA_FEP = encodeAggchainDataFEP(
             dockerCreateRollup.aggchainParams.initAggchainVKeyVersion,

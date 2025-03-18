@@ -23,7 +23,7 @@ const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.j
 import utilsECDSA from "../../src/utils-aggchain-ECDSA"
 import utilsFEP from "../../src/utils-aggchain-FEP";
 import utilsAggchain from "../../src/utils-common-aggchain";
-const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
+import utilsPP from "../../src/pessimistic-utils"
 
 import {
     PolygonRollupManager,
@@ -76,8 +76,16 @@ async function main() {
         programVKey,
     } = createRollupParameters;
 
-    const arraySupportedAggchains = ["AggchainECDSA", "AggchainFEP"];
-    const arraySupportedLegacyConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"];
+    const arraySupportedAggchains = [
+        utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA,
+        utilsAggchain.AGGCHAIN_CONTRACT_NAMES.FEP
+    ];
+    
+    const arraySupportedLegacyConsensus = [
+        utilsPP.ConsensusContracts.PolygonZkEVMEtrog,
+        utilsPP.ConsensusContracts.PolygonValidiumEtrog,
+        utilsPP.ConsensusContracts.PolygonPessimisticConsensus
+    ];
     const supportedConsensus = arraySupportedLegacyConsensus.concat(arraySupportedAggchains);
 
     if (!supportedConsensus.includes(consensusContract)) {
@@ -299,7 +307,7 @@ async function main() {
         // verifierAddress = address(0)
         // programVKey must be 0x00.00 for aggchain types
         verifierAddress = ethers.ZeroAddress;
-        if(consensusContract == "AggchainECDSA") {
+        if(consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA) {
             initializeBytesAggchain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 createRollupParameters.aggchainParams.useDefaultGateway,
                 createRollupParameters.aggchainParams.initOwnedAggchainVKey,
@@ -311,7 +319,7 @@ async function main() {
                 trustedSequencerURL,
                 networkName
             )
-        } else if(consensusContract.includes("AggchainFEP")) {
+        } else if(consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.FEP) {
             initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
                 createRollupParameters.aggchainParams.initParams,
                 createRollupParameters.aggchainParams.useDefaultGateway,
@@ -351,7 +359,7 @@ async function main() {
         }
 
         verifierAddress = verifierContract.target;
-        initializeBytesAggchain = encodeInitializeBytesLegacy(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
+        initializeBytesAggchain = utilsAggchain.encodeInitializeBytesLegacy(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
         console.log("#######################\n");
         console.log("Verifier name:", verifierName);
         console.log("Verifier deployed to:", verifierAddress);
@@ -417,7 +425,7 @@ async function main() {
 
     if(arraySupportedAggchains.includes(consensusContract)) {
         let aggchainType = utilsFEP.AGGCHAIN_TYPE_FEP;
-        if(consensusContract == "AggchainECDSA") {
+        if(consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA) {
             aggchainType = utilsECDSA.AGGCHAIN_TYPE_ECDSA;
         }
         // Load aggLayerGateway
@@ -449,7 +457,7 @@ async function main() {
         } as never;
 
         outputJson.defaultAggchainVKeyALGateway = defaultAggchainVKeyALGateway;
-        
+
     }
 
     if (consensusContract.includes("PolygonValidiumEtrog") && dataAvailabilityProtocol === "PolygonDataCommittee") {

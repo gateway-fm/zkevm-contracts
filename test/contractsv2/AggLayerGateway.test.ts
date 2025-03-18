@@ -63,7 +63,9 @@ describe("AggLayerGateway tests", () => {
             .to.emit(aggLayerGatewayContract, "RoleGranted")
             .withArgs(AL_ADD_PP_ROUTE_ROLE, addPPRoute.address, deployer.address)
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(AL_FREEZE_PP_ROUTE_ROLE, freezePPRoute.address, deployer.address);
+            .withArgs(AL_FREEZE_PP_ROUTE_ROLE, freezePPRoute.address, deployer.address)
+            .to.emit(aggLayerGatewayContract, "RouteAdded")
+            .withArgs(initPPVKeySelector, verifierContract.target, initPPVkey);
     });
 
     it("should check the initialize parameters", async () => {

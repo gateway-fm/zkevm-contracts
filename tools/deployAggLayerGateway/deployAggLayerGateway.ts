@@ -18,7 +18,7 @@ async function main() {
         "aggchainDefaultVKeyRoleAddress",
         "addRouteRoleAddress",
         "freezeRouteRoleAddress",
-        "realVerifier",
+        "verifierAddress",
         "ppVKey",
         "ppVKeySelector",
     ];
@@ -28,7 +28,7 @@ async function main() {
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
         freezeRouteRoleAddress,
-        realVerifier,
+        verifierAddress,
         ppVKey,
         ppVKeySelector
     } = deployParameters;
@@ -38,22 +38,6 @@ async function main() {
     // Load deployer
     const deployer = await getDeployerFromParameters(currentProvider, deployParameters, ethers);
     console.log("deploying with: ", deployer.address);
-
-    // Deploy verifier
-    let verifierName;
-    if (realVerifier === true) {
-        verifierName = "SP1VerifierPlonk";
-    } else {
-        verifierName = "VerifierRollupHelperMock";
-    }
-    const VerifierRollupFactory = await ethers.getContractFactory(verifierName, deployer);
-    const verifierContract = await VerifierRollupFactory.deploy();
-    await verifierContract.waitForDeployment();
-
-    console.log("#######################\n");
-    console.log("Verifier name:", verifierName);
-    console.log("Verifier deployed to:", verifierContract.target);
-    console.log("#######################\n");
 
     /*
      * Deployment of AggLayerGateway
@@ -65,7 +49,7 @@ async function main() {
         addRouteRoleAddress,
         freezeRouteRoleAddress,
         ppVKeySelector,
-        verifierContract.target,
+        verifierAddress,
         ppVKey,
     ], {
         unsafeAllow: ["constructor"],
@@ -90,7 +74,7 @@ async function main() {
         addRouteRoleAddress,
         freezeRouteRoleAddress,
         ppVKeySelector,
-        verifierContract.target,
+        verifierAddress,
         ppVKey
     )).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
 
@@ -118,7 +102,7 @@ async function main() {
         freezeRouteRoleAddress,
         ppVKey,
         ppVKeySelector,
-        verifierAddress: verifierContract.target,
+        verifierAddress,
     };
 
     fs.writeFileSync(pathOutput, JSON.stringify(outputJson, null, 1));
