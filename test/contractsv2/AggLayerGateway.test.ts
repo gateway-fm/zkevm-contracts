@@ -3,7 +3,6 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { AggLayerGateway, SP1VerifierPlonk } from "../../typechain-types";
 import input from "./real-prover-sp1/test-inputs/input.json";
-import { pessimistic } from "../../typechain-types/contracts/v2/consensus";
 
 describe("AggLayerGateway tests", () => {
     upgrades.silenceWarnings();
@@ -23,6 +22,9 @@ describe("AggLayerGateway tests", () => {
     const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
     const AL_FREEZE_PP_ROUTE_ROLE = ethers.id("AL_FREEZE_PP_ROUTE_ROLE");
 
+    const initPPVKeySelector = "0x00000001";
+    const initPPVkey = "0xbbbbbb85702e0582d900f3a19521270c92a58e2588230c4a5cf3b45103f4a512"
+
     const selector = input["proof"].slice(0, 10);
     const pessimisticVKey = input["vkey"];
     const newPessimisticVKey = "0xaaaaaa85702e0582d900f3a19521270c92a58e2588230c4a5cf3b45103f4a512";
@@ -38,21 +40,32 @@ describe("AggLayerGateway tests", () => {
             unsafeAllow: ["constructor"],
         })) as unknown as AggLayerGateway;
 
+        // deploy verifier contract
+        const SP1VerifierPlonkFactory = await ethers.getContractFactory("SP1VerifierPlonk");
+        verifierContract = (await SP1VerifierPlonkFactory.deploy()) as SP1VerifierPlonk;
+
         // initialize AggLayerGateway
         await expect(
             aggLayerGatewayContract.initialize(
                 defaultAdmin.address,
                 aggchainVKey.address,
                 addPPRoute.address,
-                freezePPRoute.address
+                freezePPRoute.address,
+                initPPVKeySelector,
+                verifierContract.target,
+                initPPVkey,
             )
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(DEFAULT_ADMIN_ROLE, defaultAdmin.address, deployer.address);
-
-        // deploy verifier contract
-        const SP1VerifierPlonkFactory = await ethers.getContractFactory("SP1VerifierPlonk");
-        verifierContract = (await SP1VerifierPlonkFactory.deploy()) as SP1VerifierPlonk;
+            .withArgs(DEFAULT_ADMIN_ROLE, defaultAdmin.address, deployer.address)
+            .to.emit(aggLayerGatewayContract, "RoleGranted")
+            .withArgs(AGGCHAIN_DEFAULT_VKEY_ROLE, aggchainVKey.address, deployer.address)
+            .to.emit(aggLayerGatewayContract, "RoleGranted")
+            .withArgs(AL_ADD_PP_ROUTE_ROLE, addPPRoute.address, deployer.address)
+            .to.emit(aggLayerGatewayContract, "RoleGranted")
+            .withArgs(AL_FREEZE_PP_ROUTE_ROLE, freezePPRoute.address, deployer.address)
+            .to.emit(aggLayerGatewayContract, "RouteAdded")
+            .withArgs(initPPVKeySelector, verifierContract.target, initPPVkey);
     });
 
     it("should check the initialize parameters", async () => {
@@ -66,7 +79,10 @@ describe("AggLayerGateway tests", () => {
                 defaultAdmin.address,
                 aggchainVKey.address,
                 addPPRoute.address,
-                freezePPRoute.address
+                freezePPRoute.address,
+                initPPVKeySelector,
+                verifierContract.target,
+                initPPVkey,
             )
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
     });

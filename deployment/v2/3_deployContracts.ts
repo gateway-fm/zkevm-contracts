@@ -80,6 +80,9 @@ async function main() {
         "emergencyCouncilAddress",
         "zkEVMDeployerAddress",
         "polTokenAddress",
+        "realVerifier",
+        "ppVKeySelector",
+        "ppVKey",        
     ];
 
     for (const parameterName of mandatoryDeploymentParameters) {
@@ -99,6 +102,9 @@ async function main() {
         salt,
         zkEVMDeployerAddress,
         polTokenAddress,
+        ppVKeySelector,
+        realVerifier,
+        ppVKey,
     } = deployParameters;
 
     // Load provider
@@ -241,8 +247,8 @@ async function main() {
         // + 1 (deployTimelock) + 1 (transfer Ownership Admin) = +4
         const nonceProxyGlobalExitRoot = Number(await ethers.provider.getTransactionCount(deployer.address)) + 4;
 
-        // nonceProxyRollupManager :Nonce globalExitRoot + 1 (proxy globalExitRoot) + 1 (impl agglayer gateway) + 1 (proxy agglayer gateway) + 1 (impl rollupManager) = +4
-        const nonceProxyRollupManager = nonceProxyGlobalExitRoot + 4;
+        // nonceProxyRollupManager :Nonce globalExitRoot + 1 (proxy globalExitRoot) + 1 (verifier) + 1 (impl agglayer gateway) + 1 (proxy agglayer gateway) + 1 (impl rollupManager) = +5
+        const nonceProxyRollupManager = nonceProxyGlobalExitRoot + 5;
 
         // Contracts are not deployed, normal deployment
         precalculateGlobalExitRootAddress = ethers.getCreateAddress({
@@ -398,6 +404,25 @@ async function main() {
     */
     let aggLayerGatewayContract;
     const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
+    
+    // deploy Verifier 
+    let verifierName;
+    if (realVerifier === true) {
+        verifierName = "SP1VerifierPlonk";
+    } else {
+        verifierName = "VerifierRollupHelperMock";
+    }
+    const VerifierRollupFactory = await ethers.getContractFactory(verifierName, deployer);
+    const verifierContract = await VerifierRollupFactory.deploy();
+    await verifierContract.waitForDeployment();
+
+    console.log("#######################\n");
+    console.log("Verifier name:", verifierName);
+    console.log("Verifier deployed to:", verifierContract.target);
+    console.log("#######################\n");
+
+    let pessimisticVKeyRouteALGateway;
+
     if (!ongoingDeployment.aggLayerGatewayContract) {
         for (let i = 0; i < attemptsDeployProxy; i++) {
             try {
@@ -406,17 +431,26 @@ async function main() {
                         // defaultAdmin: The address of the default admin. Can grant role to addresses.
                         finalTimelockAddress,
                         // aggchainDefaultVKeyRole: The address that can manage the aggchain verification keys
-                        deployParameters.admin,
+                        admin,
                         // addRouteRole: The address that can add a route to a pessimistic verification key
-                        deployParameters.admin,
+                        admin,
                         // freezeRouteRole: The address that can freeze a route to a pessimistic verification key
-                        deployParameters.admin,
+                        admin,
+                        ppVKeySelector,
+                        verifierContract.target,
+                        ppVKey,
                     ],
                     {
-                        initializer: "initialize(address,address,address,address)",
+                        initializer: "initialize(address,address,address,address,bytes4,address,bytes32)",
                         unsafeAllow: ["constructor", "state-variable-immutable"],
                     }
                 );
+
+                pessimisticVKeyRouteALGateway = {
+                    "pessimisticVKeySelector": ppVKeySelector,
+                    "verifier": verifierContract.target,
+                    "pessimisticVKey": ppVKey
+                };
 
                 break;
             } catch (error: any) {
@@ -432,9 +466,17 @@ async function main() {
  
         console.log("#######################\n");
         console.log("aggLayerGatewayContract deployed to:", aggLayerGatewayContract?.target);
+
+        console.log("#######################\n");
+        console.log(`New Pessimistic VKey Route AggLayerGateway`);
+        console.log(`pessimisticVKeySelector: ${ppVKeySelector}`);
+        console.log(`verifier: ${verifierContract.target}`);
+        console.log(`pessimisticVKey: ${ppVKey}`);
+        console.log("#######################\n");
  
         // save an ongoing deployment
         ongoingDeployment.aggLayerGatewayContract = aggLayerGatewayContract?.target;
+        ongoingDeployment.pessimisticVKeyRouteALGateway = pessimisticVKeyRouteALGateway;
         fs.writeFileSync(pathOngoingDeploymentJson, JSON.stringify(ongoingDeployment, null, 1));
     } else {
         // Expect the precalculate address matches de onogin deployment
@@ -444,6 +486,13 @@ async function main() {
         
         console.log("#######################\n");
         console.log("aggLayerGatewayContract already deployed on: ", ongoingDeployment.aggLayerGatewayContract);
+
+        console.log("#######################\n");
+        console.log(`Pessimistic VKey Route AggLayerGateway: ${ongoingDeployment.aggLayerGatewayContract}`);
+        console.log(`pessimisticVKeySelector: ${ongoingDeployment.pessimisticVKeyRouteALGateway.pessimisticVKeySelector}`);
+        console.log(`verifier: ${ongoingDeployment.pessimisticVKeyRouteALGateway.verifier}`);
+        console.log(`pessimisticVKey: ${ongoingDeployment.pessimisticVKeyRouteALGateway.pessimisticVKey}`);
+        console.log("#######################\n");
 
         // Import OZ manifest the deployed contracts, its enough to import just the proyx, the rest are imported automatically (admin/impl)
         await upgrades.forceImport(
@@ -588,6 +637,7 @@ async function main() {
         polygonZkEVMBridgeAddress: polygonZkEVMBridgeContract.target,
         polygonZkEVMGlobalExitRootAddress: polygonZkEVMGlobalExitRoot?.target,
         aggLayerGatewayAddress: aggLayerGatewayContract?.target,
+        pessimisticVKeyRouteALGateway,
         polTokenAddress,
         zkEVMDeployerContract: zkEVMDeployerContract.target,
         deployerAddress: deployer.address,

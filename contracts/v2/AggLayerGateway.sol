@@ -75,17 +75,29 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
      * @param aggchainDefaultVKeyRole The address that can manage the aggchain verification keys.
      * @param addRouteRole The address that can add a route to a pessimistic verification key.
      * @param freezeRouteRole The address that can freeze a route to a pessimistic verification key.
+     * @param pessimisticVKeySelector The 4 bytes selector to add to the pessimistic verification keys.
+     * @param verifier The address of the verifier contract.
+     * @param pessimisticVKey New pessimistic program verification key.
      */
     function initialize(
         address defaultAdmin,
         address aggchainDefaultVKeyRole,
         address addRouteRole,
-        address freezeRouteRole
+        address freezeRouteRole,
+        bytes4 pessimisticVKeySelector,
+        address verifier,
+        bytes32 pessimisticVKey
     ) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggchainDefaultVKeyRole);
         _grantRole(AL_ADD_PP_ROUTE_ROLE, addRouteRole);
         _grantRole(AL_FREEZE_PP_ROUTE_ROLE, freezeRouteRole);
+
+        _addPessimisticVKeyRoute(
+            pessimisticVKeySelector,
+            verifier,
+            pessimisticVKey
+        );
     }
 
     ////////////////////////////////////////////////////////////
@@ -121,16 +133,16 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
     }
 
     /**
-     * @notice Function to add a pessimistic verification key route
+     * @notice Internal function to add a pessimistic verification key route
      * @param pessimisticVKeySelector The 4 bytes selector to add to the pessimistic verification keys.
      * @param verifier The address of the verifier contract.
      * @param pessimisticVKey New pessimistic program verification key
      */
-    function addPessimisticVKeyRoute(
+    function _addPessimisticVKeyRoute(
         bytes4 pessimisticVKeySelector,
         address verifier,
         bytes32 pessimisticVKey
-    ) external onlyRole(AL_ADD_PP_ROUTE_ROLE) {
+    ) internal {
         if (pessimisticVKeySelector == bytes4(0)) {
             revert PPSelectorCannotBeZero();
         }
@@ -148,6 +160,24 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         route.verifier = verifier;
         route.pessimisticVKey = pessimisticVKey;
         emit RouteAdded(pessimisticVKeySelector, verifier, pessimisticVKey);
+    }
+
+    /**
+     * @notice Function to add a pessimistic verification key route
+     * @param pessimisticVKeySelector The 4 bytes selector to add to the pessimistic verification keys.
+     * @param verifier The address of the verifier contract.
+     * @param pessimisticVKey New pessimistic program verification key
+     */
+    function addPessimisticVKeyRoute(
+        bytes4 pessimisticVKeySelector,
+        address verifier,
+        bytes32 pessimisticVKey
+    ) external onlyRole(AL_ADD_PP_ROUTE_ROLE) {
+        _addPessimisticVKeyRoute(
+            pessimisticVKeySelector,
+            verifier,
+            pessimisticVKey
+        );
     }
 
     /**

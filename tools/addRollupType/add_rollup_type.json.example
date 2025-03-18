@@ -2,7 +2,7 @@
     "type": "EOA",
     "consensusContract": "AggchainFEP",
     "consensusContractAddress": "",
-    "polygonRollupManagerAddress": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+    "polygonRollupManagerAddress": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
     "verifierAddress": "",
     "description": "Type: Validium, Version: etrog, genesis: /ipfs/QmUXnRoPbUmZuEZCGyiHjEsoNcFVu3hLtSvhpnfBS2mAYU",
     "forkID": 0,
@@ -13,5 +13,5 @@
     "maxPriorityFeePerGas":"",
     "multiplierGas": "",
     "genesisRoot": "0x4e162206cf43dc25698089ff4183ab1ef31c56049d57bcb295e1fc7a734cfe8f",
-    "programVKey": "0xaabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+    "programVKey": "0x0000000000000000000000000000000000000000000000000000000000000000"
 }

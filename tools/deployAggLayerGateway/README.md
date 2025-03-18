@@ -30,6 +30,7 @@ cp ./tools/deployAggLayerGateway/deploy_parameters.json.example ./tools/deployAg
     - "aggchainDefaultVKeyRoleAddress": "0x.." -> The address of the AGGCHAIN_DEFAULT_VKEY_ROLE role
     - "addRouteRoleAddress": "0x.." -> The address of the AGGLAYER_ADD_ROUTE_ROLE role
     - "freezeRouteRoleAddress": "0x..." -> The address of the AGGLAYER_FREEZE_ROUTE_ROLE role
+    - "verifierAddress": "0x...", -> The address of the verifier
     - "deployerPvtKey": "0x...", -> Optional: The private key of the wallet used to deploy the new implementation
 
 - Run tool:
@@ -50,6 +51,8 @@ npx hardhat run ./tools/deployAggLayerGateway/deployAggLayerGateway.ts --network
  "aggchainDefaultVKeyRoleAddress": "0x229A5bDBb09d8555f9214F7a6784804999BA4E0D",
  "addRouteRoleAddress": "0x229A5bDBb09d8555f9214F7a6784804999BA4E0D",
  "freezeRouteRoleAddress": "0x229A5bDBb09d8555f9214F7a6784804999BA4E0D"
+ "verifierAddress:":
+ "0x..."
 }
 ```
 
@@ -76,3 +79,6 @@ The address granted permission to add new routes.
 
 - freezeRouteRoleAddress
 The address authorized to freeze existing routes. In case of detected anomalies or security concerns, this role can halt further modifications by freezing routes, thus preserving system integrity.
+
+- verifierAddress
+Verifier Address

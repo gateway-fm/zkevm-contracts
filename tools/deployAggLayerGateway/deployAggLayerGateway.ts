@@ -13,15 +13,25 @@ import { AggLayerGateway } from "../../typechain-types";
 
 async function main() {
 
-    const mandatoryUpgradeParameters = ["defaultAdminAddress",
+    const mandatoryUpgradeParameters = [
+        "defaultAdminAddress",
         "aggchainDefaultVKeyRoleAddress",
         "addRouteRoleAddress",
-        "freezeRouteRoleAddress"];
+        "freezeRouteRoleAddress",
+        "verifierAddress",
+        "ppVKey",
+        "ppVKeySelector",
+    ];
     checkParams(deployParameters, mandatoryUpgradeParameters);
-    const { defaultAdminAddress,
+    const {
+        defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress } = deployParameters;
+        freezeRouteRoleAddress,
+        verifierAddress,
+        ppVKey,
+        ppVKeySelector
+    } = deployParameters;
     // Load provider
     const currentProvider = getProviderAdjustingMultiplierGas(deployParameters, ethers);
 
@@ -33,10 +43,15 @@ async function main() {
      * Deployment of AggLayerGateway
      */
     const aggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
-    const aggLayerGatewayContract = await upgrades.deployProxy(aggLayerGatewayFactory, [defaultAdminAddress,
+    const aggLayerGatewayContract = await upgrades.deployProxy(aggLayerGatewayFactory, [
+        defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress], {
+        freezeRouteRoleAddress,
+        ppVKeySelector,
+        verifierAddress,
+        ppVKey,
+    ], {
         unsafeAllow: ["constructor"],
     });
     await aggLayerGatewayContract.waitForDeployment();
@@ -53,10 +68,15 @@ async function main() {
     // Check deployment
     const aggLayerGateway = aggLayerGatewayFactory.attach(aggLayerGatewayContract.target) as AggLayerGateway;
     // Check already initialized
-    await expect(aggLayerGateway.initialize(defaultAdminAddress,
+    await expect(aggLayerGateway.initialize(
+        defaultAdminAddress,
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
-        freezeRouteRoleAddress)).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
+        freezeRouteRoleAddress,
+        ppVKeySelector,
+        verifierAddress,
+        ppVKey
+    )).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
 
     // Check initializer params (ROLES)
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
@@ -80,6 +100,9 @@ async function main() {
         aggchainDefaultVKeyRoleAddress,
         addRouteRoleAddress,
         freezeRouteRoleAddress,
+        ppVKey,
+        ppVKeySelector,
+        verifierAddress,
     };
 
     fs.writeFileSync(pathOutput, JSON.stringify(outputJson, null, 1));

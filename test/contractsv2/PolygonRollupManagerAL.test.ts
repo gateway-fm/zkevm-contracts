@@ -61,6 +61,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
     const AGGCHAIN_VKEY_SELECTOR = "0x0001";
     const randomNewStateRoot = computeRandomBytes(32);
     const CUSTOM_DATA_ECDSA = encodeAggchainDataECDSA(AGGCHAIN_VKEY_SELECTOR, randomNewStateRoot);
+    const randomPessimisticVKey = computeRandomBytes(32);
 
     upgrades.silenceWarnings();
     beforeEach("Deploy contract", async () => {
@@ -103,11 +104,20 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             initializer: false,
             unsafeAllow: ["constructor", "missing-initializer"],
         });
+
+        // deploy mock verifier
+        const VerifierRollupHelperFactory = await ethers.getContractFactory("VerifierRollupHelperMock");
+        verifierContract = await VerifierRollupHelperFactory.deploy();
+
+        // Initialize aggLayerGateway
         await aggLayerGatewayContract.initialize(
             admin.address,
             aggchainVKey.address,
             addPPRoute.address,
-            freezePPRoute.address
+            freezePPRoute.address,
+            PESSIMISTIC_SELECTOR,
+            verifierContract.target,
+            randomPessimisticVKey
         );
         // Grant role to agglayer admin
         await aggLayerGatewayContract.connect(admin).grantRole(AL_ADD_PP_ROUTE_ROLE, aggLayerAdmin.address);
@@ -165,10 +175,6 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         // fund sequencer address with Matic tokens
         await polTokenContract.transfer(trustedSequencer.address, ethers.parseEther("1000"));
 
-        // deploy mock verifier
-        const VerifierRollupHelperFactory = await ethers.getContractFactory("VerifierRollupHelperMock");
-        verifierContract = await VerifierRollupHelperFactory.deploy();
-
         // deploy ECDSA implementation contract
         const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
         aggchainECDSAImplementationContract = await aggchainECDSAFactory.deploy(
@@ -195,7 +201,10 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 timelock.address,
                 aggchainVKey.address,
                 addPPRoute.address,
-                freezePPRoute.address
+                freezePPRoute.address,
+                PESSIMISTIC_SELECTOR,
+                verifierContract.target,
+                randomPessimisticVKey
             )
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidInitialization");
 
@@ -405,16 +414,6 @@ describe("Polygon rollup manager aggregation layer v3", () => {
 
         expect(await polygonZkEVMBridgeContract.depositCount()).to.be.equal(1);
 
-        // Add route with verifier to the gateway
-        const randomPessimisticVKey = computeRandomBytes(32);
-        await expect(
-            aggLayerGatewayContract
-                .connect(aggLayerAdmin)
-                .addPessimisticVKeyRoute(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey)
-        )
-            .to.emit(aggLayerGatewayContract, "RouteAdded")
-            .withArgs(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey);
-
         // call rollup manager verify function
         // Compute random values for proof generation
         const randomNewLocalExitRoot = computeRandomBytes(32);
@@ -602,16 +601,6 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         ];
 
         expect(expectedRollupDataV2).to.be.deep.equal(resRollupDataV2);
-
-        // Add route with verifier to the gateway
-        const randomPessimisticVKey = computeRandomBytes(32);
-        await expect(
-            aggLayerGatewayContract
-                .connect(aggLayerAdmin)
-                .addPessimisticVKeyRoute(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey)
-        )
-            .to.emit(aggLayerGatewayContract, "RouteAdded")
-            .withArgs(PESSIMISTIC_SELECTOR, verifierContract.target, randomPessimisticVKey);
 
         // Verify pessimist proof with the new ECDSA rollup
         const randomNewLocalExitRoot = computeRandomBytes(32);

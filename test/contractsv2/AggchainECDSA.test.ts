@@ -31,6 +31,8 @@ describe("AggchainECDSA", () => {
     // aggLayerGateway variables
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
     const AGGCHAIN_DEFAULT_VKEY_ROLE = ethers.id("AGGCHAIN_DEFAULT_VKEY_ROLE");
+    const ppVKeySelector = "0x00000001";
+    const ppVKey = "0xbbbbbb85702e0582d900f3a19521270c92a58e2588230c4a5cf3b45103f4a512";
 
     // aggchain variables
     let initializeBytesAggchain: string;
@@ -75,6 +77,10 @@ describe("AggchainECDSA", () => {
             networkName
         );
 
+         // deploy verifier contract
+         const SP1VerifierPlonkFactory = await ethers.getContractFactory("SP1VerifierPlonk");
+         const verifierContract = (await SP1VerifierPlonkFactory.deploy()) as SP1VerifierPlonk;
+
         // deploy AggLayerGateway
         const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway");
         aggLayerGatewayContract = (await upgrades.deployProxy(AggLayerGatewayFactory, [], {
@@ -88,11 +94,16 @@ describe("AggchainECDSA", () => {
                 defaultAdminAgglayer.address,
                 aggchainVKey.address,
                 addPPRoute.address,
-                freezePPRoute.address
+                freezePPRoute.address,
+                ppVKeySelector,
+                verifierContract.target,
+                ppVKey
             )
         )
             .to.emit(aggLayerGatewayContract, "RoleGranted")
-            .withArgs(DEFAULT_ADMIN_ROLE, defaultAdminAgglayer.address, deployer.address);
+            .withArgs(DEFAULT_ADMIN_ROLE, defaultAdminAgglayer.address, deployer.address)
+            .to.emit(aggLayerGatewayContract, "RoleGranted")
+            .withArgs(AGGCHAIN_DEFAULT_VKEY_ROLE, aggchainVKey.address, deployer.address);
 
         // grantRole AGGCHAIN_DEFAULT_VKEY_ROLE --> defaultAdminAgglayer
         await expect(
