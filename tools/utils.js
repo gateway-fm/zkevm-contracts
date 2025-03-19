@@ -72,10 +72,36 @@ function checkBridgeAddress(genesis, expectedBridgeAddress){
     }
 }
 
+function decodeScheduleData(timelockTx, factory) {
+    const paramsArray = timelockTx?.fragment.inputs;
+    const objectDecoded = {};
+    for (let i = 0; i < paramsArray?.length; i++) {
+        const currentParam = paramsArray[i];
+
+        objectDecoded[currentParam.name] = timelockTx?.args[i];
+
+        if (currentParam.name == "data") {
+            const decodeData = factory.interface.parseTransaction({
+                data: timelockTx?.args[i],
+            });
+            const objectDecodedData = {};
+            const paramsArrayData = decodeData?.fragment.inputs;
+
+            for (let j = 0; j < paramsArrayData?.length; j++) {
+                const currentParam = paramsArrayData[j];
+                objectDecodedData[currentParam.name] = decodeData?.args[j];
+            }
+            objectDecoded["decodedData"] = objectDecodedData;
+        }
+    }
+    return convertBigIntsToNumbers(objectDecoded);
+}
+
 module.exports = {
     genOperation,
     transactionTypes,
     convertBigIntsToNumbers,
     supportedBridgeContracts,
     checkBridgeAddress,
+    decodeScheduleData,
 };
