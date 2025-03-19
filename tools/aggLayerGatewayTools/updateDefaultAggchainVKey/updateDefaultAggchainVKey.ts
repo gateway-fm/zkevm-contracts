@@ -5,7 +5,8 @@ import params from "./parameters.json";
 import {
   AggLayerGateway,
 } from "../../../typechain-types";
-import {decodeScheduleData, transactionTypes, genOperation} from "../../utils";
+import {transactionTypes, genOperation} from "../../utils";
+import {decodeScheduleData} from "../../../upgrade/utils";
 import { logger } from "../../../src/logger";
 import { checkParams } from "../../../src/utils";
 
@@ -160,8 +161,7 @@ async function main() {
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
-        const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
-        outputJson.decodedScheduleData = decodeScheduleData(timelockTx, AggLayerGatewayFactory);
+        outputJson.decodedScheduleData = decodeScheduleData(scheduleData, AggLayerGatewayFactory);
     } else if(type === transactionTypes.MULTISIG){
         logger.info("Creating calldata to update default vkey from multisig...");
         const txUpdateDefaultAggchainVKey = AggLayerGatewayFactory.interface.encodeFunctionData("updateDefaultAggchainVKey", [
