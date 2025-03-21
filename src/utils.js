@@ -128,8 +128,7 @@ function padZeros(str, length) {
  * @returns {String} encoded value in hexadecimal string
  */
 function valueToStorageBytes(_value) {
-    const valueHex = valueToHexStr(_value, false);
-    return `0x${padZeros(valueHex, 64)}`;
+    return ethers.toBeHex(_value, 32)
 }
 
 /**

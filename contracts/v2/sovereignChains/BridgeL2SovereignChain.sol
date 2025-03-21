@@ -585,7 +585,7 @@ contract BridgeL2SovereignChain is
         // Update claimedGlobalIndexHashChain
         claimedGlobalIndexHashChain = Hashes.efficientKeccak256(
             claimedGlobalIndexHashChain,
-            bytes32(globalIndex)
+            Hashes.efficientKeccak256(bytes32(globalIndex), leafValue)
         );
 
         emit UpdatedClaimedGlobalIndexHashChain(
