@@ -28,6 +28,9 @@ cp ./tools/aggLayerGatewayTools/addDefaultAggchainVKey/parameters.json.example .
     - `aggLayerGatewayAddress`: Address AggLayerGateway contract
     - `defaultAggchainSelector`: The 4 bytes selector to add to the default aggchain verification keys
     - `defaultAggchainVKey`: default aggchain verification key to be added
+    - `timelockDelay(optional)`: timelock delay
+    - `timelockSalt(optional)`: timelock salt
+    - `predecessor(optional)`: timelock predecessor
 
 -  Run tool:
 ```

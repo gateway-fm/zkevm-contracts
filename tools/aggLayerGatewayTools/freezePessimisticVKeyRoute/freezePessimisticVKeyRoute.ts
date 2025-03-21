@@ -124,7 +124,7 @@ async function main() {
     if(type === transactionTypes.TIMELOCK){
         logger.info("Creating timelock tx to freeze pessimistic vkey route...");
         const salt = params.timelockSalt || ethers.ZeroHash;
-        const predecessor = ethers.ZeroHash;
+        const predecessor = params.predecessor || ethers.ZeroHash;
         const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
         const operation = genOperation(
             aggLayerGatewayAddress,
@@ -190,11 +190,11 @@ async function main() {
             logger.error(`Error sending tx: ${e.message}`);
             process.exit(1);
         }
+        logger.info("Transaction successful");
     }
     // Save output
     fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
     logger.info(`Finished script, output saved at: ${destPath}`);
-    logger.info("Transaction successful");
 }
 main().then(() => {
     process.exit(0);

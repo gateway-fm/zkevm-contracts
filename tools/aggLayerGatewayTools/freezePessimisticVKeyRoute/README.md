@@ -27,6 +27,9 @@ cp ./tools/aggLayerGatewayTools/freezePessimisticVKeyRoute/parameters.json.examp
     - `deployerPvtKey`: Not mandatory, used to send tx
     - `aggLayerGatewayAddress`: Address AggLayerGateway contract
     - `pessimisticVKeySelector`: The 4 bytes selector to freeze the pessimistic verification key route
+    - `timelockDelay(optional)`: timelock delay
+    - `timelockSalt(optional)`: timelock salt
+    - `predecessor(optional)`: timelock predecessor
 
 -  Run tool:
 ```

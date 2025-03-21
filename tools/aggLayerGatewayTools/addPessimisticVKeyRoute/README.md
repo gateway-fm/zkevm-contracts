@@ -29,6 +29,9 @@ cp ./tools/aggLayerGatewayTools/addPessimisticVKeyRoute/parameters.json.example 
     - `pessimisticVKeySelector`: The 4 bytes selector to add to the pessimistic verification keys
     - `verifier`: The address of the verifier contract
     - `pessimisticVKey`: New pessimistic program verification key
+    - `timelockDelay(optional)`: timelock delay
+    - `timelockSalt(optional)`: timelock salt
+    - `predecessor(optional)`: timelock predecessor
 
 -  Run tool:
 ```
