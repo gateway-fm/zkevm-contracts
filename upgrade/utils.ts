@@ -59,7 +59,7 @@ async function verifyContractEtherscan(implementationAddress: string, constructo
  * @param proxyAdmin The proxy admin contract
  * @returns The decoded data
  */
-async function decodeScheduleData(scheduleData: any, proxyAdmin: any) {
+async function decodeScheduleData(scheduleData: any, contractFactory: any) {
     const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock");
     const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
     const objectDecoded = {} as any;
@@ -69,18 +69,18 @@ async function decodeScheduleData(scheduleData: any, proxyAdmin: any) {
         objectDecoded[currentParam.name] = timelockTx?.args[i];
 
         if (currentParam.name == "data") {
-            const decodedProxyAdmin = proxyAdmin.interface.parseTransaction({
+            const decodedData = contractFactory.interface.parseTransaction({
                 data: timelockTx?.args[i],
             });
             const objectDecodedData = {} as any;
-            const paramsArrayData = decodedProxyAdmin?.fragment.inputs as any;
+            const paramsArrayData = decodedData?.fragment.inputs as any;
 
-            objectDecodedData.signature = decodedProxyAdmin?.signature;
-            objectDecodedData.selector = decodedProxyAdmin?.selector;
+            objectDecodedData.signature = decodedData?.signature;
+            objectDecodedData.selector = decodedData?.selector;
 
             for (let j = 0; j < paramsArrayData?.length; j++) {
                 const currentParam = paramsArrayData[j];
-                objectDecodedData[currentParam.name] = decodedProxyAdmin?.args[j];
+                objectDecodedData[currentParam.name] = decodedData?.args[j];
             }
             objectDecoded["decodedData"] = objectDecodedData;
         }
