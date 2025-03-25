@@ -150,6 +150,7 @@ async function main() {
 
     // make claim transaction
     const claimedGlobalIndexes: any[] = [];
+    const claimedLeafs: any[] = [];
 
     console.log("making a claim transaction");
     for (let i = 0; i < simulateGERs.claims.length; i++) {
@@ -171,6 +172,7 @@ async function main() {
         ).wait();
 
         claimedGlobalIndexes.push(claim.globalIndex);
+        claimedLeafs.push(claim.leafValue);
     }
 
     // claim undo
@@ -189,6 +191,7 @@ async function main() {
     output.removedGERs = removedGERs;
     output.claimedGlobalIndexes = claimedGlobalIndexes;
     output.unclaimedGlobalIndexes = unclaimedGlobalIndexes;
+    output.claimedLeafs = claimedLeafs;
 
     fs.writeFileSync(pathOutput, JSON.stringify(output, null, 1));
 }
@@ -267,6 +270,7 @@ function simulateGERWithEtherClaims(destinationAddress: any) {
             globalIndex: computeGlobalIndex(0, 0, false),
             mainnetExitRoot,
             rollupRoot,
+            leafValue,
         },
         {
             originNetwork,
@@ -280,6 +284,7 @@ function simulateGERWithEtherClaims(destinationAddress: any) {
             globalIndex: computeGlobalIndex(1, 0, false),
             mainnetExitRoot,
             rollupRoot,
+            leafValue,
         },
     ];
     return output;

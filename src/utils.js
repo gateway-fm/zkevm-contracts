@@ -1,6 +1,5 @@
 /* eslint-disable no-inner-declarations */
 /* eslint-disable no-console */
-const { Scalar } = require('ffjavascript');
 const { ethers } = require('ethers');
 
 /**
@@ -88,48 +87,12 @@ function checkParams(objParams, expectedParams, checkAddresses = false) {
 }
 
 /**
- * Convert a value into in its hexadecimal string representation
- * @param {Number | BigInt} _value - value to encode
- * @param {Boolean} prefix - attach '0x' at the beginning of the string
- * @returns {String} encoded value in hexadecimal string
- */
-function valueToHexStr(_value, prefix = false) {
-    if (!(typeof _value === 'number' || typeof _value === 'bigint')) {
-        throw new Error('valueToHexStr: _value is not a number or BigInt type');
-    }
-
-    if (prefix !== false && typeof prefix !== 'boolean') {
-        throw new Error('valueToHexStr: _prefix is not a boolean');
-    }
-
-    let valueHex = Scalar.e(_value).toString(16);
-    valueHex = valueHex.length % 2 ? `0${valueHex}` : valueHex;
-
-    return prefix ? `0x${valueHex}` : valueHex;
-}
-
-/**
- * Pad a string hex number with 0
- * @param {String} str - String input
- * @param {Number} length - Length of the resulting string
- * @returns {String} Resulting string
- */
-function padZeros(str, length) {
-    if (length > str.length) {
-        str = '0'.repeat(length - str.length) + str;
-    }
-
-    return str;
-}
-
-/**
  * Convert a value into in its hexadecimal string representation with 32 bytes padding
  * @param {Number | BigInt} _value - value to encode
  * @returns {String} encoded value in hexadecimal string
  */
 function valueToStorageBytes(_value) {
-    const valueHex = valueToHexStr(_value, false);
-    return `0x${padZeros(valueHex, 64)}`;
+    return ethers.toBeHex(_value, 32);
 }
 
 /**

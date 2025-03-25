@@ -29,6 +29,10 @@ function newHashChainValue(prevHashChainValue: any, valueToAdd: any) {
     return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [prevHashChainValue, valueToAdd]);
 }
 
+function newClaimedGlobalIndexValue(globalIndex: any, leafValue: any) {
+    return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [valueTo32BytesHex(globalIndex), leafValue]);
+}
+
 describe("BridgeL2SovereignChain Contract", () => {
     upgrades.silenceWarnings();
 
@@ -227,7 +231,7 @@ describe("BridgeL2SovereignChain Contract", () => {
         // new hashchain value
         claimedGlobalIndexHashChainJS = newHashChainValue(
             claimedGlobalIndexHashChainJS,
-            valueTo32BytesHex(globalIndex)
+            newClaimedGlobalIndexValue(globalIndex, leafValue)
         );
 
         // verify merkle proof
@@ -724,8 +728,9 @@ describe("BridgeL2SovereignChain Contract", () => {
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
 
         // Set rollupManager as bridge manager, revert OnlyBridgeManager
-        await expect(sovereignChainBridgeContract.connect(deployer).setBridgeManager(rollupManager.address))
-            .to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
+        await expect(
+            sovereignChainBridgeContract.connect(deployer).setBridgeManager(rollupManager.address)
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
 
         // Set rollupManager as bridge manager
         await expect(sovereignChainBridgeContract.connect(bridgeManager).setBridgeManager(rollupManager.address))
@@ -1259,7 +1264,7 @@ describe("BridgeL2SovereignChain Contract", () => {
         let claimedGlobalIndexHashChainJS = ethers.ZeroHash;
         claimedGlobalIndexHashChainJS = newHashChainValue(
             claimedGlobalIndexHashChainJS,
-            valueTo32BytesHex(globalIndex)
+            newClaimedGlobalIndexValue(globalIndex, leafValue)
         );
 
         /*
@@ -1413,7 +1418,7 @@ describe("BridgeL2SovereignChain Contract", () => {
         let claimedGlobalIndexHashChainJS = ethers.ZeroHash;
         claimedGlobalIndexHashChainJS = newHashChainValue(
             claimedGlobalIndexHashChainJS,
-            valueTo32BytesHex(globalIndex)
+            newClaimedGlobalIndexValue(globalIndex, leafValue)
         );
 
         expect(false).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
@@ -1523,7 +1528,7 @@ describe("BridgeL2SovereignChain Contract", () => {
         const globalIndex2 = computeGlobalIndex(index2, indexRollup, false);
         claimedGlobalIndexHashChainJS = newHashChainValue(
             claimedGlobalIndexHashChainJS,
-            valueTo32BytesHex(globalIndex2)
+            newClaimedGlobalIndexValue(globalIndex2, leafValue)
         );
 
         await expect(
@@ -1671,12 +1676,12 @@ describe("BridgeL2SovereignChain Contract", () => {
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(index2, indexRollup + 1));
 
         await expect(
-        sovereignChainBridgeContract
-            .connect(deployer)
-            .unsetMultipleClaims([
-                computeGlobalIndex(indexLocal, indexRollup, false),
-                computeGlobalIndex(index2, indexRollup, false),
-            ])
+            sovereignChainBridgeContract
+                .connect(deployer)
+                .unsetMultipleClaims([
+                    computeGlobalIndex(indexLocal, indexRollup, false),
+                    computeGlobalIndex(index2, indexRollup, false),
+                ])
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyBridgeManager");
 
         await sovereignChainBridgeContract
@@ -2010,7 +2015,7 @@ describe("BridgeL2SovereignChain Contract", () => {
         let claimedGlobalIndexHashChainJS = ethers.ZeroHash;
         claimedGlobalIndexHashChainJS = newHashChainValue(
             claimedGlobalIndexHashChainJS,
-            valueTo32BytesHex(globalIndex)
+            newClaimedGlobalIndexValue(globalIndex, leafValue)
         );
 
         // Can't claim without tokens
@@ -2172,7 +2177,7 @@ describe("BridgeL2SovereignChain Contract", () => {
         let claimedGlobalIndexHashChainJS = ethers.ZeroHash;
         claimedGlobalIndexHashChainJS = newHashChainValue(
             claimedGlobalIndexHashChainJS,
-            valueTo32BytesHex(globalIndex)
+            newClaimedGlobalIndexValue(globalIndex, leafValue)
         );
         // verify merkle proof
         expect(verifyMerkleProof(leafValue, proofLocal, index, rootJSRollup)).to.be.equal(true);
@@ -2337,7 +2342,7 @@ describe("BridgeL2SovereignChain Contract", () => {
         let claimedGlobalIndexHashChainJS = ethers.ZeroHash;
         claimedGlobalIndexHashChainJS = newHashChainValue(
             claimedGlobalIndexHashChainJS,
-            valueTo32BytesHex(globalIndex)
+            newClaimedGlobalIndexValue(globalIndex, leafValue)
         );
 
         // verify merkle proof
