@@ -43,16 +43,16 @@ contract PolygonZkEVMBridgeV2 is
     bytes4 internal constant _PERMIT_SIGNATURE_DAI = 0x8fcbaf0c;
 
     // Mainnet identifier
-    uint32 private constant _MAINNET_NETWORK_ID = 0;
+    uint32 internal constant _MAINNET_NETWORK_ID = 0;
 
     // ZkEVM identifier
     uint32 private constant _ZKEVM_NETWORK_ID = 1;
 
     // Leaf type asset
-    uint8 private constant _LEAF_TYPE_ASSET = 0;
+    uint8 internal constant _LEAF_TYPE_ASSET = 0;
 
     // Leaf type message
-    uint8 private constant _LEAF_TYPE_MESSAGE = 1;
+    uint8 internal constant _LEAF_TYPE_MESSAGE = 1;
 
     // Nullifier offset
     uint256 internal constant _MAX_LEAFS_PER_NETWORK = 2 ** 32;
@@ -313,16 +313,14 @@ contract PolygonZkEVMBridgeV2 is
             uint32(depositCount)
         );
 
-        _addLeaf(
-            getLeafValue(
-                _LEAF_TYPE_ASSET,
-                originNetwork,
-                originTokenAddress,
-                destinationNetwork,
-                destinationAddress,
-                leafAmount,
-                keccak256(metadata)
-            )
+        _addLeafBridge(
+            _LEAF_TYPE_ASSET,
+            originNetwork,
+            originTokenAddress,
+            destinationNetwork,
+            destinationAddress,
+            leafAmount,
+            keccak256(metadata)
         );
 
         // Update the new root to the global exit root manager if set by the user
@@ -422,16 +420,14 @@ contract PolygonZkEVMBridgeV2 is
             uint32(depositCount)
         );
 
-        _addLeaf(
-            getLeafValue(
-                _LEAF_TYPE_MESSAGE,
-                networkID,
-                msg.sender,
-                destinationNetwork,
-                destinationAddress,
-                amountEther,
-                keccak256(metadata)
-            )
+        _addLeafBridge(
+            _LEAF_TYPE_MESSAGE,
+            networkID,
+            msg.sender,
+            destinationNetwork,
+            destinationAddress,
+            amountEther,
+            keccak256(metadata)
         );
 
         // Update the new root to the global exit root manager if set by the user
@@ -479,21 +475,19 @@ contract PolygonZkEVMBridgeV2 is
         }
 
         // Verify leaf exist and it does not have been claimed
-        _verifyLeaf(
+        _verifyLeafBridge(
             smtProofLocalExitRoot,
             smtProofRollupExitRoot,
             globalIndex,
             mainnetExitRoot,
             rollupExitRoot,
-            getLeafValue(
-                _LEAF_TYPE_ASSET,
-                originNetwork,
-                originTokenAddress,
-                destinationNetwork,
-                destinationAddress,
-                amount,
-                keccak256(metadata)
-            )
+            _LEAF_TYPE_ASSET,
+            originNetwork,
+            originTokenAddress,
+            destinationNetwork,
+            destinationAddress,
+            amount,
+            keccak256(metadata)
         );
 
         // Transfer funds
@@ -640,21 +634,19 @@ contract PolygonZkEVMBridgeV2 is
         }
 
         // Verify leaf exist and it does not have been claimed
-        _verifyLeaf(
+        _verifyLeafBridge(
             smtProofLocalExitRoot,
             smtProofRollupExitRoot,
             globalIndex,
             mainnetExitRoot,
             rollupExitRoot,
-            getLeafValue(
-                _LEAF_TYPE_MESSAGE,
-                originNetwork,
-                originAddress,
-                destinationNetwork,
-                destinationAddress,
-                amount,
-                keccak256(metadata)
-            )
+            _LEAF_TYPE_MESSAGE,
+            originNetwork,
+            originAddress,
+            destinationNetwork,
+            destinationAddress,
+            amount,
+            keccak256(metadata)
         );
 
         // Execute message
@@ -693,6 +685,53 @@ contract PolygonZkEVMBridgeV2 is
             originAddress,
             destinationAddress,
             amount
+        );
+    }
+
+    /**
+     * @notice Get leaf value and verify the merkle proof
+     * @param smtProofLocalExitRoot Smt proof to proof the leaf against the exit root
+     * @param smtProofRollupExitRoot Smt proof to proof the rollupLocalExitRoot against the rollups exit root
+     * @param globalIndex Global index
+     * @param mainnetExitRoot Mainnet exit root
+     * @param rollupExitRoot Rollup exit root
+     * @param leafType Leaf type
+     * @param originNetwork Origin network
+     * @param originAddress Origin address
+     * @param destinationNetwork Network destination
+     * @param destinationAddress Address destination
+     * @param amount message value
+     * @param metadataHash Hash of the metadata
+     */
+    function _verifyLeafBridge(
+        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofLocalExitRoot,
+        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofRollupExitRoot,
+        uint256 globalIndex,
+        bytes32 mainnetExitRoot,
+        bytes32 rollupExitRoot,
+        uint8 leafType,
+        uint32 originNetwork,
+        address originAddress,
+        uint32 destinationNetwork,
+        address destinationAddress,
+        uint256 amount,
+        bytes32 metadataHash
+    ) internal virtual {
+        _verifyLeaf(
+            smtProofLocalExitRoot,
+            smtProofRollupExitRoot,
+            globalIndex,
+            mainnetExitRoot,
+            rollupExitRoot,
+            getLeafValue(
+                leafType,
+                originNetwork,
+                originAddress,
+                destinationNetwork,
+                destinationAddress,
+                amount,
+                metadataHash
+            )
         );
     }
 
@@ -765,6 +804,38 @@ contract PolygonZkEVMBridgeV2 is
      */
     function deactivateEmergencyState() external virtual onlyRollupManager {
         _deactivateEmergencyState();
+    }
+
+    /**
+     * @notice Function to add a new leaf to the bridge merkle tree
+     * @param leafType leaf type
+     * @param originNetwork Origin network
+     * @param originAddress Origin address
+     * @param destinationNetwork Destination network
+     * @param destinationAddress Destination address
+     * @param amount Amount of tokens
+     * @param metadataHash Metadata hash
+     */
+    function _addLeafBridge(
+        uint8 leafType,
+        uint32 originNetwork,
+        address originAddress,
+        uint32 destinationNetwork,
+        address destinationAddress,
+        uint256 amount,
+        bytes32 metadataHash
+    ) internal virtual {
+        _addLeaf(
+            getLeafValue(
+                leafType,
+                originNetwork,
+                originAddress,
+                destinationNetwork,
+                destinationAddress,
+                amount,
+                metadataHash
+            )
+        );
     }
 
     /**

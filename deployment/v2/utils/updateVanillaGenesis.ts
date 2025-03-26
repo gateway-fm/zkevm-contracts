@@ -276,8 +276,9 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     );
 
     // Storage value for the _initialized uint8 variable of Initializable.sol contract, incremented each time the contract is successfully initialized. It also stores the _initializing param set to true when an initialization function is being executed, and it reverts to false once the initialization completed.
+    // This is used to initialize the contract only once,and it depends if the contract is already deployed or not.
     expect(bridgeProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000000"]).to.equal(
-        "0x0000000000000000000000000000000000000000000000000000000000000001"
+        "0x0000000000000000000000000000000000000000000000000000000000000002"
     );
 
     // Storage value for the _status variable of ReentrancyGuardUpgradeable contract. Tracks the current "status" of the contract to enforce the non-reentrant behavior. Default value is 1 (_NOT_ENTERED)

@@ -70,6 +70,26 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
      */
     error EmergencyStateNotAllowed();
 
+    /**
+     @dev Thrown when trying to substract more rather than available balance
+     */
+    error LocalBalanceTreeUnderflow(
+        uint32 originNetwork,
+        address originTokenAddress,
+        uint256 amount,
+        uint256 localBalanceTreeAmount
+    );
+
+    /**
+     @dev Thrown when trying to add an amount over the maximum allowed balance
+     */
+    error LocalBalanceTreeOverflow(
+        uint32 originNetwork,
+        address originTokenAddress,
+        uint256 amount,
+        uint256 localBalanceTreeAmount
+    );
+
     function initialize(
         uint32 _networkID,
         address _gasTokenAddress,

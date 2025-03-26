@@ -35,6 +35,13 @@ contract BridgeL2SovereignChain is
     // newUnsetGlobalIndexHashChain = Keccak256(oldUnsetGlobalIndexHashChain,bytes32(removedGlobalIndex));
     bytes32 public unsetGlobalIndexHashChain;
 
+    // Map to store wrappedAddresses that are not mintable
+    mapping(bytes32 tokenInfoHash => uint256 amount) public localBalanceTree;
+
+    /// @notice Value to detect if the contract has been initialized previously.
+    ///         This mechanism is used to properly select the initializer
+    uint8 private _initializerVersion;
+
     /**
      * @dev Emitted when a bridge manager is updated
      */
@@ -94,6 +101,20 @@ contract BridgeL2SovereignChain is
     );
 
     /**
+     * @dev Emitted when the localBalanceTree amount is initialized
+     */
+    event SetInitialLocalBalanceTreeAmount(
+        bytes32 tokenInfoHash,
+        uint256 amount
+    );
+
+    /// @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
+    modifier getInitializedVersion() {
+        _initializerVersion = _getInitializedVersion();
+        _;
+    }
+
+    /**
      * Disable initializers on the implementation following the best practices
      */
     constructor() PolygonZkEVMBridgeV2() {
@@ -101,13 +122,14 @@ contract BridgeL2SovereignChain is
     }
 
     /**
+     * @dev initilaizer function to set the initial values of the contract when the contract is deployed for the first time
      * @param _networkID networkID
      * @param _gasTokenAddress gas token address
      * @param _gasTokenNetwork gas token network
      * @param _globalExitRootManager global exit root manager address
      * @param _polygonRollupManager Rollup manager address
      * @notice The value of `_polygonRollupManager` on the L2 deployment of the contract will be address(0), so
-     * emergency state is not possible for the L2 deployment of the bridge, intentionally
+     * emergency state is not possible for the L2 deployment of the bridge in StateTransistion chains, intentionally
      * @param _gasTokenMetadata Abi encoded gas token metadata
      * @param _bridgeManager bridge manager address
      * @param _sovereignWETHAddress sovereign WETH address
@@ -123,7 +145,11 @@ contract BridgeL2SovereignChain is
         address _bridgeManager,
         address _sovereignWETHAddress,
         bool _sovereignWETHAddressIsNotMintable
-    ) public virtual initializer {
+    ) public virtual getInitializedVersion reinitializer(2) {
+        if (_initializerVersion != 0) {
+            revert InvalidInitializeFunction();
+        }
+
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonRollupManager = _polygonRollupManager;
@@ -171,6 +197,43 @@ contract BridgeL2SovereignChain is
 
         // Initialize OZ contracts
         __ReentrancyGuard_init();
+    }
+
+    /**
+     * @notice Initialize function on contracts that has been already deployed
+     * Allow to initialize the LocalBalanceTree with the initial balances
+     * @param tokenInfoHash Array of tokenInfoHash
+     * @param amount Array of amount
+     */
+    function initialize(
+        bytes32[] calldata tokenInfoHash,
+        uint256[] calldata amount
+    ) public getInitializedVersion reinitializer(2) {
+        if (_initializerVersion == 0) {
+            revert InvalidInitializeFunction();
+        }
+
+        if (tokenInfoHash.length != amount.length) {
+            revert InputArraysLengthMismatch();
+        }
+
+        for (uint256 i = 0; i < tokenInfoHash.length; i++) {
+            _setInitialLocalBalanceTreeAmount(tokenInfoHash[i], amount[i]);
+        }
+    }
+
+    /**
+     * @notice Set the initial local balance tree amount
+     * @param tokenInfoHash Token info hash
+     * @param amount Amount to set
+     */
+    function _setInitialLocalBalanceTreeAmount(
+        bytes32 tokenInfoHash,
+        uint256 amount
+    ) internal {
+        localBalanceTree[tokenInfoHash] = amount;
+
+        emit SetInitialLocalBalanceTreeAmount(tokenInfoHash, amount);
     }
 
     /**
@@ -559,45 +622,6 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @notice Verify leaf and checks that it has not been claimed
-     * @dev Add logic to create a hash chain of globalIndexes
-     * @param smtProofLocalExitRoot Smt proof
-     * @param smtProofRollupExitRoot Smt proof
-     * @param globalIndex Index of the leaf
-     * @param mainnetExitRoot Mainnet exit root
-     * @param rollupExitRoot Rollup exit root
-     * @param leafValue leaf value
-     */
-    function _verifyLeaf(
-        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofLocalExitRoot,
-        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofRollupExitRoot,
-        uint256 globalIndex,
-        bytes32 mainnetExitRoot,
-        bytes32 rollupExitRoot,
-        bytes32 leafValue
-    ) internal override {
-        super._verifyLeaf(
-            smtProofLocalExitRoot,
-            smtProofRollupExitRoot,
-            globalIndex,
-            mainnetExitRoot,
-            rollupExitRoot,
-            leafValue
-        );
-
-        // Update claimedGlobalIndexHashChain
-        claimedGlobalIndexHashChain = Hashes.efficientKeccak256(
-            claimedGlobalIndexHashChain,
-            Hashes.efficientKeccak256(bytes32(globalIndex), leafValue)
-        );
-
-        emit UpdatedClaimedGlobalIndexHashChain(
-            bytes32(globalIndex),
-            claimedGlobalIndexHashChain
-        );
-    }
-
-    /**
      * @notice Function to call token permit method of extended ERC20
      * @dev function overridden from PolygonZkEVMBridgeV2 to improve a bit the performance and bytecode not checking unnecessary conditions for sovereign chains context
      + @param token ERC20 token address
@@ -715,5 +739,187 @@ contract BridgeL2SovereignChain is
         override(IPolygonZkEVMBridgeV2, PolygonZkEVMBridgeV2)
     {
         revert EmergencyStateNotAllowed();
+    }
+
+    ///////////////////////////
+    //// LocalBalanceTree /////
+    ///////////////////////////
+
+    /**
+     * @notice Function to decrease the local balance tree
+     * @param originNetwork Origin network
+     * @param originTokenAddress Origin token address
+     * @param amount Amount to decrease
+     */
+    function _decreaseLocalBalanceTree(
+        uint32 originNetwork,
+        address originTokenAddress,
+        uint256 amount
+    ) internal {
+        // If the token is generated in this chain does not modify the Local Balance Tree
+        if (originNetwork == networkID) {
+            return;
+        }
+
+        // compute tokenInfoHash which identifies uniquely the token in the LocalBalanceTree
+        bytes32 tokenInfoHash = keccak256(
+            abi.encodePacked(originNetwork, originTokenAddress)
+        );
+
+        // revert due to an underflow explicitly
+        // custom error added to not wait for the EVM to revert when substracting from uint256
+        if (amount > localBalanceTree[tokenInfoHash]) {
+            revert LocalBalanceTreeUnderflow(
+                originNetwork,
+                originTokenAddress,
+                amount,
+                localBalanceTree[tokenInfoHash]
+            );
+        }
+
+        // underflow is controlled by the previous error
+        localBalanceTree[tokenInfoHash] -= amount;
+    }
+
+    /**
+     * @notice Function to increase the local balance tree
+     * @param originNetwork Origin network
+     * @param originTokenAddress Origin token address
+     * @param amount Amount to increase
+     */
+    function _increaseLocalBalanceTree(
+        uint32 originNetwork,
+        address originTokenAddress,
+        uint256 amount
+    ) internal {
+        // If the token is generated in this chain does not modify the Local Balance Tree
+        if (originNetwork == networkID) {
+            return;
+        }
+
+        // compute tokenInfoHash which identifies uniquely the token in the LocalBalanceTree
+        bytes32 tokenInfoHash = keccak256(
+            abi.encodePacked(originNetwork, originTokenAddress)
+        );
+
+        // revert due to an overflow explicitly
+        // custom error added to not wait for the EVM to revert when adding above uint256
+        if (amount > type(uint256).max - localBalanceTree[tokenInfoHash]) {
+            revert LocalBalanceTreeOverflow(
+                originNetwork,
+                originTokenAddress,
+                amount,
+                localBalanceTree[tokenInfoHash]
+            );
+        }
+
+        // overflows is controlled by the previous error
+        localBalanceTree[tokenInfoHash] += amount;
+    }
+
+    /**
+     * @notice Function to add a new leaf to the bridge merkle tree
+     * @param leafType leaf type
+     * @param originNetwork Origin network
+     * @param originAddress Origin address
+     * @param destinationNetwork Destination network
+     * @param destinationAddress Destination address
+     * @param amount Amount of tokens
+     * @param metadataHash Metadata hash
+     */
+    function _addLeafBridge(
+        uint8 leafType,
+        uint32 originNetwork,
+        address originAddress,
+        uint32 destinationNetwork,
+        address destinationAddress,
+        uint256 amount,
+        bytes32 metadataHash
+    ) internal override {
+        super._addLeafBridge(
+            leafType,
+            originNetwork,
+            originAddress,
+            destinationNetwork,
+            destinationAddress,
+            amount,
+            metadataHash
+        );
+
+        if (leafType == _LEAF_TYPE_ASSET) {
+            _decreaseLocalBalanceTree(originNetwork, originAddress, amount);
+        }
+
+        if (leafType == _LEAF_TYPE_MESSAGE) {
+            _decreaseLocalBalanceTree(_MAINNET_NETWORK_ID, address(0), amount);
+        }
+    }
+
+    /**
+     * @notice Get leaf value and verify the merkle proof
+     * @param smtProofLocalExitRoot Smt proof to proof the leaf against the exit root
+     * @param smtProofRollupExitRoot Smt proof to proof the rollupLocalExitRoot against the rollups exit root
+     * @param globalIndex Global index
+     * @param mainnetExitRoot Mainnet exit root
+     * @param rollupExitRoot Rollup exit root
+     * @param leafType Leaf type
+     * @param originNetwork Origin network
+     * @param originAddress Origin address
+     * @param destinationNetwork Network destination
+     * @param destinationAddress Address destination
+     * @param amount message value
+     * @param metadataHash Hash of the metadata
+     */
+    function _verifyLeafBridge(
+        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofLocalExitRoot,
+        bytes32[_DEPOSIT_CONTRACT_TREE_DEPTH] calldata smtProofRollupExitRoot,
+        uint256 globalIndex,
+        bytes32 mainnetExitRoot,
+        bytes32 rollupExitRoot,
+        uint8 leafType,
+        uint32 originNetwork,
+        address originAddress,
+        uint32 destinationNetwork,
+        address destinationAddress,
+        uint256 amount,
+        bytes32 metadataHash
+    ) internal override {
+        bytes32 leafValue = getLeafValue(
+            leafType,
+            originNetwork,
+            originAddress,
+            destinationNetwork,
+            destinationAddress,
+            amount,
+            metadataHash
+        );
+
+        _verifyLeaf(
+            smtProofLocalExitRoot,
+            smtProofRollupExitRoot,
+            globalIndex,
+            mainnetExitRoot,
+            rollupExitRoot,
+            leafValue
+        );
+
+        // Update claimedGlobalIndexHashChain
+        claimedGlobalIndexHashChain = Hashes.efficientKeccak256(
+            claimedGlobalIndexHashChain,
+            Hashes.efficientKeccak256(bytes32(globalIndex), leafValue)
+        );
+
+        emit UpdatedClaimedGlobalIndexHashChain(
+            bytes32(globalIndex),
+            claimedGlobalIndexHashChain
+        );
+
+        if (leafType == _LEAF_TYPE_ASSET) {
+            _increaseLocalBalanceTree(originNetwork, originAddress, amount);
+        }
+
+        if (leafType == _LEAF_TYPE_MESSAGE) {
+            _increaseLocalBalanceTree(_MAINNET_NETWORK_ID, address(0), amount);
+        }
     }
 }
