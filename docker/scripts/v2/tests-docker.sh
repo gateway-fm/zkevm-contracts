@@ -12,6 +12,8 @@ npx hardhat test docker/docker-tests.test.ts --network localhost
 npx hardhat test docker/tools-docker-tests.test.ts --network localhost
 # Run verify tests to docker
 npx hardhat test docker/docker-verify.test.ts --network localhost
+# If docker is deployed with npm run dockerv2:contracts:all you can check all rollups
+# npx hardhat test check-all-rollups.ts --network localhost
 # stop container
 docker stop docker_test
 # remove container
