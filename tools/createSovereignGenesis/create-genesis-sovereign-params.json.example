@@ -8,6 +8,7 @@
     "sovereignWETHAddressIsNotMintable": false,
     "globalExitRootUpdater": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
     "globalExitRootRemover": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
+    "emergencyBridgePauser": "0x8576158a89648aA88B6036f47B8b74Fc0C2b5c66",
     "setPreMintAccounts": true,
     "preMintAccounts": [
         {

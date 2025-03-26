@@ -44,6 +44,7 @@ async function main() {
         "sovereignWETHAddressIsNotMintable",
         "globalExitRootUpdater",
         "globalExitRootRemover",
+        "emergencyBridgePauser",
         "setPreMintAccounts",
         "setTimelockParameters",
     ];

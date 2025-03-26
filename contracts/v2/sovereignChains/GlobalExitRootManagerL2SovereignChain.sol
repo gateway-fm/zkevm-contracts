@@ -3,6 +3,7 @@
 pragma solidity 0.8.28;
 import "../../PolygonZkEVMGlobalExitRootL2.sol";
 import "../lib/Hashes.sol";
+import "../../v2/interfaces/IGlobalExitRootManagerL2SovereignChain.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
@@ -10,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  */
 contract GlobalExitRootManagerL2SovereignChain is
     PolygonZkEVMGlobalExitRootL2,
+    IGlobalExitRootManagerL2SovereignChain,
     Initializable
 {
     // Current contract version

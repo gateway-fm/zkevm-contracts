@@ -164,7 +164,8 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
                 "0x",
                 ethers.Typed.address(bridgeManager),
                 ethers.ZeroAddress,
-                false
+                false,
+                ethers.ZeroAddress,
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");
 
@@ -174,7 +175,8 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
         await expect(
             sovereignChainBridgeContract.initialize(
                 arrayTokeInfoHash,
-                arrayAmount
+                arrayAmount,
+                ethers.ZeroAddress,
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InputArraysLengthMismatch");
 
@@ -184,7 +186,8 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
         await expect(
             sovereignChainBridgeContract.initialize(
                 arrayTokeInfoHashOk,
-                arrayAmountOk
+                arrayAmountOk,
+                ethers.ZeroAddress,
             )
         ).to.emit(sovereignChainBridgeContract, "SetInitialLocalBalanceTreeAmount")
         .withArgs(arrayTokeInfoHashOk[0], arrayAmountOk[0])

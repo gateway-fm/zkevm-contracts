@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.20;
 
-import "../../interfaces/IBridgeL2SovereignChains.sol";
+import "./IBridgeL2SovereignChainsPessimistic.sol";
 import "./PolygonZkEVMBridgeV2Pessimistic.sol";
 
 /**
@@ -12,7 +12,7 @@ import "./PolygonZkEVMBridgeV2Pessimistic.sol";
  */
 contract BridgeL2SovereignChainPessimistic is
     PolygonZkEVMBridgeV2Pessimistic,
-    IBridgeL2SovereignChains
+    IBridgeL2SovereignChainsPessimistic
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 

@@ -116,6 +116,7 @@ async function main() {
             "sovereignWETHAddressIsNotMintable",
             "globalExitRootUpdater",
             "globalExitRootRemover",
+            "emergencyBridgePauser"
         ];
         for (const parameterName of mandatorySovereignParams) {
             if (typeof sovereignParams[parameterName] === undefined || sovereignParams[parameterName] === "") {
@@ -548,6 +549,7 @@ async function main() {
             sovereignWETHAddressIsNotMintable: sovereignParams.sovereignWETHAddressIsNotMintable,
             globalExitRootUpdater: sovereignParams.globalExitRootUpdater,
             globalExitRootRemover: sovereignParams.globalExitRootRemover,
+            emergencyBridgePauser: sovereignParams.emergencyBridgePauser,
         };
         genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);
         // Add weth address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
