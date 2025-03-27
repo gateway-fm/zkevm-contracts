@@ -928,7 +928,7 @@ contract PolygonRollupManager is
     function rollbackBatches(
         IPolygonRollupBase rollupContract,
         uint64 targetBatch
-    ) external {
+    ) external nonReentrant {
         // Check msg.sender has _UPDATE_ROLLUP_ROLE rol or is the admin of the network
         if (
             !hasRole(_UPDATE_ROLLUP_ROLE, msg.sender) &&
