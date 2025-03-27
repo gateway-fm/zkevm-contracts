@@ -466,7 +466,7 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @notice Moves old native or remapped token (legacy) to the new mapped token. If the token is mintable, it will be burnt and minted, otherwise it will be transferred
+     * @notice Migrates remapped token (legacy) to the new mapped token. If the token is mintable, it will be burnt and minted, otherwise it will be transferred
      * @param legacyTokenAddress Address of legacy token to migrate
      * @param amount Legacy token balance to migrate
      */
