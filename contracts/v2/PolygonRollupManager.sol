@@ -503,6 +503,11 @@ contract PolygonRollupManager is
         string memory description,
         bytes32 programVKey
     ) external onlyRole(_ADD_ROLLUP_TYPE_ROLE) {
+        // Check proposed address is not this contract to avoid self-referential loops causing infinite delegate calls
+        if (consensusImplementation == address(this)) {
+            revert InvalidImplementationAddress();
+        }
+
         uint32 rollupTypeID = ++rollupTypeCount;
 
         if (rollupVerifierType == VerifierType.Pessimistic) {
@@ -731,6 +736,11 @@ contract PolygonRollupManager is
         // Check if rollup address was already added
         if (rollupAddressToID[address(rollupAddress)] != 0) {
             revert RollupAddressAlreadyExist();
+        }
+
+        // Check proposed address is not this contract to avoid self-referential loops causing infinite delegate calls
+        if (rollupAddress == address(this)) {
+            revert InvalidImplementationAddress();
         }
 
         // Increment rollup count
