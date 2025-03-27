@@ -739,8 +739,12 @@ contract PolygonRollupManager is
         }
 
         // Check proposed address is not this contract to avoid self-referential loops causing infinite delegate calls
-        if (rollupAddress == address(this)) {
+        if (rollupAddress == address(this) || rollupAddress.code.length == 0) {
             revert InvalidImplementationAddress();
+        }
+
+        if (verifier.code.length == 0) {
+            revert InvalidVerifierAddress();
         }
 
         // Increment rollup count
