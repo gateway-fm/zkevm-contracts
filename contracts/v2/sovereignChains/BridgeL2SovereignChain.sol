@@ -497,11 +497,14 @@ contract BridgeL2SovereignChain is
         }
 
         // Proceed to migrate the token
-        _bridgeWrappedAsset(TokenWrapped(legacyTokenAddress), amount);
+        uint256 amountToClaim = _bridgeWrappedAsset(
+            TokenWrapped(legacyTokenAddress),
+            amount
+        );
         _claimWrappedAsset(
             TokenWrapped(currentTokenAddress),
             msg.sender,
-            amount
+            amountToClaim
         );
 
         // Trigger event
@@ -509,7 +512,7 @@ contract BridgeL2SovereignChain is
             msg.sender,
             legacyTokenAddress,
             currentTokenAddress,
-            amount
+            amountToClaim
         );
     }
 
@@ -619,23 +622,32 @@ contract BridgeL2SovereignChain is
      * note This function has been extracted to be able to override it by other contracts like Bridge2SovereignChain
      * @param tokenWrapped Wrapped token to burnt
      * @param amount Amount of tokens
+     * @return Amount of tokens that must be added to the leaf after the bridge operation
+     * @dev in case of tokens with non-standard transfers behavior like fee-on-transfer tokens or Max-value amount transfers user balance tokens,
+     * It is possible that the amount of tokens sent is different from the amount of tokens received, in those cases, the amount that should be
+     * added to the leaf has to be the amount received by the bridge
      */
     function _bridgeWrappedAsset(
         TokenWrapped tokenWrapped,
         uint256 amount
-    ) internal override {
+    ) internal override returns (uint256) {
         // The token is either (1) a correctly wrapped token from another network
         // or (2) wrapped with custom contract from origin network
         if (wrappedAddressIsNotMintable[address(tokenWrapped)]) {
+            uint256 balanceBefore = tokenWrapped.balanceOf(address(this));
             // Don't use burn but transfer to bridge
             IERC20Upgradeable(address(tokenWrapped)).safeTransferFrom(
                 msg.sender,
                 address(this),
                 amount
             );
+            uint256 balanceAfter = tokenWrapped.balanceOf(address(this));
+
+            return balanceAfter - balanceBefore;
         } else {
             // Burn tokens
             tokenWrapped.burn(msg.sender, amount);
+            return amount;
         }
     }
 

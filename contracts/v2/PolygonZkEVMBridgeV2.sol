@@ -253,7 +253,9 @@ contract PolygonZkEVMBridgeV2 is
             // In case ether is the native token, WETHToken will be 0, and the address 0 is already checked
             if (token == address(WETHToken)) {
                 // Burn tokens
-                _bridgeWrappedAsset(TokenWrapped(token), amount);
+                /// @dev in case this function is called from a sovereign bridge that has remapped wethToken with a non-standard token,
+                /// we have to add to the leaf the amount received to the bridge, not the amount sent
+                leafAmount = _bridgeWrappedAsset(TokenWrapped(token), amount);
 
                 // Both origin network and originTokenAddress will be 0
                 // Metadata will be empty
@@ -267,8 +269,12 @@ contract PolygonZkEVMBridgeV2 is
                     tokenInfo.originNetwork != _MAINNET_NETWORK_ID
                 ) {
                     // The token is a wrapped token from another network
-
-                    _bridgeWrappedAsset(TokenWrapped(token), amount);
+                    /// @dev in case this function is called from a sovereign bridge that has remapped the token with a non-standard token,
+                    /// we have to add to the leaf the amount received to the bridge, not the amount sent
+                    leafAmount = _bridgeWrappedAsset(
+                        TokenWrapped(token),
+                        amount
+                    );
 
                     originTokenAddress = tokenInfo.originTokenAddress;
                     originNetwork = tokenInfo.originNetwork;
@@ -379,12 +385,14 @@ contract PolygonZkEVMBridgeV2 is
         }
 
         // Burn wETH tokens
-        _bridgeWrappedAsset(WETHToken, amountWETH);
+        /// @dev in case this function is called from a sovereign bridge that has remapped wethToken with a non-standard token,
+        /// we have to add to the leaf the amount received to the bridge, not the amount sent
+        uint256 leafAmount = _bridgeWrappedAsset(WETHToken, amountWETH);
 
         _bridgeMessage(
             destinationNetwork,
             destinationAddress,
-            amountWETH,
+            leafAmount,
             forceUpdateGlobalExitRoot,
             metadata
         );
@@ -996,13 +1004,15 @@ contract PolygonZkEVMBridgeV2 is
      * note This  function has been extracted to be able to override it by other contracts like Bridge2SovereignChain
      * @param tokenWrapped Wrapped token to burnt
      * @param amount Amount of tokens
+     * @return Amount of tokens that must be added to the leaf after the bridge operation
      */
     function _bridgeWrappedAsset(
         TokenWrapped tokenWrapped,
         uint256 amount
-    ) internal virtual {
+    ) internal virtual returns (uint256) {
         // Burn tokens
         tokenWrapped.burn(msg.sender, amount);
+        return amount;
     }
 
     /**
