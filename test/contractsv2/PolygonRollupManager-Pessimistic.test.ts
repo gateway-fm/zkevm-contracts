@@ -1,6 +1,8 @@
 /* eslint-disable no-plusplus, no-await-in-loop */
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
+import { setCode } from "@nomicfoundation/hardhat-network-helpers";
+
 import {
     VerifierRollupHelperMock,
     ERC20PermitMock,
@@ -422,7 +424,8 @@ describe("Polygon Rollup Manager with Polygon Pessimistic Consensus", () => {
 
         // add existing rollup: pessimistic type
         const newCreatedRollupID = 1;
-
+        // Add arbitrary bytecode to the implementation
+        await setCode(rollupAddress, computeRandomBytes(32))
         await expect(
             rollupManagerContract.connect(timelock).addExistingRollup(
                 rollupAddress,

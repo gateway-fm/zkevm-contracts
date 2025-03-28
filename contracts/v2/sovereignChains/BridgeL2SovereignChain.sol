@@ -571,7 +571,12 @@ contract BridgeL2SovereignChain is
     function setBridgeManager(
         address _bridgeManager
     ) external onlyBridgeManager {
+        if (_bridgeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         bridgeManager = _bridgeManager;
+
         emit SetBridgeManager(bridgeManager);
     }
 
@@ -663,6 +668,10 @@ contract BridgeL2SovereignChain is
         address destinationAddress,
         uint256 amount
     ) internal override {
+        if (destinationAddress == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         // If is not mintable transfer instead of mint
         if (wrappedAddressIsNotMintable[address(tokenWrapped)]) {
             // Transfer tokens

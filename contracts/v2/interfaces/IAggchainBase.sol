@@ -91,6 +91,8 @@ interface IAggchainBaseErrors {
     error OnlyAggchainManager();
     /// @notice Thrown when the caller is not the pending aggchain manager
     error OnlyPendingAggchainManager();
+    /// @notice Thrown when trying to call a function with an input zero address
+    error InvalidZeroAddress();
 }
 
 /**

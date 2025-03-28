@@ -1,5 +1,7 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
+import { setCode } from "@nomicfoundation/hardhat-network-helpers";
+
 import {
     AggLayerGateway,
     ERC20PermitMock,
@@ -20,7 +22,7 @@ const {
 const { CONSENSUS_TYPE, encodeInitAggchainManager } = require("../../src/utils-common-aggchain");
 const { getAggchainVKeySelector } = require("../../src/utils-common-aggchain");
 const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
-const {NO_ADDRESS} = require("../../src/constants");
+const { NO_ADDRESS } = require("../../src/constants");
 const randomPessimisticVKey = computeRandomBytes(32);
 
 describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
@@ -566,7 +568,8 @@ describe("Polygon rollup manager aggregation layer v3 UPGRADED", () => {
         const initPessimisticRoot = computeRandomBytes(32);
         // add existing rollup: pessimistic type
         const newCreatedRollupID = 1;
-
+        // Add arbitrary bytecode to the implementation
+        await setCode(rollupAddress, computeRandomBytes(32))
         await expect(
             rollupManagerContract
                 .connect(timelock)

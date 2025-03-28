@@ -358,6 +358,11 @@ contract AggchainFEP is AggchainBase {
     /// @notice Initializer AggchainFEP storage
     /// @param _initParams The initialization parameters for the contract.
     function _initializeAggchain(InitParams memory _initParams) internal {
+
+        if(_initParams.aggchainManager == address(0) || _initParams.optimisticModeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         if (_initParams.submissionInterval == 0) {
             revert SubmissionIntervalMustBeGreaterThanZero();
         }
@@ -654,12 +659,46 @@ contract AggchainFEP is AggchainBase {
     //         optimisticModeManager functions                //
     ////////////////////////////////////////////////////////////
 
+    /// @notice Starts the aggchainManager role transfer
+    ///         This is a two step process, the pending aggchainManager must accept to finalize the process
+    /// @param newAggchainManager Address of the new aggchainManager
+    function transferAggchainManagerRole(
+        address newAggchainManager
+    ) external onlyAggchainManager {
+
+        if(newAggchainManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
+        pendingAggchainManager = newAggchainManager;
+
+        emit TransferAggchainManagerRole(aggchainManager, newAggchainManager);
+    }
+
+    /// @notice Allow the current pending aggchainManager to accept the aggchainManager role
+    function acceptAggchainManagerRole() external {
+        if (pendingAggchainManager != msg.sender) {
+            revert OnlyPendingAggchainManager();
+        }
+
+        address oldAggchainManager = aggchainManager;
+        aggchainManager = pendingAggchainManager;
+        delete pendingAggchainManager;
+
+        emit AcceptAggchainManagerRole(oldAggchainManager, aggchainManager);
+    }
+
     /// @notice Starts the optimisticModeManager role transfer
     /// This is a two step process, the pending optimisticModeManager must accepted to finalize the process
     /// @param newOptimisticModeManager Address of the new optimisticModeManager
     function transferOptimisticModeManagerRole(
         address newOptimisticModeManager
     ) external onlyOptimisticModeManager {
+
+        if(newOptimisticModeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         pendingOptimisticModeManager = newOptimisticModeManager;
 
         emit TransferOptimisticModeManagerRole(

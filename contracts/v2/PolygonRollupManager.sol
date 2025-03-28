@@ -743,10 +743,6 @@ contract PolygonRollupManager is
             revert InvalidImplementationAddress();
         }
 
-        if (verifier.code.length == 0) {
-            revert InvalidVerifierAddress();
-        }
-
         // Increment rollup count
         uint32 rollupID = ++rollupCount;
 
@@ -768,6 +764,9 @@ contract PolygonRollupManager is
             rollup.programVKey = programVKey;
             rollup.lastPessimisticRoot = initPessimisticRoot;
             rollup.lastLocalExitRoot = initRoot;
+            if (verifier.code.length == 0) {
+                revert InvalidVerifierAddress();
+            }
         } else if (rollupVerifierType == VerifierType.ALGateway) {
             if (
                 verifier != address(0) ||
@@ -787,6 +786,9 @@ contract PolygonRollupManager is
             }
 
             rollup.batchNumToStateRoot[0] = initRoot;
+            if (verifier.code.length == 0) {
+                revert InvalidVerifierAddress();
+            }
         }
 
         emit AddExistingRollup(
