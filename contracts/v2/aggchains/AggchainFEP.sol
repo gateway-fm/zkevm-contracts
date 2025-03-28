@@ -358,8 +358,10 @@ contract AggchainFEP is AggchainBase {
     /// @notice Initializer AggchainFEP storage
     /// @param _initParams The initialization parameters for the contract.
     function _initializeAggchain(InitParams memory _initParams) internal {
-
-        if(_initParams.aggchainManager == address(0) || _initParams.optimisticModeManager == address(0)) {
+        if (
+            _initParams.aggchainManager == address(0) ||
+            _initParams.optimisticModeManager == address(0)
+        ) {
             revert InvalidZeroAddress();
         }
 
@@ -432,6 +434,10 @@ contract AggchainFEP is AggchainBase {
     function getAggchainHash(
         bytes memory aggchainData
     ) external view returns (bytes32) {
+        if (aggchainData.length != 32 * 3) {
+            revert InvalidAggchainDataLength();
+        }
+
         // decode the aggchainData
         (
             bytes2 _aggchainVKeyVersion,
@@ -554,6 +560,10 @@ contract AggchainFEP is AggchainBase {
     function onVerifyPessimistic(
         bytes memory aggchainData
     ) external onlyRollupManager {
+        if (aggchainData.length != 32 * 3) {
+            revert InvalidAggchainDataLength();
+        }
+
         // decode the aggchainData
         (, bytes32 _outputRoot, uint256 _l2BlockNumber) = abi.decode(
             aggchainData,
@@ -665,8 +675,7 @@ contract AggchainFEP is AggchainBase {
     function transferAggchainManagerRole(
         address newAggchainManager
     ) external onlyAggchainManager {
-
-        if(newAggchainManager == address(0)) {
+        if (newAggchainManager == address(0)) {
             revert InvalidZeroAddress();
         }
 
@@ -694,8 +703,7 @@ contract AggchainFEP is AggchainBase {
     function transferOptimisticModeManagerRole(
         address newOptimisticModeManager
     ) external onlyOptimisticModeManager {
-
-        if(newOptimisticModeManager == address(0)) {
+        if (newOptimisticModeManager == address(0)) {
             revert InvalidZeroAddress();
         }
 

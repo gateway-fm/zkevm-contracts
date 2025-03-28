@@ -93,6 +93,8 @@ interface IAggchainBaseErrors {
     error OnlyPendingAggchainManager();
     /// @notice Thrown when trying to call a function with an input zero address
     error InvalidZeroAddress();
+    /// @notice Thrown when the aggchainData has an invalid format
+    error InvalidAggchainDataLength();
 }
 
 /**
