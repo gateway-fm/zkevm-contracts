@@ -270,7 +270,7 @@ describe("AggLayerGateway tests", () => {
     it("verifyPessimisticProof", async () => {
         // verifyPessimisticProof
         // check RouteNotFound
-        await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], input["proof"]))
+        await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], `${selector}${input["proof"].slice(2)}`))
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteNotFound")
             .withArgs(selector);
 
@@ -309,7 +309,7 @@ describe("AggLayerGateway tests", () => {
             .withArgs(selector, verifierContract.target, pessimisticVKey);
 
         // check RouteIsFrozen
-        await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], input["proof"]))
+        await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], `${selector}${input["proof"].slice(2)}`))
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteIsFrozen")
             .withArgs(selector);
     });

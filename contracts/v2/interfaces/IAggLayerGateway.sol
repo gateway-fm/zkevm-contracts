@@ -83,6 +83,9 @@ interface IAggLayerGatewayErrors {
 
     /// @notice Thrown when trying to call a function with an input zero address
     error InvalidZeroAddress();
+
+    /// @notice Thrown when the input proof bytes are invalid.
+    error InvalidProofBytesLength();
 }
 
 /// @title IAggLayerGateway

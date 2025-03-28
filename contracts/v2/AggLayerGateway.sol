@@ -125,6 +125,11 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         bytes calldata publicValues,
         bytes calldata proofBytes
     ) external view {
+        /// @dev By protocol the proof should at least have the 4 bytes selector, the other bytes are not part of our protocol
+        if (proofBytes.length < 4) {
+            revert InvalidProofBytesLength();
+        }
+
         bytes4 ppSelector = bytes4(proofBytes[:4]);
 
         AggLayerVerifierRoute memory route = pessimisticVKeyRoutes[ppSelector];
