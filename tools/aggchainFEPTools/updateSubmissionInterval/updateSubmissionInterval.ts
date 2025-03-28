@@ -3,15 +3,15 @@ import fs = require("fs");
 
 import params from "./parameters.json";
 import {
-  AggLayerGateway,
+    AggchainFEP,
 } from "../../../typechain-types";
-import {transactionTypes, genOperation} from "../../utils";
-import {decodeScheduleData} from "../../../upgrade/utils";
+import { transactionTypes, genOperation}  from "../../utils";
+import { decodeScheduleData } from "../../../upgrade/utils";
 import { logger } from "../../../src/logger";
 import { checkParams } from "../../../src/utils";
 
 async function main() {
-    logger.info("Starting tool to add pessimistic vkey route to AggLayerGateway contract");
+    logger.info("Starting tool to update submission interval");
 
     /////////////////////////////
     ///        CONSTANTS      ///
@@ -20,10 +20,7 @@ async function main() {
     const dateStr = new Date().toISOString();
     const destPath = params.outputPath
         ? path.join(__dirname, params.outputPath)
-        : path.join(__dirname, `add_pp_route_output_${params.type}_${dateStr}.json`);
-
-    const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
-    const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
+        : path.join(__dirname, `update_submission_interval_output_${params.type}_${dateStr}.json`);
 
     /////////////////////////////
     ///   CHECK TOOL PARAMS   ///
@@ -32,10 +29,8 @@ async function main() {
 
     const mandatoryParameters = [
         "type",
-        "aggLayerGatewayAddress",
-        "pessimisticVKeySelector",
-        "verifier",
-        "pessimisticVKey"
+        "rollupAddress",
+        "submissionInterval"
     ];
 
     switch (params.type) {
@@ -56,13 +51,12 @@ async function main() {
         logger.error(`Error checking parameters. ${e.message}`);
         process.exit(1);
     }
+    
 
     const {
         type,
-        aggLayerGatewayAddress,
-        pessimisticVKeySelector,
-        verifier,
-        pessimisticVKey
+        rollupAddress,
+        submissionInterval
     } = params;
     
     // Load provider
@@ -100,44 +94,40 @@ async function main() {
         }
     }
 
-    logger.info('Load deployer');
-    // Load deployer
-    let deployer;
-    if (params.deployerPvtKey) {
-        deployer = new ethers.Wallet(params.deployerPvtKey, currentProvider);
+    logger.info('Load aggchainManager');
+    // Load aggchainManager
+    let aggchainManager;
+    if (params.aggchainManagerPvk) {
+        aggchainManager = new ethers.Wallet(params.aggchainManagerPvk, currentProvider);
     } else if (process.env.MNEMONIC) {
-        deployer = ethers.HDNodeWallet.fromMnemonic(
+        aggchainManager = ethers.HDNodeWallet.fromMnemonic(
             ethers.Mnemonic.fromPhrase(process.env.MNEMONIC),
             "m/44'/60'/0'/0/0"
         ).connect(currentProvider);
     } else {
-        [deployer] = await ethers.getSigners();
+        [aggchainManager] = await ethers.getSigners();
     }
 
-    logger.info(`Using with: ${deployer.address}`);
+    logger.info(`Using with: ${aggchainManager.address}`);
 
     // --network <input>
-    logger.info("Load AggLayerGateway contract");
-    const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
-    const aggLayerGateway = (await AggLayerGatewayFactory.attach(
-        aggLayerGatewayAddress
-    )) as AggLayerGateway;
+    logger.info("Load AggchainFEP contract");
+    const AggchainFEPFactory = await ethers.getContractFactory("AggchainFEP", aggchainManager);
+    const aggchainFEP = (await AggchainFEPFactory.attach(
+        rollupAddress
+    )) as AggchainFEP;
 
-    logger.info(`AggLayerGateway address: ${aggLayerGateway.target}`);
+    logger.info(`AggchainFEP address: ${aggchainFEP.target}`);
 
     if(type === transactionTypes.TIMELOCK){
-        logger.info("Creating timelock tx to add pessimistic vkey route...");
+        logger.info("Creating timelock tx to update submission interval....");
         const salt = params.timelockSalt || ethers.ZeroHash;
         const predecessor = params.predecessor || ethers.ZeroHash;
-        const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
+        const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", aggchainManager);
         const operation = genOperation(
-            aggLayerGatewayAddress,
+            rollupAddress,
             0, // value
-            AggLayerGatewayFactory.interface.encodeFunctionData("addPessimisticVKeyRoute", [
-                pessimisticVKeySelector,
-                verifier,
-                pessimisticVKey
-            ]),
+            AggchainFEPFactory.interface.encodeFunctionData("updateSubmissionInterval", [submissionInterval]),
             predecessor, // predecessor
             salt // salt
         );
@@ -163,42 +153,28 @@ async function main() {
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
-        outputJson.decodedScheduleData = await decodeScheduleData(scheduleData, AggLayerGatewayFactory);
+        outputJson.decodedScheduleData = await decodeScheduleData(scheduleData, AggchainFEPFactory);
     } else if(type === transactionTypes.MULTISIG){
-        logger.info("Creating calldata to add pessimistic vkey route from multisig...");
-        const txAddPPVKeyRoute = AggLayerGatewayFactory.interface.encodeFunctionData("addPessimisticVKeyRoute", [
-            pessimisticVKeySelector,
-            verifier,
-            pessimisticVKey
-        ]);
-        outputJson.aggLayerGatewayAddress = aggLayerGatewayAddress;
-        outputJson.pessimisticVKeySelector = pessimisticVKeySelector;
-        outputJson.verifier = verifier;
-        outputJson.pessimisticVKey = pessimisticVKey;
-        outputJson.txAddPPVKeyRoute = txAddPPVKeyRoute;
+        logger.info("Creating calldata to update submission interval from multisig...");
+        const txUpdateSubmissionInterval = AggchainFEPFactory.interface.encodeFunctionData("updateSubmissionInterval",
+            [submissionInterval]
+        );
+        outputJson.rollupAddress = rollupAddress;
+        outputJson.submissionInterval = submissionInterval;
+        outputJson.txUpdateSubmissionInterval = txUpdateSubmissionInterval;
     } else {
-        logger.info("Send tx to add pessimistic vkey route...");
-        logger.info("Check deployer role");
-        if ((await aggLayerGateway.hasRole(AL_ADD_PP_ROUTE_ROLE, deployer.address)) == false) {
-            if ((await aggLayerGateway.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)) == false) {
-                logger.error("Deployer does not have admin role. Use the test flag on deploy_parameters if this is a test deployment");
+        logger.info("Send tx to update submission interval...");
+        logger.info("Check aggchainManager");
+        if ((await aggchainFEP.aggchainManager()) != aggchainManager.address) {
+                logger.error("Invalid aggchainManager");
                 process.exit(1);
-            }
-            // Grant role AL_ADD_PP_ROUTE_ROLE to deployer
-            await aggLayerGateway.grantRole(AL_ADD_PP_ROUTE_ROLE, deployer.address);
         }
-        logger.info("Sending transaction to add pessimistic vkey route...");
+        logger.info(`Sending updateSubmissionInterval transaction to AggchainFEP ${rollupAddress}...`);
         try {
-            const tx = await aggLayerGateway.addPessimisticVKeyRoute(
-                pessimisticVKeySelector,
-            verifier,
-            pessimisticVKey
-            );
+            const tx = await aggchainFEP.updateSubmissionInterval(submissionInterval);
             await tx.wait();
-            outputJson.aggLayerGatewayAddress = aggLayerGatewayAddress;
-            outputJson.pessimisticVKeySelector = pessimisticVKeySelector;
-            outputJson.verifier = verifier;
-            outputJson.pessimisticVKey = pessimisticVKey;
+            outputJson.rollupAddress = rollupAddress;
+            outputJson.submissionInterval = submissionInterval;
             outputJson.txHash = tx.hash;
         } catch(e){
             logger.error(`Error sending tx: ${e.message}`);
@@ -213,7 +189,7 @@ async function main() {
 main().then(() => {
     process.exit(0);
 }, (err) => {
-    console.log(err.message);
-    console.log(err.stack);
+    logger.info(err.message);
+    logger.info(err.stack);
     process.exit(1);
 });

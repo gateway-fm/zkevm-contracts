@@ -161,7 +161,7 @@ async function main() {
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
-        outputJson.decodedScheduleData = decodeScheduleData(scheduleData, AggLayerGatewayFactory);
+        outputJson.decodedScheduleData = await decodeScheduleData(scheduleData, AggLayerGatewayFactory);
     } else if(type === transactionTypes.MULTISIG){
         logger.info("Creating calldata to update default vkey from multisig...");
         const txUpdateDefaultAggchainVKey = AggLayerGatewayFactory.interface.encodeFunctionData("updateDefaultAggchainVKey", [
