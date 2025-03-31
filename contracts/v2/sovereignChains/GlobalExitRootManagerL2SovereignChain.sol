@@ -122,8 +122,11 @@ contract GlobalExitRootManagerL2SovereignChain is
 
         // set globalExitRootUpdater
         globalExitRootUpdater = _globalExitRootUpdater;
+        emit AcceptGlobalExitRootUpdater(address(0), globalExitRootUpdater);
+
         // set globalExitRootRemover
         globalExitRootRemover = _globalExitRootRemover;
+        emit AcceptGlobalExitRootRemover(address(0), globalExitRootRemover);
     }
 
     modifier onlyGlobalExitRootUpdater() {
