@@ -124,7 +124,17 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 999,
+                        runs: 999, // should have same runs than BridgeL2SovereignChain
+                    },
+                    evmVersion: "shanghai",
+                },
+            },
+            "contracts/v2/lib/TokenWrappedBridgeInitCode.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999, // should have same runs than PolygonZkEVMBridgeV2
                     },
                     evmVersion: "shanghai",
                 },
@@ -134,7 +144,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 20,
+                        runs: 999, // should have same runs than PolygonZkEVMBridgeV2
                     },
                     evmVersion: "shanghai",
                 }, // try yul optimizer

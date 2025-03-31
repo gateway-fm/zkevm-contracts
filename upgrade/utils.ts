@@ -83,6 +83,28 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
                 objectDecodedData[currentParam.name] = decodedData?.args[j];
             }
             objectDecoded["decodedData"] = objectDecodedData;
+
+        } else if (currentParam.name == "payloads") {
+            // for each payload
+            const payloads = timelockTx?.args[i];
+            for (let j = 0; j < payloads.length; j++) {
+                const data = payloads[j];
+                const decodedProxyAdmin = proxyAdmin.interface.parseTransaction({
+                    data,
+                });
+
+                const resultDecodeProxyAdmin = {} as any;
+                resultDecodeProxyAdmin.signature = decodedProxyAdmin?.signature;
+                resultDecodeProxyAdmin.selector = decodedProxyAdmin?.selector;
+
+                const paramsArrayData = decodedProxyAdmin?.fragment.inputs;
+
+                for (let n = 0; n < paramsArrayData?.length; n++) {
+                    const currentParam = paramsArrayData[n];
+                    resultDecodeProxyAdmin[currentParam.name] = decodedProxyAdmin?.args[n];
+                }
+                objectDecoded[`decodePayload_${j}`] = resultDecodeProxyAdmin;
+            }
         }
     }
     return objectDecoded;

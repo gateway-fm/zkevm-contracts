@@ -5,5 +5,5 @@
     "deployerPvtKey": "0x..",
     "rpc": "...",
     "rollupManagerAddress": "0x...",
-    "aggLayerGatewayAddress":"0x...",
+    "aggLayerGatewayAddress":"0x..."
 }

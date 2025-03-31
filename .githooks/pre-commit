@@ -47,6 +47,7 @@ if npm run lint; then
     cp artifacts/contracts/v2/aggchains/AggchainECDSA.sol/AggchainECDSA.json compiled-contracts/
     ## Aggchain FEP is obtained from a private repo, should be updated manually until it is public, therefore it is commented out
     ## cp artifacts/contracts/v2/aggchains/AggchainFEP.sol/AggchainFEP.json compiled-contracts/
+    ## Last version of foundry is giving problems when building contracts, therefore we need to downgrade to 0.3.0    
     forge selectors ls > docs/selectors.txt
     git add docs/selectors.txt
     git add compiled-contracts

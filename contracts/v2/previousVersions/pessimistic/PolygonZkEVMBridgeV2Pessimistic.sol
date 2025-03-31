@@ -10,7 +10,7 @@ import "../../../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
 import "../../../interfaces/IBridgeMessageReceiver.sol";
 import "../../interfaces/IPolygonZkEVMBridgeV2.sol";
 import "../../../lib/EmergencyManager.sol";
-import "../../../lib/GlobalExitRootLib.sol";
+import "./GlobalExitRootLibPessimistic.sol";
 
 /**
  * PolygonZkEVMBridge that will be deployed on Ethereum and all Polygon rollups
@@ -775,7 +775,7 @@ contract PolygonZkEVMBridgeV2Pessimistic is
         // Note that previusly timestamps were setted, since in only checked if != 0 it's ok
         uint256 blockHashGlobalExitRoot = globalExitRootManager
             .globalExitRootMap(
-                GlobalExitRootLib.calculateGlobalExitRoot(
+                GlobalExitRootLibPessimistic.calculateGlobalExitRoot(
                     mainnetExitRoot,
                     rollupExitRoot
                 )

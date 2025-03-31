@@ -16,6 +16,9 @@ contract BridgeL2SovereignChain is
 {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
+    // Current bridge version
+    string public constant BRIDGE_SOVEREIGN_VERSION = "al-v0.3.0";
+
     // Map to store wrappedAddresses that are not mintable
     mapping(address wrappedAddress => bool isNotMintable)
         public wrappedAddressIsNotMintable;
@@ -93,7 +96,7 @@ contract BridgeL2SovereignChain is
     /**
      * Disable initializers on the implementation following the best practices
      */
-    constructor() {
+    constructor() PolygonZkEVMBridgeV2() {
         _disableInitializers();
     }
 

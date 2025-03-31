@@ -12,6 +12,9 @@ contract GlobalExitRootManagerL2SovereignChain is
     PolygonZkEVMGlobalExitRootL2,
     Initializable
 {
+    // Current contract version
+    string public constant GER_SOVEREIGN_VERSION = "al-v0.3.0";
+
     // globalExitRootUpdater address
     address public globalExitRootUpdater;
 
@@ -101,6 +104,7 @@ contract GlobalExitRootManagerL2SovereignChain is
         }
         _;
     }
+
     /**
      * @notice Insert a new global exit root
      * @dev After inserting the new global exit root, the hash chain value is updated.

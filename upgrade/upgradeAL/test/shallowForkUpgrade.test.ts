@@ -1,13 +1,12 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
-/* eslint-disable no-console, no-inner-declarations, no-undef, import/no-unresolved */
+/* eslint-disable, no-inner-declarations, no-undef, import/no-unresolved */
 import { expect } from "chai";
 import path = require("path");
-import fs = require("fs");
-
+import { logger } from "../../../src/logger";
 import * as dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { ethers } from "hardhat";
-import { PolygonRollupManager, PolygonZkEVMTimelock, PolygonRollupManagerPessimistic } from "../../typechain-types";
+import { PolygonRollupManager, PolygonZkEVMTimelock, PolygonRollupManagerPessimistic, PolygonZkEVMBridgeV2, PolygonZkEVMBridgeV2Pessimistic, PolygonZkEVMGlobalExitRootV2, PolygonZkEVMGlobalExitRootV2Pessimistic } from "../../typechain-types";
 
 import { time, reset, setBalance, mine } from "@nomicfoundation/hardhat-network-helpers";
 import { checkParams } from "../../../src/utils";
@@ -17,6 +16,7 @@ const upgradeOutput = require("../upgrade_output.json");
 
 describe('Should shallow fork network, execute upgrade and validate Upgrade', () => {
     it('Should shallow fork network, execute upgrade and validate Upgrade', async () => {
+        const AL_VERSION = "al-v0.3.0";
         const mandatoryParameters = ["network", "rollupManagerAddress"];
         checkParams(upgradeParams, mandatoryParameters);
         if (!["mainnet", "sepolia"].includes(upgradeParams.network)) {
@@ -25,23 +25,37 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
 
         // hard fork
         const rpc = typeof upgradeParams.rpc === "undefined" ? `https://${upgradeParams.network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}` : upgradeParams.rpc;
-        console.log(`Shallow forking ${rpc}`);
+        logger.info(`Shallow forking ${rpc}`);
         await reset(rpc, upgradeOutput.implementationDeployBlockNumber + 1);
         await mine();
         let forkedBlock = await ethers.provider.getBlockNumber();
         // If forked block is lower than implementation deploy block, wait until it is reached
         while (forkedBlock <= upgradeOutput.implementationDeployBlockNumber) {
-            console.log(`Forked block is ${forkedBlock}, waiting until ${upgradeOutput.implementationDeployBlockNumber}, wait 1 minute...`);
+            logger.info(`Forked block is ${forkedBlock}, waiting until ${upgradeOutput.implementationDeployBlockNumber}, wait 1 minute...`);
             await new Promise(r => setTimeout(r, 60000));
-            console.log("Retrying fork...")
+            logger.info("Retrying fork...")
             await reset(rpc);
         }
-        console.log("Shallow fork Succeed!")
+        logger.info("Shallow fork Succeed!")
+
         // Get contracts
         const rollupManagerPessimisticFactory = await ethers.getContractFactory("PolygonRollupManagerPessimistic");
         const rollupManagerPessimisticContract = rollupManagerPessimisticFactory.attach(
             upgradeParams.rollupManagerAddress
         ) as PolygonRollupManagerPessimistic;
+
+        const bridgeAddress = await rollupManagerPessimisticContract.bridgeAddress();
+        const bridgePessimisticFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2Pessimistic");
+        const bridgePessimisticContract = bridgePessimisticFactory.attach(
+            bridgeAddress
+        ) as PolygonZkEVMBridgeV2Pessimistic;
+
+        const globalExitRootManager = await rollupManagerPessimisticContract.globalExitRootManager();
+        const gerPessimisticFactory = await ethers.getContractFactory("PolygonZkEVMGlobalExitRootV2Pessimistic");
+        const gerPessimisticContract = gerPessimisticFactory.attach(
+            globalExitRootManager
+        ) as PolygonZkEVMGlobalExitRootV2Pessimistic;
+
         // Get admin address from grant role events, should be a timelock and add balance
         const adminRoleFilter = rollupManagerPessimisticContract.filters.RoleGranted(ethers.ZeroHash, null, null);
         const adminRoleEvents = await rollupManagerPessimisticContract.queryFilter(adminRoleFilter, 0, "latest");
@@ -49,10 +63,10 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
             throw new Error("No admin role granted");
         }
         const adminRoleAddress = adminRoleEvents[0].args.account;
-        console.log(`Default Admin rollup manager role address: ${adminRoleAddress}`);
+        logger.info(`Default Admin rollup manager role address: ${adminRoleAddress}`);
         // Expect upgrade param timelock address to equal admin role address
         expect(upgradeOutput.timelockContractAddress).to.be.equal(adminRoleAddress);
-        console.log("✓ admin role is same as upgrade output file timelock address");
+        logger.info("✓ admin role is same as upgrade output file timelock address");
 
         // Get timelock admin role
         // TODO: move this logic to utils
@@ -76,20 +90,19 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
             throw new Error("Timelock admin address does not have proposer and executor role");
         }
 
-        console.log(`Proposer/executor timelock role address: ${proposerRoleAddress}`);
+        logger.info(`Proposer/executor timelock role address: ${proposerRoleAddress}`);
         await ethers.provider.send("hardhat_impersonateAccount", [proposerRoleAddress]);
         const proposerRoleSigner = await ethers.getSigner(proposerRoleAddress as any);
         await setBalance(proposerRoleAddress, 100n ** 18n);
-        console.log(`✓ Funded proposer account ${proposerRoleAddress}`);
+        logger.info(`✓ Funded proposer account ${proposerRoleAddress}`);
 
         // Get current rollupManager params to compare after upgrade
         const rollupManagerVersion = await rollupManagerPessimisticContract.ROLLUP_MANAGER_VERSION();
         expect(rollupManagerVersion).to.equal("pessimistic");
-        const bridgeAddress = await rollupManagerPessimisticContract.bridgeAddress();
+        // Rollup manager prev params
         const calculateRewardPerBatch = await rollupManagerPessimisticContract.calculateRewardPerBatch();
         const batchFee = await rollupManagerPessimisticContract.getBatchFee();
         const forcedBatchFee = await rollupManagerPessimisticContract.getForcedBatchFee();
-        const globalExitRootManager = await rollupManagerPessimisticContract.globalExitRootManager();
         const isEmergencyState = await rollupManagerPessimisticContract.isEmergencyState();
         const lastAggregationTimestamp = await rollupManagerPessimisticContract.lastAggregationTimestamp();
         const lastDeactivatedEmergencyStateTimestamp =
@@ -100,28 +113,42 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
         const totalSequencedBatches = await rollupManagerPessimisticContract.totalSequencedBatches();
         const totalVerifiedBatches = await rollupManagerPessimisticContract.totalVerifiedBatches();
 
+        // Bridge prev params
+        const bridgeGlobalExitRootManager = await bridgePessimisticContract.globalExitRootManager();
+        const bridgeLastUpdatedDepositCount = await bridgePessimisticContract.lastUpdatedDepositCount();
+        const bridgeRollupManager = await bridgePessimisticContract.polygonRollupManager();
+        const bridgeGasTokenAddress = await bridgePessimisticContract.gasTokenAddress();
+        const bridgeGasTokenNetwork = await bridgePessimisticContract.gasTokenNetwork();
+        const bridgeGasTokenMetadata = await bridgePessimisticContract.gasTokenMetadata();
+
+        // GER prev params
+        const gerBridgeAddress = await gerPessimisticContract.bridgeAddress();
+        const gerRollupManger = await gerPessimisticContract.rollupManager();
+
         // Send schedule transaction
         const txScheduleUpgrade = {
             to: upgradeOutput.timelockContractAddress,
             data: upgradeOutput.scheduleData,
         };
         await (await proposerRoleSigner.sendTransaction(txScheduleUpgrade)).wait();
-        console.log("✓ Sent schedule transaction");
+        logger.info("✓ Sent schedule transaction");
         // Increase time to bypass the timelock delay
         const timelockDelay = upgradeOutput.decodedScheduleData.delay;
         await time.increase(Number(timelockDelay));
-        console.log(`✓ Increase time ${timelockDelay} seconds to bypass timelock delay`);
+        logger.info(`✓ Increase time ${timelockDelay} seconds to bypass timelock delay`);
         // Send execute transaction
         const txExecuteUpgrade = {
             to: upgradeOutput.timelockContractAddress,
             data: upgradeOutput.executeData,
         };
         await (await proposerRoleSigner.sendTransaction(txExecuteUpgrade)).wait();
-        console.log(`✓ Sent execute transaction`);
+        logger.info(`✓ Sent execute transaction`);
+        // Check rollup manager contract
         const rollupMangerFactory = await ethers.getContractFactory("PolygonRollupManager");
         const rollupManagerContract = rollupMangerFactory.attach(
             upgradeParams.rollupManagerAddress
         ) as PolygonRollupManager;
+        expect(await rollupManagerContract.ROLLUP_MANAGER_VERSION()).to.equal(AL_VERSION);
         expect(await rollupManagerContract.bridgeAddress()).to.equal(bridgeAddress);
         expect(await rollupManagerContract.calculateRewardPerBatch()).to.equal(calculateRewardPerBatch);
         expect(await rollupManagerContract.getBatchFee()).to.equal(batchFee);
@@ -138,7 +165,32 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
         expect(await rollupManagerContract.rollupTypeCount()).to.equal(rollupTypeCount);
         expect(await rollupManagerContract.totalSequencedBatches()).to.equal(totalSequencedBatches);
         expect(await rollupManagerContract.totalVerifiedBatches()).to.equal(totalVerifiedBatches);
-        console.log(`✓ Checked rollup manager contract storage parameters and new version`);
-        console.log("Finished shallow fork upgrade");
+        logger.info(`✓ Checked rollup manager contract storage parameters and new version`);
+
+        // Check bridge contract
+        const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
+        const bridgeContract = bridgeFactory.attach(
+            bridgeAddress
+        ) as PolygonZkEVMBridgeV2;
+        expect(await bridgeContract.BRIDGE_VERSION()).to.equal(AL_VERSION);
+        expect(await bridgeContract.globalExitRootManager()).to.equal(bridgeGlobalExitRootManager);
+        expect(await bridgeContract.lastUpdatedDepositCount()).to.equal(bridgeLastUpdatedDepositCount);
+        expect(await bridgeContract.polygonRollupManager()).to.equal(bridgeRollupManager);
+        expect(await bridgeContract.gasTokenAddress()).to.equal(bridgeGasTokenAddress);
+        expect(await bridgeContract.gasTokenNetwork()).to.equal(bridgeGasTokenNetwork);
+        expect(await bridgeContract.gasTokenMetadata()).to.equal(bridgeGasTokenMetadata);
+        logger.info(`✓ Checked bridge contract storage parameters`);
+
+        // Check ger contract
+        const gerFactory = await ethers.getContractFactory("PolygonZkEVMGlobalExitRootV2");
+        const gerContract = gerFactory.attach(
+            globalExitRootManager
+        ) as PolygonZkEVMGlobalExitRootV2;
+        expect(await gerContract.GER_VERSION()).to.equal(AL_VERSION);
+        expect(await gerContract.bridgeAddress()).to.equal(gerBridgeAddress);
+        expect(await gerContract.rollupManager()).to.equal(gerRollupManger);
+        logger.info(`✓ Checked global exit root contract storage parameters`);
+
+        logger.info("Finished shallow fork upgrade");
     }).timeout(0);
 });

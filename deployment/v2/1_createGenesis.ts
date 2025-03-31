@@ -177,6 +177,18 @@ async function main() {
         overrideGasLimit
     );
 
+    // Retrieve TokenWrappedBridgeInitCode contract to add it to the genesis, necessary for token wrapped deployments from the bridge
+    const bridgeContract = polygonZkEVMBridgeFactory.attach(bridgeImplementationAddress) as PolygonZkEVMBridgeV2;
+    const wrappedTokenBytecodeStorer = await bridgeContract.wrappedTokenBytecodeStorer();
+
+    const tokenWrappedBridgeInitCodeInfo = await getAddressInfo(wrappedTokenBytecodeStorer as string);
+    genesis.push({
+        contractName: `TokenWrappedBridgeInitCode`,
+        balance: "0",
+        nonce: tokenWrappedBridgeInitCodeInfo.nonce.toString(),
+        address: wrappedTokenBytecodeStorer,
+        bytecode: tokenWrappedBridgeInitCodeInfo.bytecode,
+    });
     if (isMainnet === false) {
         finalBridgeImplAddress = bridgeImplementationAddress;
     }

@@ -1,31 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0
 
-pragma solidity 0.8.28;
+pragma solidity 0.8.20;
 
-import "./interfaces/IPolygonZkEVMGlobalExitRootV2.sol";
-import "./lib/PolygonZkEVMGlobalExitRootBaseStorage.sol";
-import "../lib/GlobalExitRootLib.sol";
-import "./lib/DepositContractBase.sol";
+import "../../interfaces/IPolygonZkEVMGlobalExitRootV2.sol";
+import "../../lib/PolygonZkEVMGlobalExitRootBaseStorage.sol";
+import "./GlobalExitRootLibPessimistic.sol";
+import "./DepositContractBasePessimistic.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /**
  * Contract responsible for managing the exit roots across multiple networks
  */
-contract PolygonZkEVMGlobalExitRootV2 is
+contract PolygonZkEVMGlobalExitRootV2Pessimistic is
     PolygonZkEVMGlobalExitRootBaseStorage,
-    DepositContractBase,
+    DepositContractBasePessimistic,
     Initializable
 {
     // PolygonZkEVMBridge address
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable bridgeAddress;
 
     // Rollup manager contract address
-    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     address public immutable rollupManager;
-
-    // Current Global Exit Root Manager version
-    string public constant GER_VERSION = "al-v0.3.0";
 
     // Store every l1InfoLeaf
     mapping(uint32 leafCount => bytes32 l1InfoRoot) public l1InfoRootMap;
@@ -99,10 +94,11 @@ contract PolygonZkEVMGlobalExitRootV2 is
             revert OnlyAllowedContracts();
         }
 
-        bytes32 newGlobalExitRoot = GlobalExitRootLib.calculateGlobalExitRoot(
-            cacheLastMainnetExitRoot,
-            cacheLastRollupExitRoot
-        );
+        bytes32 newGlobalExitRoot = GlobalExitRootLibPessimistic
+            .calculateGlobalExitRoot(
+                cacheLastMainnetExitRoot,
+                cacheLastRollupExitRoot
+            );
 
         // If it already exists, do not modify the blockhash
         if (globalExitRootMap[newGlobalExitRoot] == 0) {
@@ -141,7 +137,7 @@ contract PolygonZkEVMGlobalExitRootV2 is
      */
     function getLastGlobalExitRoot() public view returns (bytes32) {
         return
-            GlobalExitRootLib.calculateGlobalExitRoot(
+            GlobalExitRootLibPessimistic.calculateGlobalExitRoot(
                 lastMainnetExitRoot,
                 lastRollupExitRoot
             );
@@ -153,7 +149,7 @@ contract PolygonZkEVMGlobalExitRootV2 is
     function getRoot()
         public
         view
-        override(DepositContractBase, IPolygonZkEVMGlobalExitRootV2)
+        override(DepositContractBasePessimistic, IPolygonZkEVMGlobalExitRootV2)
         returns (bytes32)
     {
         return super.getRoot();

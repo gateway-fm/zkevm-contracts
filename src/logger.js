@@ -6,10 +6,15 @@ const logger = winston.createLogger({
     format: winston.format.combine(
         winston.format.colorize(), // Adds color to console logs
         winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), // Adds timestamp
-        winston.format.printf(({ timestamp, level, message }) => `${timestamp} [${level}]: ${message}`), // Custom format
+        winston.format.printf(({ timestamp, level, message }) => {
+            if (typeof message === 'object') {
+                message = JSON.stringify(message, null, 4); // Pretty print objects
+            }
+            return `${timestamp} [${level}]: ${message}`; // Custom format
+        }),
     ),
     transports: [
-        new winston.transports.Console(), // Logs only to the terminal
+        new winston.transports.Console({ forceConsole: true }), // Logs only to the terminal and in debug terminal with force console
     ],
 });
 
