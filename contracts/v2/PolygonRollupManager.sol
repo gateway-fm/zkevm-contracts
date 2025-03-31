@@ -812,7 +812,7 @@ contract PolygonRollupManager is
             revert AllSequencedMustBeVerified();
         }
 
-        // Only allowed to update to an older rollup type id if the destination rollup type is ALGateway
+        // Not allowed to update to an older rollup type id, only supported from updateRollup function
         // Rollups added via 'addExistingRollup' has rollupTypeID = 0
         if (rollup.rollupTypeID >= newRollupTypeID) {
             revert UpdateToOldRollupTypeID();
