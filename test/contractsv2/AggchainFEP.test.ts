@@ -185,7 +185,7 @@ describe("AggchainFEP", () => {
 
         await expect(aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
             aggchainFEPcontract,
-            "StartL2TimestampMustBeGreaterThanCurrentTime"
+            "StartL2TimestampMustBeLessThanCurrentTime"
         );
 
         // correct initialization

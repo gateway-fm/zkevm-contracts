@@ -188,7 +188,7 @@ contract AggchainFEP is AggchainBase {
     error L2BlockTimeMustBeGreaterThanZero();
 
     /// @notice starting L2 timestamp must be less than current time
-    error StartL2TimestampMustBeGreaterThanCurrentTime();
+    error StartL2TimestampMustBeLessThanCurrentTime();
 
     /// @notice rollup config hash must be different than 0
     error RollupConfigHashMustBeDifferentThanZero();
@@ -374,7 +374,7 @@ contract AggchainFEP is AggchainBase {
         }
 
         if (_initParams.startingTimestamp > block.timestamp) {
-            revert StartL2TimestampMustBeGreaterThanCurrentTime();
+            revert StartL2TimestampMustBeLessThanCurrentTime();
         }
 
         if (_initParams.rollupConfigHash == bytes32(0)) {
