@@ -41,6 +41,12 @@ contract GlobalExitRootManagerL2SovereignChain is
     address public pendingGlobalExitRootRemover;
 
     /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     */
+    uint256[50] private _gap;
+
+    /**
      * @dev Emitted when a new global exit root is inserted and added to the hash chain
      */
     event UpdateHashChainValue(
@@ -185,7 +191,7 @@ contract GlobalExitRootManagerL2SovereignChain is
     function removeGlobalExitRoots(
         bytes32[] calldata gersToRemove
     ) external onlyGlobalExitRootRemover {
-        // @dev A memory variable is used to reduce sload/sstore operations while the loop
+        // @dev A memory variable is used to reduce sload/sstore operations while looping
         bytes32 nextRemovalHashChainValue = removedGERHashChain;
         for (uint256 i = 0; i < gersToRemove.length; i++) {
             // Check if the GER exists
