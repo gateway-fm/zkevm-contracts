@@ -24,6 +24,10 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ////////////////////////////////////////////////////////////
     //                       Variables                        //
     ////////////////////////////////////////////////////////////
+    // Added legacy storage values to avoid storage collision with PolygonValidiumEtrog contract in case this consensus contract is upgraded to aggchain
+    address private _legacyDataAvailabilityProtocol;
+    bool private _legacyIsSequenceWithDataAvailabilityAllowed;
+
     // Address that will be able to manage the aggchain verification keys and swap the useDefaultGateway flag.
     address public vKeyManager;
 
