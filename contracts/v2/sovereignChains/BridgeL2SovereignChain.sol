@@ -472,8 +472,14 @@ contract BridgeL2SovereignChain is
      */
     function migrateLegacyToken(
         address legacyTokenAddress,
-        uint256 amount
+        uint256 amount,
+        bytes calldata permitData
     ) external {
+        // Use permit if any
+        if (permitData.length != 0) {
+            _permit(legacyTokenAddress, amount, permitData);
+        }
+
         // Get current wrapped token address
         TokenInformation memory legacyTokenInfo = wrappedTokenToTokenInfo[
             legacyTokenAddress

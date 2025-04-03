@@ -248,7 +248,10 @@ contract PolygonZkEVMBridgeV2 is
             if (msg.value != 0) {
                 revert MsgValueNotZero();
             }
-
+            // Use permit if any
+            if (permitData.length != 0) {
+                _permit(token, amount, permitData);
+            }
             // Check if it's WETH, this only applies on L2 networks with gasTokens
             // In case ether is the native token, WETHToken will be 0, and the address 0 is already checked
             if (token == address(WETHToken)) {
@@ -279,11 +282,6 @@ contract PolygonZkEVMBridgeV2 is
                     originTokenAddress = tokenInfo.originTokenAddress;
                     originNetwork = tokenInfo.originNetwork;
                 } else {
-                    // Use permit if any
-                    if (permitData.length != 0) {
-                        _permit(token, amount, permitData);
-                    }
-
                     // In order to support fee tokens check the amount received, not the transferred
                     uint256 balanceBefore = IERC20Upgradeable(token).balanceOf(
                         address(this)

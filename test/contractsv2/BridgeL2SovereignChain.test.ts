@@ -361,7 +361,7 @@ describe("BridgeL2SovereignChain Contract", () => {
 
         // Try migrate token that is not mapped
         await expect(
-            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount)
+            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount, '0x')
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "TokenNotMapped");
 
         // Make first remapping
@@ -400,11 +400,11 @@ describe("BridgeL2SovereignChain Contract", () => {
 
         // Try migrate a token already updated
         await expect(
-            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(updatedToken.target, migrationAmount)
+            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(updatedToken.target, migrationAmount, '0x')
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "TokenAlreadyUpdated");
 
         // Migrate tokens
-        await sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount);
+        await sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount, '0x');
         expect(await legacyToken.balanceOf(sovereignChainBridgeContract.target)).to.be.equal(migrationAmount);
         expect(await legacyToken.balanceOf(acc1.address)).to.be.equal(0n);
         expect(await updatedToken.balanceOf(sovereignChainBridgeContract.target)).to.be.equal(0n);

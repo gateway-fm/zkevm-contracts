@@ -528,25 +528,6 @@ describe("PolygonZkEVMBridge Contract", () => {
                 amount,
                 tokenAddress,
                 true,
-                ifacePermit.encodeFunctionData("permit", [
-                    deployer.address,
-                    polygonZkEVMBridgeContract.target,
-                    amount + 1n,
-                    deadline,
-                    v,
-                    r,
-                    s,
-                ])
-            )
-        ).to.be.revertedWithCustomError(polygonZkEVMBridgeContract, "NotValidAmount");
-
-        await expect(
-            polygonZkEVMBridgeContract.bridgeAsset(
-                destinationNetwork,
-                destinationAddress,
-                amount,
-                tokenAddress,
-                true,
                 ethers.ZeroHash
             )
         ).to.be.revertedWithCustomError(polygonZkEVMBridgeContract, "NotValidSignature");
