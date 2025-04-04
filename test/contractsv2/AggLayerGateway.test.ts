@@ -44,6 +44,51 @@ describe("AggLayerGateway tests", () => {
         const SP1VerifierPlonkFactory = await ethers.getContractFactory("SP1VerifierPlonk");
         verifierContract = (await SP1VerifierPlonkFactory.deploy()) as SP1VerifierPlonk;
 
+        // Check invalid zero address from ALGateway initializer
+        await expect(
+            aggLayerGatewayContract.initialize(
+                ethers.ZeroAddress,
+                aggchainVKey.address,
+                addPPRoute.address,
+                freezePPRoute.address,
+                initPPVKeySelector,
+                verifierContract.target,
+                initPPVkey,
+            )
+        ).to.revertedWithCustomError(aggLayerGatewayContract, "InvalidZeroAddress");
+        await expect(
+            aggLayerGatewayContract.initialize(
+                defaultAdmin.address,
+                ethers.ZeroAddress,
+                addPPRoute.address,
+                freezePPRoute.address,
+                initPPVKeySelector,
+                verifierContract.target,
+                initPPVkey,
+            )
+        ).to.revertedWithCustomError(aggLayerGatewayContract, "InvalidZeroAddress");
+        await expect(
+            aggLayerGatewayContract.initialize(
+                defaultAdmin.address,
+                aggchainVKey.address,
+                ethers.ZeroAddress,
+                freezePPRoute.address,
+                initPPVKeySelector,
+                verifierContract.target,
+                initPPVkey,
+            )
+        ).to.revertedWithCustomError(aggLayerGatewayContract, "InvalidZeroAddress");
+        await expect(
+            aggLayerGatewayContract.initialize(
+                defaultAdmin.address,
+                aggchainVKey.address,
+                addPPRoute.address,
+                ethers.ZeroAddress,
+                initPPVKeySelector,
+                verifierContract.target,
+                initPPVkey,
+            )
+        ).to.revertedWithCustomError(aggLayerGatewayContract, "InvalidZeroAddress");
         // initialize AggLayerGateway
         await expect(
             aggLayerGatewayContract.initialize(
@@ -89,6 +134,7 @@ describe("AggLayerGateway tests", () => {
 
     it("addPessimisticVKeyRoute", async () => {
         // add pessimistic vkey route
+
         // check onlyRole
         await expect(
             aggLayerGatewayContract.addPessimisticVKeyRoute(selector, verifierContract.target, pessimisticVKey)
@@ -110,11 +156,19 @@ describe("AggLayerGateway tests", () => {
                 .connect(aggLayerAdmin)
                 .addPessimisticVKeyRoute("0x00000000", verifierContract.target, pessimisticVKey)
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "PPSelectorCannotBeZero");
+
         // check VKeyCannotBeZero
         await expect(
             aggLayerGatewayContract.connect(aggLayerAdmin).addPessimisticVKeyRoute(selector, verifierContract.target, ethers.ZeroHash)
         )
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "VKeyCannotBeZero")
+
+        // check InvalidZeroAddress
+        await expect(
+            aggLayerGatewayContract.connect(aggLayerAdmin).addPessimisticVKeyRoute(selector, ethers.ZeroAddress, pessimisticVKey)
+        )
+            .to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidZeroAddress")
+
         // check RouteAdded
         await expect(
             aggLayerGatewayContract
@@ -269,6 +323,10 @@ describe("AggLayerGateway tests", () => {
 
     it("verifyPessimisticProof", async () => {
         // verifyPessimisticProof
+        // check InvalidProofBytesLength
+        await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], `0x01`))
+            .to.be.revertedWithCustomError(aggLayerGatewayContract, "InvalidProofBytesLength")
+
         // check RouteNotFound
         await expect(aggLayerGatewayContract.verifyPessimisticProof(input["public-values"], `${selector}${input["proof"].slice(2)}`))
             .to.be.revertedWithCustomError(aggLayerGatewayContract, "RouteNotFound")

@@ -6,8 +6,8 @@ import {
     BridgeL2SovereignChain,
     TokenWrapped,
 } from "../../typechain-types";
-import {MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
-import {valueTo32BytesHex} from "../../src/utils";
+import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+import { valueTo32BytesHex } from "../../src/utils";
 import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
 const MerkleTreeBridge = MTBridge;
 const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
@@ -46,7 +46,7 @@ describe("BridgeL2SovereignChain Contract", () => {
     let acc1: any;
     let emergencyBridgePauser: any;
     let globalExitRootRemover: any;
-    
+
     const tokenName = "Matic Token";
     const tokenSymbol = "MATIC";
     const decimals = 18;
@@ -81,13 +81,20 @@ describe("BridgeL2SovereignChain Contract", () => {
         );
         sovereignChainGlobalExitRootContract = (await upgrades.deployProxy(
             GlobalExitRootManagerL2SovereignChainFactory,
-            [globalExitRootRemover.address, globalExitRootRemover.address], // Initializer params
+            [],
             {
-                initializer: "initialize", // initializer function name
+                initializer: false,
                 constructorArgs: [sovereignChainBridgeContract.target], // Constructor arguments
-                unsafeAllow: ["constructor", "state-variable-immutable"],
+                unsafeAllow: ["constructor", "missing-initializer", "state-variable-immutable"],
             }
         )) as unknown as GlobalExitRootManagerL2SovereignChain;
+
+        await expect(sovereignChainGlobalExitRootContract.initialize(ethers.ZeroAddress, globalExitRootRemover.address)).to.be.revertedWithCustomError(
+            sovereignChainGlobalExitRootContract,
+            "InvalidZeroAddress"
+        );
+
+        await expect(sovereignChainGlobalExitRootContract.initialize(globalExitRootRemover.address, globalExitRootRemover.address))
 
         // cannot initialize bridgeV2 initializer from Sovereign bridge
         await expect(
@@ -625,6 +632,10 @@ describe("BridgeL2SovereignChain Contract", () => {
         await expect(sovereignChainGlobalExitRootContract.connect(acc1).acceptGlobalExitRootRemover()).to.emit(sovereignChainGlobalExitRootContract, "AcceptGlobalExitRootRemover").withArgs(deployer.address, acc1.address);
 
         // Update globalExitRootUpdater
+        await expect(
+            sovereignChainGlobalExitRootContract.transferGlobalExitRootUpdater(ethers.ZeroAddress)
+        ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "InvalidZeroAddress");
+
         await expect(
             sovereignChainGlobalExitRootContract.transferGlobalExitRootUpdater(acc1.address)
         ).to.emit(sovereignChainGlobalExitRootContract, "TransferGlobalExitRootUpdater").withArgs(deployer.address, acc1.address);
@@ -2734,5 +2745,31 @@ describe("BridgeL2SovereignChain Contract", () => {
             "EmergencyStateDeactivated"
         );
         expect(await sovereignChainBridgeContract.isEmergencyState()).to.be.equal(false);
+
+        // Transfer emergency bridge pauser role
+        await expect(
+            sovereignChainBridgeContract
+                .connect(emergencyBridgePauser)
+                .transferEmergencyBridgePauserRole(deployer.address)
+        ).to.emit(sovereignChainBridgeContract, "TransferEmergencyBridgePauserRole").withArgs
+            (emergencyBridgePauser.address, deployer.address);
+
+        await expect(
+            sovereignChainBridgeContract
+                .connect(emergencyBridgePauser)
+                .acceptEmergencyBridgePauserRole()
+        ).to.revertedWithCustomError(
+            sovereignChainBridgeContract,
+            "OnlyPendingEmergencyBridgePauser"
+        );
+
+        await expect(
+            sovereignChainBridgeContract
+                .connect(deployer)
+                .acceptEmergencyBridgePauserRole()
+        ).to.emit(sovereignChainBridgeContract, "AcceptEmergencyBridgePauserRole").withArgs(
+            emergencyBridgePauser.address,
+            deployer.address
+        );
     });
 });

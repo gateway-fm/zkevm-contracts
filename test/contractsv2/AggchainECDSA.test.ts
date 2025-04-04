@@ -1,7 +1,7 @@
 /* eslint-disable no-plusplus, no-await-in-loop */
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
-import {Address, AggchainECDSA, AggLayerGateway} from "../../typechain-types";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
+import { Address, AggchainECDSA, AggLayerGateway } from "../../typechain-types";
 import utilsECDSA from "../../src/utils-aggchain-ECDSA";
 
 describe("AggchainECDSA", () => {
@@ -79,9 +79,9 @@ describe("AggchainECDSA", () => {
             networkName
         );
 
-         // deploy verifier contract
-         const SP1VerifierPlonkFactory = await ethers.getContractFactory("SP1VerifierPlonk");
-         const verifierContract = (await SP1VerifierPlonkFactory.deploy()) as SP1VerifierPlonk;
+        // deploy verifier contract
+        const SP1VerifierPlonkFactory = await ethers.getContractFactory("SP1VerifierPlonk");
+        const verifierContract = (await SP1VerifierPlonkFactory.deploy()) as SP1VerifierPlonk;
 
         // deploy AggLayerGateway
         const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway");
@@ -365,6 +365,10 @@ describe("AggchainECDSA", () => {
         );
 
         // getAggchainHash
+        await expect(aggchainECDSAcontract.getAggchainHash("0x")).to.be.revertedWithCustomError(
+            aggchainECDSAcontract,
+            "InvalidAggchainDataLength"
+        );
         expect(await aggchainECDSAcontract.getAggchainHash(aggchainData)).to.be.equal(aggchainHash);
     });
 
@@ -383,9 +387,15 @@ describe("AggchainECDSA", () => {
             "OnlyRollupManager"
         );
 
+        // check InvalidAggchainDataLength
+        await expect(aggchainECDSAcontract.connect(rollupManagerSigner).onVerifyPessimistic("0x", { gasPrice: 0 })).to.be.revertedWithCustomError(
+            aggchainECDSAcontract,
+            "InvalidAggchainDataLength"
+        );
+
         // onVerifyPessimistic
         await expect(
-            aggchainECDSAcontract.connect(rollupManagerSigner).onVerifyPessimistic(aggchainData, {gasPrice: 0})
+            aggchainECDSAcontract.connect(rollupManagerSigner).onVerifyPessimistic(aggchainData, { gasPrice: 0 })
         )
             .to.emit(aggchainECDSAcontract, "OnVerifyPessimisticECDSA")
             .withArgs(newStateRoot);
