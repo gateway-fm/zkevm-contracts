@@ -1,5 +1,5 @@
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     ERC20PermitMock,
     GlobalExitRootManagerL2SovereignChain,
@@ -8,32 +8,11 @@ import {
     TokenWrapped,
     ERC20Decimals,
 } from "../../typechain-types";
-import {MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
-import {valueTo32BytesHex} from "../../src/utils";
+import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+import { valueTo32BytesHex } from "../../src/utils";
 import { claimBeforeBridge, createClaimAndAddGER } from "./helpers/helpers-sovereign-bridge";
-const MerkleTreeBridge = MTBridge;
-const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
 
-function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
-    return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [mainnetExitRoot, rollupExitRoot]);
-}
 const _GLOBAL_INDEX_MAINNET_FLAG = 2n ** 64n;
-
-function computeGlobalIndex(indexLocal: any, indexRollup: any, isMainnet: Boolean) {
-    if (isMainnet === true) {
-        return BigInt(indexLocal) + _GLOBAL_INDEX_MAINNET_FLAG;
-    } else {
-        return BigInt(indexLocal) + BigInt(indexRollup) * 2n ** 32n;
-    }
-}
-
-function newHashChainValue(prevHashChainValue: any, valueToAdd: any) {
-    return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [prevHashChainValue, valueToAdd]);
-}
-
-function newClaimedGlobalIndexValue(globalIndex: any, leafValue: any) {
-    return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [valueTo32BytesHex(globalIndex), leafValue]);
-}
 
 describe("BridgeL2SovereignChain: LBT & upgrade", () => {
     upgrades.silenceWarnings();
@@ -46,6 +25,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
     let rollupManager: any;
     let bridgeManager: any;
     let acc1: any;
+    let emergencyBridgePauser: any;
 
     const tokenName = "Matic Token";
     const tokenSymbol = "MATIC";
@@ -64,7 +44,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
 
     beforeEach("Deploy contracts", async () => {
         // load signers
-        [deployer, rollupManager, acc1, bridgeManager] = await ethers.getSigners();
+        [deployer, rollupManager, acc1, bridgeManager, emergencyBridgePauser] = await ethers.getSigners();
         // Set trusted sequencer as coinbase for sovereign chains
         await ethers.provider.send("hardhat_setCoinbase", [deployer.address]);
         // deploy BridgeL2SovereignChain
@@ -80,7 +60,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
         );
         sovereignChainGlobalExitRootContract = (await upgrades.deployProxy(
             GlobalExitRootManagerL2SovereignChainFactory,
-            [ethers.ZeroAddress, deployer.address], // Initializer params
+            [deployer.address, deployer.address], // Initializer params
             {
                 initializer: "initialize", // initializer function name
                 constructorArgs: [sovereignChainBridgeContract.target], // Constructor arguments
@@ -165,7 +145,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
                 ethers.Typed.address(bridgeManager),
                 ethers.ZeroAddress,
                 false,
-                ethers.ZeroAddress,
+                emergencyBridgePauser.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");
 
@@ -176,7 +156,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
             sovereignChainBridgeContract.initialize(
                 arrayTokeInfoHash,
                 arrayAmount,
-                ethers.ZeroAddress,
+                emergencyBridgePauser.address,
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InputArraysLengthMismatch");
 
@@ -187,12 +167,12 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
             sovereignChainBridgeContract.initialize(
                 arrayTokeInfoHashOk,
                 arrayAmountOk,
-                ethers.ZeroAddress,
+                emergencyBridgePauser.address,
             )
         ).to.emit(sovereignChainBridgeContract, "SetInitialLocalBalanceTreeAmount")
-        .withArgs(arrayTokeInfoHashOk[0], arrayAmountOk[0])
-        .to.emit(sovereignChainBridgeContract, "SetInitialLocalBalanceTreeAmount")
-        .withArgs(arrayTokeInfoHashOk[1], arrayAmountOk[1]);
+            .withArgs(arrayTokeInfoHashOk[0], arrayAmountOk[0])
+            .to.emit(sovereignChainBridgeContract, "SetInitialLocalBalanceTreeAmount")
+            .withArgs(arrayTokeInfoHashOk[1], arrayAmountOk[1]);
     });
 
     it("LBT overflow", async () => {
@@ -253,7 +233,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
                 [tokenAddress],
                 [newToken.target],
                 [false]
-        );
+            );
 
         // try to claim again
         const res = await createClaimAndAddGER(
@@ -286,6 +266,6 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
                 metadata
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeOverflow")
-        .withArgs(originNetwork, tokenAddress, amount2, amount);
+            .withArgs(originNetwork, tokenAddress, amount2, amount);
     });
 });

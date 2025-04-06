@@ -113,7 +113,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             sovereignChainBridgeContract.initialize(
                 [ethers.randomBytes(32)],
                 [42],
-                ethers.ZeroAddress,
+                emergencyBridgePauser.address,
             )
         ).to.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");
 
