@@ -84,7 +84,7 @@ function encodeInitializeBytesAggchainFEPv1(
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
         [
-            'tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, address)',
+            'tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, bytes32, bytes32)',
             'bool',
             'bytes32',
             'bytes2',

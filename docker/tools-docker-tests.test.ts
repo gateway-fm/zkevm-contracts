@@ -16,7 +16,7 @@ import {
 } from "../typechain-types";
 
 describe("Tooling docker build tests Contract", () => {
-    it("Create a new rollup", async () => {
+    it("Create a new rollupa and initialize it", async () => {
         // Read docker deployment output
         const dockerCreateRollupOutput = JSON.parse(
             fs.readFileSync(path.join(__dirname, "./deploymentOutput/create_rollup_output.json"), "utf8")
@@ -82,9 +82,7 @@ describe("Tooling docker build tests Contract", () => {
                 throw new Error("Invalid consensus contract");
         }
 
-        expect(await rollupContract.rollupManager()).to.equal(createRollupConfig.rollupManagerAddress);
-        expect(await rollupContract.gasTokenAddress()).to.equal(createRollupConfig.gasTokenAddress);
-        expect(await rollupContract.trustedSequencer()).to.equal(createRollupConfig.trustedSequencer);
+        expect(await rollupContract.aggchainManager()).to.equal(createRollupConfig.aggchainParams.aggchainManager);
     });
 
     it("Create a new rollup type", async () => {

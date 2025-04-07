@@ -103,16 +103,16 @@ function encodeInitializeBytesLegacy(
 
 /**
  * Function to encode the initialize bytes for aggchain manager
- * @param {String} encodeInitAggchainManager Aggchain manager address
+ * @param {String} aggchainManager Aggchain manager address
  * @returns {String} Encoded value in hexadecimal string
  */
 function encodeInitAggchainManager(
-    encodeInitAggchainManager
+    aggchainManager,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
         ['address'],
         [
-            encodeInitAggchainManager
+            aggchainManager,
         ],
     );
 }
@@ -124,5 +124,5 @@ module.exports = {
     getAggchainVKeySelector,
     encodeInitializeBytesLegacy,
     encodeInitAggchainManager,
-    ARRAY_AGGCHAIN_SUPPORTED_NAMES
+    ARRAY_AGGCHAIN_SUPPORTED_NAMES,
 };

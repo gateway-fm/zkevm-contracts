@@ -11,6 +11,7 @@ const utilsCommon = require("../../src/utils-common-aggchain");
 
 // SIGNERS
 let admin: any;
+let aggchainManager: any;
 let vKeyManager: any;
 let aggchainECDSAContract: AggchainECDSA;
 
@@ -36,7 +37,7 @@ describe("Test vectors aggchain ECDSA", () => {
 
         it(`generate id: ${i}`, async function () {
             // load signers
-            [vKeyManager, admin] = await ethers.getSigners();
+            [vKeyManager, admin, aggchainManager] = await ethers.getSigners();
 
             aggchainVKeySelector = utilsCommon.getAggchainVKeySelector(
                 data.initAggchainVKeyVersion,
@@ -80,9 +81,9 @@ describe("Test vectors aggchain ECDSA", () => {
             // initialize using rollup manager & initializeBytesAggchain
             await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
             const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-            await aggchainECDSAContract
-                .connect(rollupManagerSigner)
-                .initialize(initializeBytesAggchainV0, {gasPrice: 0});
+            await aggchainECDSAContract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+
+            await aggchainECDSAContract.connect(aggchainManager).initialize(initializeBytesAggchainV0, {gasPrice: 0});
 
             // check initializeBytesAggchain
             expect(await aggchainECDSAContract.admin()).to.be.equal(admin.address);
@@ -175,7 +176,8 @@ describe("Test vectors aggchain ECDSA", () => {
                 vKeyManager.address
             );
 
-            await ppConsensusContract.connect(rollupManagerSigner).initialize(initializeBytesAggchainV1, {gasPrice: 0});
+            await ppConsensusContract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+            await ppConsensusContract.connect(aggchainManager).initialize(initializeBytesAggchainV1, {gasPrice: 0});
 
             // check initializeBytesAggchain
             expect(await aggchainECDSAContract.admin()).to.be.equal(admin.address);

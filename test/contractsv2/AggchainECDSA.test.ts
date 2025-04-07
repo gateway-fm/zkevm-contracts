@@ -9,6 +9,7 @@ describe("AggchainECDSA", () => {
     let trustedSequencer: any;
     let admin: any;
     let defaultAdminAgglayer: any;
+    let aggchainManager: any;
     let vKeyManager: any;
     let aggchainVKey: any;
     let addPPRoute: any;
@@ -59,6 +60,7 @@ describe("AggchainECDSA", () => {
             trustedSequencer,
             admin,
             defaultAdminAgglayer,
+            aggchainManager,
             vKeyManager,
             aggchainVKey,
             addPPRoute,
@@ -144,8 +146,8 @@ describe("AggchainECDSA", () => {
     });
 
     it("should check the initialized parameters", async () => {
-        // initialize zkEVM using non admin address
-        await expect(aggchainECDSAcontract.initialize(initializeBytesAggchain)).to.be.revertedWithCustomError(
+        // should set the aggachainManager: error "OnlyRollupManager"
+        await expect(aggchainECDSAcontract.initAggchainManager(aggchainManager.address)).to.be.revertedWithCustomError(
             aggchainECDSAcontract,
             "OnlyRollupManager"
         );
@@ -153,7 +155,16 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+
+        // initialize zkEVM using non admin address
+        await expect(aggchainECDSAcontract.initialize(initializeBytesAggchain)).to.be.revertedWithCustomError(
+            aggchainECDSAcontract,
+            "OnlyAggchainManager"
+        );
+
+        // initialize using rollup manager
+        await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         expect(await aggchainECDSAcontract.admin()).to.be.equal(admin.address);
         expect(await aggchainECDSAcontract.vKeyManager()).to.be.equal(vKeyManager.address);
@@ -167,7 +178,7 @@ describe("AggchainECDSA", () => {
 
         // initialize again
         await expect(
-            aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})
+            aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})
         ).to.be.revertedWith("Initializable: contract is already initialized");
     });
 
@@ -176,7 +187,8 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // setTrustedSequencer
         await expect(aggchainECDSAcontract.setTrustedSequencer(deployer.address)).to.be.revertedWithCustomError(
@@ -220,7 +232,8 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // disableUseDefaultGatewayFlag
         await expect(aggchainECDSAcontract.disableUseDefaultGatewayFlag()).to.be.revertedWithCustomError(
@@ -323,7 +336,8 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // calculate aggchainHash
         const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeyVersion, newStateRoot);
@@ -358,7 +372,8 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        await aggchainECDSAcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeyVersion, newStateRoot);
 
@@ -428,7 +443,8 @@ describe("AggchainECDSA", () => {
             vKeyManager.address
         );
 
-        await ppConsensusContract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await ppConsensusContract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await ppConsensusContract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // check initializeBytesAggchain
         expect(await ppConsensusContract.admin()).to.be.equal(admin.address);

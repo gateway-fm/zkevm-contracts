@@ -11,7 +11,7 @@ import {
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
 const { VerifierType, computeRandomBytes } = require("../../src/pessimistic-utils");
-const { CONSENSUS_TYPE } = require("../../src/utils-common-aggchain");
+const { CONSENSUS_TYPE, encodeInitAggchainManager } = require("../../src/utils-common-aggchain");
 const {
     AGGCHAIN_TYPE_FEP,
     encodeAggchainDataFEP,
@@ -23,7 +23,7 @@ const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
 const {encodeInitializeBytesLegacy} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
 
-describe("Polygon rollup manager aggregation layer v3", () => {
+describe("Polygon rollup manager aggregation layer v3: FEP", () => {
     // SIGNERS
     let deployer: any;
     let trustedSequencer: any;
@@ -96,8 +96,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             startingBlockNumber: 100,
             startingTimestamp: 0,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         // Deploy L1 contracts
@@ -583,8 +584,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             startingBlockNumber: 100,
             startingTimestamp: 0,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         const initializeBytesAggchain = encodeInitializeBytesAggchainFEPv1(
@@ -594,8 +596,9 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             "0x0000", // aggchainVkeySelector
             vKeyManager.address
         );
-        const upgradeData = aggchainFEPFactory.interface.encodeFunctionData("initialize(bytes)", [
-            initializeBytesAggchain,
+
+        const upgradeData = aggchainFEPFactory.interface.encodeFunctionData("initAggchainManager(address)", [
+            aggchainManager.address,
         ]);
 
         await expect(
@@ -606,6 +609,13 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             .to.emit(rollupManagerContract, "UpdateRollup")
             .withArgs(pessimisticRollupID, rollupTypeFEPId, 0 /*lastVerifiedBatch*/);
         const FEPRollupContract = aggchainFEPFactory.attach(pessimisticRollupContract.target);
+
+        const aggchainManagerSC = await FEPRollupContract.aggchainManager();
+        expect(aggchainManagerSC).to.be.equal(aggchainManager.address);
+
+        // initialize the ECDSA aggchain
+        await FEPRollupContract.connect(aggchainManager).initialize(initializeBytesAggchain);
+
         // Try update rollup by rollupAdmin but trigger UpdateToOldRollupTypeID
         // Create a new pessimistic rollup type
         await createPessimisticRollupType();
@@ -906,6 +916,10 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             "", // trusted sequencer url
             "" // network name
         );
+
+        // initialize bytes aggchainManager
+        const initBytesInitAggchainManager = encodeInitAggchainManager(aggchainManager.address);
+
         const rollupManagerNonce = await ethers.provider.getTransactionCount(rollupManagerContract.target);
         const rollupsCount = await rollupManagerContract.rollupCount();
         const precomputedAggchainFEPAddress = ethers.getCreateAddress({
@@ -916,7 +930,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 rollupTypeIdFEP, // rollupTypeID
                 1001, // chainID
-                initializeBytesAggchain
+                initBytesInitAggchainManager
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -927,6 +941,12 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 1001, // chainID
                 NO_ADDRESS // gasTokenAddress
             );
+
+        const aggchainECDSAFactory = await ethers.getContractFactory("AggchainFEP");
+        const aggchainECDSAContract = aggchainECDSAFactory.attach(precomputedAggchainFEPAddress as string);
+
+        await aggchainECDSAContract.connect(aggchainManager).initialize(initializeBytesAggchain);
+
         return [Number(rollupsCount) + 1, precomputedAggchainFEPAddress];
     }
 });
