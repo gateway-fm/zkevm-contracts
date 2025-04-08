@@ -12,6 +12,7 @@ const {calculateSnarkInput, calculateAccInputHash, calculateBatchHashData} = con
 const MerkleTreeBridge = MTBridge;
 const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
 import {setBalance} from "@nomicfoundation/hardhat-network-helpers";
+import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
 
 function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
     return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [mainnetExitRoot, rollupExitRoot]);
@@ -26,7 +27,7 @@ function computeGlobalIndex(indexLocal: any, indexRollup: any, isMainnet: Boolea
     }
 }
 
-describe("SovereignChainBridge Gas tokens tests", () => {
+describe("SovereignChainBridge Gas tokens mapped tests", () => {
     upgrades.silenceWarnings();
 
     let sovereignChainBridgeContract: BridgeL2SovereignChain;
@@ -424,6 +425,33 @@ describe("SovereignChainBridge Gas tokens tests", () => {
 
         await WETHToken.connect(bridgeMock).mint(deployer.address, amount, {gasPrice: 0});
 
+        // Check LBT underflow
+        await expect(
+            sovereignChainBridgeContract.bridgeMessageWETH(
+                destinationNetwork,
+                destinationAddress,
+                amount,
+                true,
+                metadata
+            )
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeUnderflow")
+        .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
+
+        // increase LBT to allow bridge action afterwards
+        await claimBeforeBridge(
+            LEAF_TYPE_ASSET,
+            0, // originNetwork
+            ethers.ZeroAddress, // ether (originAddress)
+            networkIDRollup2, // destinationNetwork
+            destinationAddress,
+            amount,
+            "0x", // metadata
+            sovereignChainGlobalExitRoot,
+            sovereignChainBridgeContract,
+            polTokenContract,
+            0
+        );
+
         await expect(
             sovereignChainBridgeContract.bridgeMessageWETH(
                 destinationNetwork,
@@ -565,6 +593,20 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
         await WETHToken.connect(bridgeMock).mint(deployer.address, amount, {gasPrice: 0});
 
+        await claimBeforeBridge(
+            LEAF_TYPE_ASSET,
+            0, // originNetwork
+            ethers.ZeroAddress, // ether (originAddress)
+            networkIDRollup2, // destinationNetwork
+            destinationAddress,
+            amount,
+            "0x", // metadata
+            sovereignChainGlobalExitRoot,
+            sovereignChainBridgeContract,
+            polTokenContract,
+            0
+        );
+
         await expect(
             sovereignChainBridgeContract.bridgeMessageWETH(
                 destinationNetwork,
@@ -598,6 +640,33 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         const tokenAddress2 = WETHToken.target; // Ether
         const amount2 = ethers.parseEther("10");
         await WETHToken.connect(bridgeMock).mint(deployer.address, amount2, {gasPrice: 0});
+
+        // Check LBT underflow
+        await expect(
+            sovereignChainBridgeContract.bridgeMessageWETH(
+                destinationNetwork,
+                destinationAddress,
+                amount,
+                true,
+                metadata
+            )
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeUnderflow")
+        .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
+
+        // increase LBT to allow bridge action afterwards
+        await claimBeforeBridge(
+            LEAF_TYPE_ASSET,
+            0, // originNetwork
+            ethers.ZeroAddress, // ether (originAddress)
+            networkIDRollup2, // destinationNetwork
+            destinationAddress,
+            amount2,
+            "0x", // metadata
+            sovereignChainGlobalExitRoot,
+            sovereignChainBridgeContract,
+            polTokenContract,
+            1
+        );
 
         await expect(
             sovereignChainBridgeContract.bridgeAsset(
@@ -1069,9 +1138,25 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         const depositCount = await sovereignChainBridgeContract.depositCount();
         const originNetwork = networkIDMainnet;
         const tokenAddress = ethers.ZeroAddress; // gasToken
-        const amount = ethers.parseEther("10");
+        const amountEther = 10;
+        const amount = ethers.parseEther(amountEther.toString());
+        const amount3x = ethers.parseEther((amountEther*3).toString());
         const destinationNetwork = networkIDRollup;
         const destinationAddress = deployer.address;
+
+        await claimBeforeBridge(
+            LEAF_TYPE_ASSET,
+            originNetwork,
+            gasTokenAddress,
+            networkIDRollup2, // destinationNetwork
+            destinationAddress,
+            amount3x,
+            gasTokenMetadata,
+            sovereignChainGlobalExitRoot,
+            sovereignChainBridgeContract,
+            polTokenContract,
+            0
+        );
 
         // create 3 new deposit
         await expect(

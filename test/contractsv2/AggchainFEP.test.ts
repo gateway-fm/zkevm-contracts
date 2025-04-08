@@ -78,8 +78,9 @@ describe("AggchainFEP", () => {
             startingBlockNumber: 100,
             startingTimestamp: 0,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
@@ -95,11 +96,14 @@ describe("AggchainFEP", () => {
             networkName
         );
 
-        // modififiers: initialize using address != rollup manager
-        await expect(aggchainFEPcontract.initialize(initializeBytesAggchain)).to.be.revertedWithCustomError(
+        // should set the aggachainManager: error "OnlyRollupManager"
+        await expect(aggchainFEPcontract.initAggchainManager(aggchainManager.address)).to.be.revertedWithCustomError(
             aggchainFEPcontract,
             "OnlyRollupManager"
         );
+
+        // initialize using rollup manager
+        await aggchainFEPcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
 
         // use rollup manager from now on
         // initializeAggchain: submission interval = 0
@@ -118,7 +122,7 @@ describe("AggchainFEP", () => {
             networkName
         );
 
-        await expect(aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
+        await expect(aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
             aggchainFEPcontract,
             "SubmissionIntervalMustBeGreaterThanZero"
         );
@@ -139,7 +143,7 @@ describe("AggchainFEP", () => {
             networkName
         );
 
-        await expect(aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
+        await expect(aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
             aggchainFEPcontract,
             "L2BlockTimeMustBeGreaterThanZero"
         );
@@ -159,7 +163,7 @@ describe("AggchainFEP", () => {
             networkName
         );
 
-        await expect(aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
+        await expect(aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
             aggchainFEPcontract,
             "RollupConfigHashMustBeDifferentThanZero"
         );
@@ -179,7 +183,7 @@ describe("AggchainFEP", () => {
             networkName
         );
 
-        await expect(aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
+        await expect(aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})).to.be.revertedWithCustomError(
             aggchainFEPcontract,
             "StartL2TimestampMustBeGreaterThanCurrentTime"
         );
@@ -198,14 +202,17 @@ describe("AggchainFEP", () => {
             networkName
         );
 
-        await aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // check all SC storage slots are correctly initialized
         // aggchain
+        expect(await aggchainFEPcontract.aggchainManager()).to.be.equal(aggchainManager.address);
+
         expect(await aggchainFEPcontract.l2BlockTime()).to.be.equal(initParams.l2BlockTime);
         expect(await aggchainFEPcontract.submissionInterval()).to.be.equal(initParams.submissionInterval);
         expect(await aggchainFEPcontract.rollupConfigHash()).to.be.equal(initParams.rollupConfigHash);
-        expect(await aggchainFEPcontract.aggchainManager()).to.be.equal(initParams.aggchainManager);
+        expect(await aggchainFEPcontract.aggregationVkey()).to.be.equal(initParams.aggregationVKey);
+        expect(await aggchainFEPcontract.rangeVkeyCommitment()).to.be.equal(initParams.rangeVkeyCommitment);
         expect(await aggchainFEPcontract.optimisticModeManager()).to.be.equal(initParams.optimisticModeManager);
         expect(await aggchainFEPcontract.latestOutputIndex()).to.be.equal(0);
         expect(await aggchainFEPcontract.nextOutputIndex()).to.be.equal(1);
@@ -231,7 +238,7 @@ describe("AggchainFEP", () => {
 
         // try to initialize again
         await expect(
-            aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})
+            aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})
         ).to.be.revertedWith("Initializable: contract is already initialized");
     });
 
@@ -285,8 +292,9 @@ describe("AggchainFEP", () => {
             startingBlockNumber: 100,
             startingTimestamp: 0,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         const initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv1(
@@ -297,14 +305,17 @@ describe("AggchainFEP", () => {
             vKeyManager.address
         );
 
-        await aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainFEPcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // check all SC storage slots are correctly initialized
         // aggchain
+        expect(await aggchainFEPcontract.aggchainManager()).to.be.equal(aggchainManager.address);
         expect(await aggchainFEPcontract.l2BlockTime()).to.be.equal(initParams.l2BlockTime);
         expect(await aggchainFEPcontract.submissionInterval()).to.be.equal(initParams.submissionInterval);
         expect(await aggchainFEPcontract.rollupConfigHash()).to.be.equal(initParams.rollupConfigHash);
-        expect(await aggchainFEPcontract.aggchainManager()).to.be.equal(initParams.aggchainManager);
+        expect(await aggchainFEPcontract.aggregationVkey()).to.be.equal(initParams.aggregationVKey);
+        expect(await aggchainFEPcontract.rangeVkeyCommitment()).to.be.equal(initParams.rangeVkeyCommitment);
         expect(await aggchainFEPcontract.optimisticModeManager()).to.be.equal(initParams.optimisticModeManager);
         expect(await aggchainFEPcontract.latestOutputIndex()).to.be.equal(0);
         expect(await aggchainFEPcontract.nextOutputIndex()).to.be.equal(1);
@@ -330,7 +341,7 @@ describe("AggchainFEP", () => {
 
         // try to initialize again
         await expect(
-            aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0})
+            aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0})
         ).to.be.revertedWith("Initializable: contract is already initialized");
     });
 
@@ -346,8 +357,9 @@ describe("AggchainFEP", () => {
             startingBlockNumber: 100,
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         const initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
@@ -364,7 +376,8 @@ describe("AggchainFEP", () => {
         );
 
         // initialize using rollup manager
-        await aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainFEPcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // calculate aggchainHash
         let newStateRoot = ethers.id("newStateRoot");
@@ -446,8 +459,9 @@ describe("AggchainFEP", () => {
             startingBlockNumber: 100,
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         const initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
@@ -464,7 +478,8 @@ describe("AggchainFEP", () => {
         );
 
         // initialize using rollup manager
-        await aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainFEPcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // SUBMISSION_INTERVAL
         expect(await aggchainFEPcontract.SUBMISSION_INTERVAL()).to.be.equal(initParams.submissionInterval);
@@ -509,8 +524,9 @@ describe("AggchainFEP", () => {
             startingBlockNumber: 100,
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         const initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
@@ -527,7 +543,8 @@ describe("AggchainFEP", () => {
         );
 
         // initialize using rollup manager
-        await aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainFEPcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         let newStateRoot = ethers.id("newStateRoot");
         let newl2BlockNumber = 104;
@@ -572,8 +589,9 @@ describe("AggchainFEP", () => {
             startingBlockNumber: 100,
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         const initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
@@ -590,7 +608,8 @@ describe("AggchainFEP", () => {
         );
 
         // initialize using rollup manager
-        await aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainFEPcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // aggchainManager: functions
         // submission interval
@@ -631,6 +650,43 @@ describe("AggchainFEP", () => {
         const newRollupConfigHashSC = await aggchainFEPcontract.rollupConfigHash();
         expect(newRollupConfigHashSC).to.be.equal(newRollupConfigHash);
 
+        // rangeVKeyCommitment
+        const oldRangeVKeyCommitment = await aggchainFEPcontract.rangeVkeyCommitment();
+        const newRangeVKeyCommitment = ethers.id("newRangeVKeyCommitment");
+
+        await expect(aggchainFEPcontract.updateRangeVkeyCommitment(newRangeVKeyCommitment)).to.be.revertedWithCustomError(
+            aggchainFEPcontract,
+            "OnlyAggchainManager"
+        );
+        await expect(aggchainFEPcontract.connect(aggchainManager).updateRangeVkeyCommitment(ethers.ZeroHash)).to.be.revertedWithCustomError(
+            aggchainFEPcontract,
+            "RangeVkeyCommitmentMustBeDifferentThanZero"
+        );
+        await expect(aggchainFEPcontract.connect(aggchainManager).updateRangeVkeyCommitment(newRangeVKeyCommitment))
+            .to.emit(aggchainFEPcontract, "RangeVkeyCommitmentUpdated")
+            .withArgs(oldRangeVKeyCommitment, newRangeVKeyCommitment);
+
+        const newRangeVKeyCommitmentSC = await aggchainFEPcontract.rangeVkeyCommitment();
+        expect(newRangeVKeyCommitmentSC).to.be.equal(newRangeVKeyCommitment);
+
+        // rangeVKeyCommitment
+        const oldAggregationVKey = await aggchainFEPcontract.aggregationVkey();
+        const newAggregationVKey = ethers.id("newAggregationVKey");
+
+        await expect(aggchainFEPcontract.updateAggregationVkey(newRangeVKeyCommitment)).to.be.revertedWithCustomError(
+            aggchainFEPcontract,
+            "OnlyAggchainManager"
+        );
+        await expect(aggchainFEPcontract.connect(aggchainManager).updateAggregationVkey(ethers.ZeroHash)).to.be.revertedWithCustomError(
+            aggchainFEPcontract,
+            "AggregationVkeyMustBeDifferentThanZero"
+        );
+        await expect(aggchainFEPcontract.connect(aggchainManager).updateAggregationVkey(newAggregationVKey))
+            .to.emit(aggchainFEPcontract, "AggregationVkeyUpdated")
+            .withArgs(oldAggregationVKey, newAggregationVKey);
+
+        const newAggregationVKeySC = await aggchainFEPcontract.aggregationVkey();
+        expect(newAggregationVKeySC).to.be.equal(newAggregationVKey);
 
         // aggchainManager: managing role
         await expect(aggchainFEPcontract.transferAggchainManagerRole(deployer.address)).to.be.revertedWithCustomError(
@@ -670,8 +726,9 @@ describe("AggchainFEP", () => {
             startingBlockNumber: 100,
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
-            aggchainManager: aggchainManager.address,
             optimisticModeManager: optModeManager.address,
+            aggregationVKey: ethers.id("aggregationVKey"),
+            rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
         const initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
@@ -688,7 +745,8 @@ describe("AggchainFEP", () => {
         );
 
         // initialize using rollup manager
-        await aggchainFEPcontract.connect(rollupManagerSigner).initialize(initializeBytesAggchain, {gasPrice: 0});
+        await aggchainFEPcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainFEPcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // optimisticModeManager: functions
         // enable optimistic mode

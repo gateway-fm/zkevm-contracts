@@ -193,6 +193,12 @@ contract AggchainFEP is AggchainBase {
     /// @notice rollup config hash must be different than 0
     error RollupConfigHashMustBeDifferentThanZero();
 
+    /// @notice range vkey commitment must be different than 0
+    error RangeVkeyCommitmentMustBeDifferentThanZero();
+
+    /// @notice aggregation vkey must be different than 0
+    error AggregationVkeyMustBeDifferentThanZero();
+
     /// @notice block number must be greater than or equal to next expected block number.
     error L2BlockNumberLessThanNextBlockNumber();
 
@@ -587,6 +593,10 @@ contract AggchainFEP is AggchainBase {
     function updateAggregationVkey(
         bytes32 _aggregationVkey
     ) external onlyAggchainManager {
+        if (_aggregationVkey == bytes32(0)) {
+            revert AggregationVkeyMustBeDifferentThanZero();
+        }
+
         emit AggregationVkeyUpdated(aggregationVkey, _aggregationVkey);
         aggregationVkey = _aggregationVkey;
     }
@@ -596,6 +606,10 @@ contract AggchainFEP is AggchainBase {
     function updateRangeVkeyCommitment(
         bytes32 _rangeVkeyCommitment
     ) external onlyAggchainManager {
+        if (_rangeVkeyCommitment == bytes32(0)) {
+            revert RangeVkeyCommitmentMustBeDifferentThanZero();
+        }
+
         emit RangeVkeyCommitmentUpdated(
             rangeVkeyCommitment,
             _rangeVkeyCommitment

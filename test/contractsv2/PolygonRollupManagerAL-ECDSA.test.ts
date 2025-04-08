@@ -11,7 +11,7 @@ import {
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
 const { VerifierType, computeRandomBytes } = require("../../src/pessimistic-utils");
-const { CONSENSUS_TYPE } = require("../../src/utils-common-aggchain");
+const { CONSENSUS_TYPE, encodeInitAggchainManager } = require("../../src/utils-common-aggchain");
 const {
     AGGCHAIN_TYPE_ECDSA,
     encodeAggchainDataECDSA,
@@ -23,11 +23,12 @@ const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
 const {encodeInitializeBytesLegacy} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
 
-describe("Polygon rollup manager aggregation layer v3", () => {
+describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
     // SIGNERS
     let deployer: any;
     let trustedSequencer: any;
     let trustedAggregator: any;
+    let aggchainManager: any;
     let admin: any;
     let timelock: any;
     let emergencyCouncil: any;
@@ -71,6 +72,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             trustedSequencer,
             trustedAggregator,
             admin,
+            aggchainManager,
             timelock,
             emergencyCouncil,
             aggLayerAdmin,
@@ -351,6 +353,7 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             .to.emit(aggchainECDSAContract, "AcceptVKeyManagerRole")
             .withArgs(vKeyManager.address, admin.address);
     });
+
     it("should getAggchainHash using default gateway", async () => {
         // Add default aggchain verification key
         // Generate random aggchain verification key
@@ -547,14 +550,16 @@ describe("Polygon rollup manager aggregation layer v3", () => {
         // Update the rollup to ECDSA and initialize the new rollup type
         // Compute initialize upgrade data
         const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+
         const initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv1(
             true, //useDefaultGateway
             ethers.ZeroHash, //ownedAggchainVKey
             "0x0000", // aggchainVkeySelector
             vKeyManager.address
         );
-        const upgradeData = aggchainECDSAFactory.interface.encodeFunctionData("initialize(bytes)", [
-            initializeBytesAggchain,
+
+        const upgradeData = aggchainECDSAFactory.interface.encodeFunctionData("initAggchainManager(address)", [
+            aggchainManager.address,
         ]);
 
         await expect(
@@ -565,6 +570,13 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             .to.emit(rollupManagerContract, "UpdateRollup")
             .withArgs(pessimisticRollupID, rollupTypeECDSAId, 0 /*lastVerifiedBatch*/);
         const ECDSARollupContract = aggchainECDSAFactory.attach(pessimisticRollupContract.target);
+
+        const aggchainManagerSC = await ECDSARollupContract.aggchainManager();
+        expect(aggchainManagerSC).to.be.equal(aggchainManager.address);
+
+        // initialize the ECDSA aggchain
+        await ECDSARollupContract.connect(aggchainManager).initialize(initializeBytesAggchain);
+
         // Try update rollup by rollupAdmin but trigger UpdateToOldRollupTypeID
         // Create a new pessimistic rollup type
         await createPessimisticRollupType();
@@ -856,17 +868,22 @@ describe("Polygon rollup manager aggregation layer v3", () => {
             "", // trusted sequencer url
             "" // network name
         );
+
+        // initialize bytes aggchainManager
+        const initBytesInitAggchainManager = encodeInitAggchainManager(aggchainManager.address);
+
         const rollupManagerNonce = await ethers.provider.getTransactionCount(rollupManagerContract.target);
         const rollupsCount = await rollupManagerContract.rollupCount();
         const precomputedAggchainECDSAAddress = ethers.getCreateAddress({
             from: rollupManagerContract.target as string,
             nonce: rollupManagerNonce,
         });
+
         await expect(
             rollupManagerContract.connect(admin).attachAggchainToAL(
                 rollupTypeIdECDSA, // rollupTypeID
                 1001, // chainID
-                initializeBytesAggchain
+                initBytesInitAggchainManager
             )
         )
             .to.emit(rollupManagerContract, "CreateNewRollup")
@@ -877,6 +894,12 @@ describe("Polygon rollup manager aggregation layer v3", () => {
                 1001, // chainID
                 NO_ADDRESS // gasTokenAddress
             );
+
+        const aggchainECDSAFactory = await ethers.getContractFactory("AggchainECDSA");
+        const aggchainECDSAContract = aggchainECDSAFactory.attach(precomputedAggchainECDSAAddress as string);
+
+        await aggchainECDSAContract.connect(aggchainManager).initialize(initializeBytesAggchain);
+
         return [Number(rollupsCount) + 1, precomputedAggchainECDSAAddress];
     }
 });
