@@ -46,6 +46,22 @@ interface IAggchainBaseEvents {
      * @param oldVKeyManager The previous vKeyManager.
      */
     event AcceptVKeyManagerRole(address oldVKeyManager, address newVKeyManager);
+
+    /// @dev Emitted when the aggchainManager starts the two-step transfer role setting a new pending newAggchainManager
+    /// @param currentAggchainManager The current pending aggchainManager
+    /// @param newPendingAggchainManager The new pending aggchainManager
+    event TransferAggchainManagerRole(
+        address currentAggchainManager,
+        address newPendingAggchainManager
+    );
+
+    /// @notice Emitted when the pending aggchainManager accepts the aggchainManager role
+    /// @param oldAggchainManager The old aggchainManager
+    /// @param newAggchainManager The new aggchainManager
+    event AcceptAggchainManagerRole(
+        address oldAggchainManager,
+        address newAggchainManager
+    );
 }
 
 interface IAggchainBaseErrors {
@@ -69,6 +85,12 @@ interface IAggchainBaseErrors {
     error AggchainVKeyNotFound();
     /// @notice Thrown when trying to deploy the aggchain with a zero address as the AggLayerGateway
     error InvalidAggLayerGatewayAddress();
+    /// @notice Thrown when trying to set the aggchain manager to zero address.
+    error AggchainManagerCannotBeZero();
+    /// @notice Thrown when the caller is not the aggchain manager
+    error OnlyAggchainManager();
+    /// @notice Thrown when the caller is not the pending aggchain manager
+    error OnlyPendingAggchainManager();
 }
 
 /**
@@ -93,10 +115,10 @@ interface IAggchainBase is IAggchainBaseErrors, IAggchainBaseEvents {
     function onVerifyPessimistic(bytes calldata aggchainData) external;
 
     /**
-     * @notice Initialize function of the aggchain where initial values are set.
-     * @param initializeBytesAggchain Encoded initialize params for the aggchain.
+     * @notice Sets the aggchain manager.
+     * @param newAggchainManager The address of the new aggchain manager.
      */
-    function initialize(bytes calldata initializeBytesAggchain) external;
+    function initAggchainManager(address newAggchainManager) external;
 
     /// @notice Returns the unique aggchain type identifier.
     function AGGCHAIN_TYPE() external view returns (bytes2);

@@ -22,8 +22,9 @@ contract AggchainFEP is AggchainBase {
         uint256 startingBlockNumber;
         uint256 startingTimestamp;
         uint256 submissionInterval;
-        address aggchainManager;
         address optimisticModeManager;
+        bytes32 aggregationVkey;
+        bytes32 rangeVkeyCommitment;
     }
 
     /// @notice OutputProposal represents a commitment to the L2 state. The timestamp is the L1
@@ -53,6 +54,10 @@ contract AggchainFEP is AggchainBase {
     // Aggchain type selector, hardcoded value used to force the first 2 byes of aggchain selector to retrieve the aggchain verification key
     bytes2 public constant AGGCHAIN_TYPE = 0x0001;
 
+    /// @notice Op L2OO Semantic version.
+    /// @custom:semver v2.0.0
+    string public constant version = "v2.0.0";
+
     ////////////////////////////////////////////////////////////
     //                       Storage                          //
     ////////////////////////////////////////////////////////////
@@ -75,18 +80,19 @@ contract AggchainFEP is AggchainBase {
     /// @notice The time between L2 blocks in seconds. Once set, this value MUST NOT be modified.
     uint256 public l2BlockTime;
 
+    /// @notice The verification key of the aggregation SP1 program.
+    bytes32 public aggregationVkey;
+
+    /// @notice The 32 byte commitment to the BabyBear representation of the verification key of the range SP1 program. Specifically,
+    /// this verification is the output of converting the [u32; 8] range BabyBear verification key to a [u8; 32] array.
+    bytes32 public rangeVkeyCommitment;
+
     /// @notice The hash of the chain's rollup configuration
     bytes32 public rollupConfigHash;
 
     /// @notice Activate optimistic mode. When true, the chain can bypass the state transition verification
     ///         and a trustedSequencer signature is needed to do a state transition.
     bool public optimisticMode;
-
-    /// @notice Address that manages all the functionalities related to the aggchain
-    address public aggchainManager;
-
-    /// @notice This account will be able to accept the aggchainManager role
-    address public pendingAggchainManager;
 
     /// @notice Address that can trigger the optimistic mode
     ///         This mode should be used when the chain is in a state that is not possible to verify and it should be treated as an emergency mode
@@ -133,22 +139,6 @@ contract AggchainFEP is AggchainBase {
     /// @notice Emitted when the optimistic mode is disabled.
     event DisableOptimisticMode();
 
-    /// @dev Emitted when the aggchainManager starts the two-step transfer role setting a new pending newAggchainManager
-    /// @param currentAggchainManager The current pending aggchainManager
-    /// @param newPendingAggchainManager The new pending aggchainManager
-    event TransferAggchainManagerRole(
-        address currentAggchainManager,
-        address newPendingAggchainManager
-    );
-
-    /// @notice Emitted when the pending aggchainManager accepts the aggchainManager role
-    /// @param oldAggchainManager The old aggchainManager
-    /// @param newAggchainManager The new aggchainManager
-    event AcceptAggchainManagerRole(
-        address oldAggchainManager,
-        address newAggchainManager
-    );
-
     /// @dev Emitted when the optimisticModeManager starts the two-step transfer role setting a new pending optimisticModeManager
     /// @param currentOptimisticModeManager The current pending optimisticModeManager
     /// @param newPendingOptimisticModeManager The new pending optimisticModeManager
@@ -163,6 +153,22 @@ contract AggchainFEP is AggchainBase {
     event AcceptOptimisticModeManagerRole(
         address oldOptimisticModeManager,
         address newOptimisticModeManager
+    );
+
+    /// @notice Emitted when the aggregation verification key is updated.
+    /// @param oldAggregationVkey The old aggregation verification key.
+    /// @param newAggregationVkey The new aggregation verification key.
+    event AggregationVkeyUpdated(
+        bytes32 indexed oldAggregationVkey,
+        bytes32 indexed newAggregationVkey
+    );
+
+    /// @notice Emitted when the range verification key commitment is updated.
+    /// @param oldRangeVkeyCommitment The old range verification key commitment.
+    /// @param newRangeVkeyCommitment The new range verification key commitment.
+    event RangeVkeyCommitmentUpdated(
+        bytes32 indexed oldRangeVkeyCommitment,
+        bytes32 indexed newRangeVkeyCommitment
     );
 
     ////////////////////////////////////////////////////////////
@@ -196,12 +202,6 @@ contract AggchainFEP is AggchainBase {
     /// @notice L2 output proposal cannot be the zero hash
     error L2OutputRootCannotBeZero();
 
-    /// @notice Thrown when the caller is not the aggchain manager
-    error OnlyAggchainManager();
-
-    /// @notice Thrown when the caller is not the pending aggchain manager
-    error OnlyPendingAggchainManager();
-
     /// @notice Thrown when the caller is not the optimistic mode manager
     error OnlyOptimisticModeManager();
 
@@ -218,14 +218,6 @@ contract AggchainFEP is AggchainBase {
     /// @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
     modifier getInitializedVersion() {
         _initializerVersion = _getInitializedVersion();
-        _;
-    }
-
-    /// @dev Only allows a function to be callable if the message sender is the aggchain manager
-    modifier onlyAggchainManager() {
-        if (aggchainManager != msg.sender) {
-            revert OnlyAggchainManager();
-        }
         _;
     }
 
@@ -274,7 +266,7 @@ contract AggchainFEP is AggchainBase {
     /// @param initializeBytesAggchain Encoded bytes to initialize the aggchain
     function initialize(
         bytes memory initializeBytesAggchain
-    ) external onlyRollupManager getInitializedVersion reinitializer(2) {
+    ) external onlyAggchainManager getInitializedVersion reinitializer(2) {
         // initialize all parameters
         if (_initializerVersion == 0) {
             // Decode the struct
@@ -395,8 +387,10 @@ contract AggchainFEP is AggchainBase {
         }
 
         rollupConfigHash = _initParams.rollupConfigHash;
-        aggchainManager = _initParams.aggchainManager;
         optimisticModeManager = _initParams.optimisticModeManager;
+
+        aggregationVkey = _initParams.aggregationVkey;
+        rangeVkeyCommitment = _initParams.rangeVkeyCommitment;
     }
 
     ////////////////////////////////////////////////////////////
@@ -571,9 +565,9 @@ contract AggchainFEP is AggchainBase {
         );
     }
 
-    ////////////////////////////////////////////////////////////
-    //                  Functions: admin                      //
-    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////
+    //                aggchainManager functions           //
+    ////////////////////////////////////////////////////////
 
     /// @notice Update the submission interval.
     /// @param _submissionInterval The new submission interval.
@@ -586,6 +580,27 @@ contract AggchainFEP is AggchainBase {
 
         emit SubmissionIntervalUpdated(submissionInterval, _submissionInterval);
         submissionInterval = _submissionInterval;
+    }
+
+    /// @notice Updates the aggregation verification key.
+    /// @param _aggregationVkey The new aggregation verification key.
+    function updateAggregationVkey(
+        bytes32 _aggregationVkey
+    ) external onlyAggchainManager {
+        emit AggregationVkeyUpdated(aggregationVkey, _aggregationVkey);
+        aggregationVkey = _aggregationVkey;
+    }
+
+    /// @notice Updates the range verification key commitment.
+    /// @param _rangeVkeyCommitment The new range verification key commitment.
+    function updateRangeVkeyCommitment(
+        bytes32 _rangeVkeyCommitment
+    ) external onlyAggchainManager {
+        emit RangeVkeyCommitmentUpdated(
+            rangeVkeyCommitment,
+            _rangeVkeyCommitment
+        );
+        rangeVkeyCommitment = _rangeVkeyCommitment;
     }
 
     /// @notice Updates the rollup config hash.
@@ -622,32 +637,8 @@ contract AggchainFEP is AggchainBase {
     }
 
     ////////////////////////////////////////////////////////////
-    //          Functions: manage admin addresses             //
+    //         optimisticModeManager functions                //
     ////////////////////////////////////////////////////////////
-
-    /// @notice Starts the aggchainManager role transfer
-    ///         This is a two step process, the pending aggchainManager must accept to finalize the process
-    /// @param newAggchainManager Address of the new aggchainManager
-    function transferAggchainManagerRole(
-        address newAggchainManager
-    ) external onlyAggchainManager {
-        pendingAggchainManager = newAggchainManager;
-
-        emit TransferAggchainManagerRole(aggchainManager, newAggchainManager);
-    }
-
-    /// @notice Allow the current pending aggchainManager to accept the aggchainManager role
-    function acceptAggchainManagerRole() external {
-        if (pendingAggchainManager != msg.sender) {
-            revert OnlyPendingAggchainManager();
-        }
-
-        address oldAggchainManager = aggchainManager;
-        aggchainManager = pendingAggchainManager;
-        delete pendingAggchainManager;
-
-        emit AcceptAggchainManagerRole(oldAggchainManager, aggchainManager);
-    }
 
     /// @notice Starts the optimisticModeManager role transfer
     /// This is a two step process, the pending optimisticModeManager must accepted to finalize the process

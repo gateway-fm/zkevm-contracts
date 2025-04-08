@@ -82,7 +82,7 @@ async function main() {
         "polTokenAddress",
         "realVerifier",
         "ppVKeySelector",
-        "ppVKey",        
+        "ppVKey",
     ];
 
     for (const parameterName of mandatoryDeploymentParameters) {
@@ -401,11 +401,11 @@ async function main() {
 
     /*
      * Deployment AggLayerGateway
-    */
+     */
     let aggLayerGatewayContract;
     const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
-    
-    // deploy Verifier 
+
+    // deploy Verifier
     let verifierName;
     if (realVerifier === true) {
         verifierName = "SP1VerifierPlonk";
@@ -426,7 +426,8 @@ async function main() {
     if (!ongoingDeployment.aggLayerGatewayContract) {
         for (let i = 0; i < attemptsDeployProxy; i++) {
             try {
-                aggLayerGatewayContract = await upgrades.deployProxy(AggLayerGatewayFactory,
+                aggLayerGatewayContract = await upgrades.deployProxy(
+                    AggLayerGatewayFactory,
                     [
                         // defaultAdmin: The address of the default admin. Can grant role to addresses.
                         finalTimelockAddress,
@@ -447,9 +448,9 @@ async function main() {
                 );
 
                 pessimisticVKeyRouteALGateway = {
-                    "pessimisticVKeySelector": ppVKeySelector,
-                    "verifier": verifierContract.target,
-                    "pessimisticVKey": ppVKey
+                    pessimisticVKeySelector: ppVKeySelector,
+                    verifier: verifierContract.target,
+                    pessimisticVKey: ppVKey,
                 };
 
                 break;
@@ -457,13 +458,13 @@ async function main() {
                 console.log(`attempt ${i}`);
                 console.log("upgrades.deployProxy of aggLayerGatewayContract ", error.message);
             }
- 
+
             // reach limits of attempts
             if (i + 1 === attemptsDeployProxy) {
                 throw new Error("aggLayerGatewayContract contract has not been deployed");
             }
         }
- 
+
         console.log("#######################\n");
         console.log("aggLayerGatewayContract deployed to:", aggLayerGatewayContract?.target);
 
@@ -473,7 +474,7 @@ async function main() {
         console.log(`verifier: ${verifierContract.target}`);
         console.log(`pessimisticVKey: ${ppVKey}`);
         console.log("#######################\n");
- 
+
         // save an ongoing deployment
         ongoingDeployment.aggLayerGatewayContract = aggLayerGatewayContract?.target;
         ongoingDeployment.pessimisticVKeyRouteALGateway = pessimisticVKeyRouteALGateway;
@@ -483,13 +484,15 @@ async function main() {
         aggLayerGatewayContract = AggLayerGatewayFactory.attach(
             ongoingDeployment.aggLayerGatewayContract
         ) as AggLayerGateway;
-        
+
         console.log("#######################\n");
         console.log("aggLayerGatewayContract already deployed on: ", ongoingDeployment.aggLayerGatewayContract);
 
         console.log("#######################\n");
         console.log(`Pessimistic VKey Route AggLayerGateway: ${ongoingDeployment.aggLayerGatewayContract}`);
-        console.log(`pessimisticVKeySelector: ${ongoingDeployment.pessimisticVKeyRouteALGateway.pessimisticVKeySelector}`);
+        console.log(
+            `pessimisticVKeySelector: ${ongoingDeployment.pessimisticVKeyRouteALGateway.pessimisticVKeySelector}`
+        );
         console.log(`verifier: ${ongoingDeployment.pessimisticVKeyRouteALGateway.verifier}`);
         console.log(`pessimisticVKey: ${ongoingDeployment.pessimisticVKeyRouteALGateway.pessimisticVKey}`);
         console.log("#######################\n");
@@ -528,12 +531,7 @@ async function main() {
             try {
                 polygonRollupManagerContract = await upgrades.deployProxy(
                     PolygonRollupManagerFactory,
-                    [
-                        trustedAggregator,
-                        admin,
-                        finalTimelockAddress,
-                        emergencyCouncilAddress,
-                    ],
+                    [trustedAggregator, admin, finalTimelockAddress, emergencyCouncilAddress],
                     {
                         initializer: "initialize(address,address,address,address)",
                         constructorArgs: [
@@ -598,18 +596,12 @@ async function main() {
     console.log("polygonZkEVMBridgeContract:", await polygonRollupManagerContract.bridgeAddress());
 
     // Check roles
-    expect(await polygonRollupManagerContract.hasRole(DEFAULT_ADMIN_ROLE, finalTimelockAddress)).to.be.equal(
+    expect(await polygonRollupManagerContract.hasRole(DEFAULT_ADMIN_ROLE, finalTimelockAddress)).to.be.equal(true);
+    expect(await polygonRollupManagerContract.hasRole(ADD_ROLLUP_TYPE_ROLE, finalTimelockAddress)).to.be.equal(true);
+    expect(await polygonRollupManagerContract.hasRole(UPDATE_ROLLUP_ROLE, finalTimelockAddress)).to.be.equal(true);
+    expect(await polygonRollupManagerContract.hasRole(ADD_EXISTING_ROLLUP_ROLE, finalTimelockAddress)).to.be.equal(
         true
     );
-    expect(await polygonRollupManagerContract.hasRole(ADD_ROLLUP_TYPE_ROLE, finalTimelockAddress)).to.be.equal(
-        true
-    );
-    expect(await polygonRollupManagerContract.hasRole(UPDATE_ROLLUP_ROLE, finalTimelockAddress)).to.be.equal(
-        true
-    );
-    expect(
-        await polygonRollupManagerContract.hasRole(ADD_EXISTING_ROLLUP_ROLE, finalTimelockAddress)
-    ).to.be.equal(true);
     expect(await polygonRollupManagerContract.hasRole(TRUSTED_AGGREGATOR_ROLE, trustedAggregator)).to.be.equal(true);
 
     expect(await polygonRollupManagerContract.hasRole(OBSOLETE_ROLLUP_TYPE_ROLE, admin)).to.be.equal(true);

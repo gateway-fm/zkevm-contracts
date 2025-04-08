@@ -1,19 +1,20 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
 /* eslint-disable no-console, no-inner-declarations, no-undef, import/no-unresolved */
-import { expect } from "chai";
+import {expect} from "chai";
 import path = require("path");
 import fs = require("fs");
 import * as dotenv from "dotenv";
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-import { ethers, upgrades } from "hardhat";
-import { processorUtils, Constants } from "@0xpolygonhermez/zkevm-commonjs";
-import { VerifierType, ConsensusContracts } from "../../src/pessimistic-utils";
+dotenv.config({path: path.resolve(__dirname, "../../.env")});
+import {ethers, upgrades} from "hardhat";
+import {processorUtils, Constants} from "@0xpolygonhermez/zkevm-commonjs";
+import {VerifierType, ConsensusContracts} from "../../src/pessimistic-utils";
 const createRollupParameters = require("./create_new_rollup.json");
-import { genOperation, transactionTypes, convertBigIntsToNumbers } from "../utils";
+import {genOperation, transactionTypes, convertBigIntsToNumbers} from "../utils";
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
-import { AGGCHAIN_CONTRACT_NAMES, encodeInitializeBytesLegacy } from "../../src/utils-common-aggchain"
+import {AGGCHAIN_CONTRACT_NAMES, encodeInitializeBytesLegacy} from "../../src/utils-common-aggchain";
 import utilsECDSA from "../../src/utils-aggchain-ECDSA";
 import utilsFEP from "../../src/utils-aggchain-FEP";
+import utilsAggchain from "../../src/utils-common-aggchain";
 
 import {
     PolygonRollupManager,
@@ -88,7 +89,10 @@ async function main() {
 
     // Check consensus compatibility
     if (isVanillaClient) {
-        if (consensusContractName !== ConsensusContracts.PolygonPessimisticConsensus && !supportedAggchainsArray.includes(consensusContractName)) {
+        if (
+            consensusContractName !== ConsensusContracts.PolygonPessimisticConsensus &&
+            !supportedAggchainsArray.includes(consensusContractName)
+        ) {
             throw new Error(`Vanilla client only supports PolygonPessimisticConsensus and Aggchain contracts`);
         }
         // Check sovereign params
@@ -153,7 +157,7 @@ async function main() {
                         null,
                         ((feeData.maxFeePerGas as bigint) * BigInt(createRollupParameters.multiplierGas)) / 1000n,
                         ((feeData.maxPriorityFeePerGas as bigint) * BigInt(createRollupParameters.multiplierGas)) /
-                        1000n
+                            1000n
                     );
                 }
                 currentProvider.getFeeData = overrideFeeData;
@@ -212,15 +216,15 @@ async function main() {
             `Mismatch RollupTypeID: Verifier type should be ${VerifierType.StateTransition} for ${consensusContractName}`
         );
     }
-    if (
-        supportedAggchainsArray.includes(consensusContractName) &&
-        verifierType !== VerifierType.ALGateway
-    ) {
+    if (supportedAggchainsArray.includes(consensusContractName) && verifierType !== VerifierType.ALGateway) {
         throw new Error(
             `Mismatch RollupTypeID: Verifier type should be ${VerifierType.ALGateway} for ${consensusContractName}`
         );
     }
-    if (consensusContractName !== ConsensusContracts.PolygonPessimisticConsensus && !supportedAggchainsArray.includes(consensusContractName)) {
+    if (
+        consensusContractName !== ConsensusContracts.PolygonPessimisticConsensus &&
+        !supportedAggchainsArray.includes(consensusContractName)
+    ) {
         if (verifierType !== VerifierType.StateTransition) {
             throw new Error(
                 `Mismatch RollupTypeID: Verifier type should be ${VerifierType.Pessimistic} for ${consensusContractName}`
@@ -280,36 +284,20 @@ async function main() {
     outputJson.rollupManagerAddress = createRollupParameters.rollupManagerAddress;
 
     let initializeBytes;
-    if(supportedConsensusArray.includes(consensusContractName)) {
+    if (supportedConsensusArray.includes(consensusContractName)) {
         // if consensusContractName is a consensus
-        initializeBytes = encodeInitializeBytesLegacy(rollupAdminAddress, trustedSequencer, createRollupParameters.gasTokenAddress, trustedSequencerURL, networkName);
-    } else if(consensusContractName === AGGCHAIN_CONTRACT_NAMES.ECDSA){
-        // if consensusContractName is a AggchainECDSA
-        initializeBytes = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
-            createRollupParameters.aggchainParams.useDefaultGateway,
-            createRollupParameters.aggchainParams.ownedAggchainVKey,
-            createRollupParameters.aggchainParams.aggchainVKeySelector,
-            createRollupParameters.aggchainParams.vKeyManager,
+        initializeBytes = encodeInitializeBytesLegacy(
             rollupAdminAddress,
             trustedSequencer,
             createRollupParameters.gasTokenAddress,
             trustedSequencerURL,
             networkName
-        )
-    } else if(consensusContractName === AGGCHAIN_CONTRACT_NAMES.FEP){
+        );
+    } else if (supportedAggchainsArray.includes(consensusContractName)) {
         // if consensusContractName is a AggchainECDSA
-        initializeBytes = utilsFEP.encodeInitializeBytesAggchainFEPv0(
-            createRollupParameters.aggchainParams.initParams,
-            createRollupParameters.aggchainParams.useDefaultGateway,
-            createRollupParameters.aggchainParams.ownedAggchainVKey,
-            createRollupParameters.aggchainParams.aggchainVKeySelector,
-            createRollupParameters.aggchainParams.vKeyManager,
-            rollupAdminAddress,
-            trustedSequencer,
-            createRollupParameters.gasTokenAddress,
-            trustedSequencerURL,
-            networkName
-        )
+        initializeBytes = utilsAggchain.encodeInitAggchainManager(
+            createRollupParameters.aggchainParams.aggchainManager
+        );
     }
 
     if (createRollupParameters.type === transactionTypes.TIMELOCK) {
@@ -323,7 +311,7 @@ async function main() {
             PolygonRollupManagerFactory.interface.encodeFunctionData("attachAggchainToAL", [
                 createRollupParameters.rollupTypeId,
                 chainID,
-                initializeBytes
+                initializeBytes,
             ]),
             predecessor, // predecessor
             salt // salt
@@ -345,12 +333,12 @@ async function main() {
             operation.predecessor,
             operation.salt,
         ]);
-        console.log({ scheduleData });
-        console.log({ executeData });
+        console.log({scheduleData});
+        console.log({executeData});
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
-        const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
+        const timelockTx = timelockContractFactory.interface.parseTransaction({data: scheduleData});
         const paramsArray = timelockTx?.fragment.inputs;
         const objectDecoded = {};
         for (let i = 0; i < paramsArray?.length; i++) {
@@ -382,7 +370,7 @@ async function main() {
         const txDeployRollupCalldata = PolygonRollupManagerFactory.interface.encodeFunctionData("attachAggchainToAL", [
             createRollupParameters.rollupTypeId,
             chainID,
-            initializeBytes
+            initializeBytes,
         ]);
         outputJson.txDeployRollupCalldata = txDeployRollupCalldata;
         fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
@@ -523,16 +511,15 @@ async function main() {
                     !ethers.isAddress(sovereignParams.sovereignWETHAddress))
             ) {
                 console.log("Rollup with custom gas token, adding WETH address to deployment output...");
-                const wethObject = genesis.genesis.find(function (obj: { contractName: string }) {
+                const wethObject = genesis.genesis.find(function (obj: {contractName: string}) {
                     return obj.contractName == "WETH";
                 });
                 outputJson.WETHAddress = wethObject.address;
             }
             outputJson.genesis_sovereign = genesis;
-        } catch(e) {
+        } catch (e) {
             console.log("ERROR UPDATING GENESIS: ", e);
         }
-        
     } else {
         if (consensusContractName === "PolygonPessimisticConsensus") {
             console.log("Pessimistic rollup detected, injecting initialization batch...");
@@ -584,7 +571,7 @@ async function main() {
                 globalExitRoot: lastGER,
                 sequencer: trustedSequencer,
             });
-        } else {
+        } else if (supportedConsensusArray.includes(consensusContractName)) {
             console.log("Setting initialization batch for the rollup...");
             // Add the first batch of the created rollup
             const newRollupContract = (await polygonConsensusFactory.attach(createdRollupAddress)) as PolygonZkEVMEtrog;

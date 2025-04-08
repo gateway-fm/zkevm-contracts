@@ -86,7 +86,7 @@ contract AggchainECDSA is AggchainBase {
      */
     function initialize(
         bytes memory initializeBytesAggchain
-    ) external onlyRollupManager getInitializedVersion reinitializer(2) {
+    ) external onlyAggchainManager getInitializedVersion reinitializer(2) {
         // If initializer version is 0, it means that the chain is being initialized for the first time, so the contract has just been deployed, is not an upgrade
         if (_initializerVersion == 0) {
             // custom parsing of the initializeBytesAggchain

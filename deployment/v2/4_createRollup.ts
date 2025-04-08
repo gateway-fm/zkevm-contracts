@@ -20,10 +20,10 @@ import updateVanillaGenesis from "./utils/updateVanillaGenesis";
 
 const dateStr = new Date().toISOString();
 const pathOutputJson = path.join(__dirname, `./create_rollup_output_${dateStr}.json`);
-import utilsECDSA from "../../src/utils-aggchain-ECDSA"
+import utilsECDSA from "../../src/utils-aggchain-ECDSA";
 import utilsFEP from "../../src/utils-aggchain-FEP";
 import utilsAggchain from "../../src/utils-common-aggchain";
-import utilsPP from "../../src/pessimistic-utils"
+import utilsPP from "../../src/pessimistic-utils";
 
 import {
     PolygonRollupManager,
@@ -76,15 +76,12 @@ async function main() {
         programVKey,
     } = createRollupParameters;
 
-    const arraySupportedAggchains = [
-        utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA,
-        utilsAggchain.AGGCHAIN_CONTRACT_NAMES.FEP
-    ];
-    
+    const arraySupportedAggchains = utilsAggchain.ARRAY_AGGCHAIN_SUPPORTED_NAMES;
+
     const arraySupportedLegacyConsensus = [
         utilsPP.ConsensusContracts.PolygonZkEVMEtrog,
         utilsPP.ConsensusContracts.PolygonValidiumEtrog,
-        utilsPP.ConsensusContracts.PolygonPessimisticConsensus
+        utilsPP.ConsensusContracts.PolygonPessimisticConsensus,
     ];
     const supportedConsensus = arraySupportedLegacyConsensus.concat(arraySupportedAggchains);
 
@@ -95,8 +92,7 @@ async function main() {
     // if consensusContract is Aggchain, check isVanillaClient === true
     if (arraySupportedAggchains.includes(consensusContract) && !isVanillaClient) {
         throw new Error(`Consensus contract ${consensusContract} requires isVanillaClient === true`);
-    } else if (arraySupportedAggchains.includes(consensusContract) && 
-        programVKey !== ethers.ZeroHash) {
+    } else if (arraySupportedAggchains.includes(consensusContract) && programVKey !== ethers.ZeroHash) {
         throw new Error(`Consensus contract ${consensusContract} requires programVKey === bytes32(0)`);
     } else if (arraySupportedLegacyConsensus.includes(consensusContract)) {
         if (realVerifier === undefined || realVerifier === "") {
@@ -106,7 +102,10 @@ async function main() {
 
     // Check consensus compatibility
     if (isVanillaClient) {
-        if (consensusContract !== "PolygonPessimisticConsensus" && !arraySupportedAggchains.includes(consensusContract) ) {
+        if (
+            consensusContract !== "PolygonPessimisticConsensus" &&
+            !arraySupportedAggchains.includes(consensusContract)
+        ) {
             throw new Error(`Vanilla client only supports PolygonPessimisticConsensus & Aggchain`);
         }
 
@@ -226,7 +225,7 @@ async function main() {
     let PolygonconsensusContract;
 
     // Create consensus/aggchain implementation
-    if(arraySupportedLegacyConsensus.includes(consensusContract)) {
+    if (arraySupportedLegacyConsensus.includes(consensusContract)) {
         // create consensus contract
         PolygonconsensusContract = await PolygonconsensusFactory.deploy(
             deployOutput.polygonZkEVMGlobalExitRootAddress,
@@ -242,7 +241,7 @@ async function main() {
             deployOutput.polTokenAddress,
             deployOutput.polygonZkEVMBridgeAddress,
             deployOutput.polygonRollupManagerAddress,
-            deployOutput.aggLayerGatewayAddress,
+            deployOutput.aggLayerGatewayAddress
         );
         await PolygonconsensusContract.waitForDeployment();
     }
@@ -296,6 +295,7 @@ async function main() {
     let rollupVerifierType;
     let genesisFinal;
     let verifierAddress;
+    let initializeBytesAggchainRollupManager;
     let initializeBytesAggchain;
 
     if (arraySupportedAggchains.includes(consensusContract)) {
@@ -307,7 +307,12 @@ async function main() {
         // verifierAddress = address(0)
         // programVKey must be 0x00.00 for aggchain types
         verifierAddress = ethers.ZeroAddress;
-        if(consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA) {
+
+        initializeBytesAggchainRollupManager = utilsAggchain.encodeInitAggchainManager(
+            createRollupParameters.aggchainParams.aggchainManager
+        );
+
+        if (consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA) {
             initializeBytesAggchain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 createRollupParameters.aggchainParams.useDefaultGateway,
                 createRollupParameters.aggchainParams.initOwnedAggchainVKey,
@@ -318,8 +323,8 @@ async function main() {
                 gasTokenAddress,
                 trustedSequencerURL,
                 networkName
-            )
-        } else if(consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.FEP) {
+            );
+        } else if (consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.FEP) {
             initializeBytesAggchain = utilsFEP.encodeInitializeBytesAggchainFEPv0(
                 createRollupParameters.aggchainParams.initParams,
                 createRollupParameters.aggchainParams.useDefaultGateway,
@@ -336,7 +341,7 @@ async function main() {
             throw new Error(`Aggchain ${consensusContract} not supported`);
         }
     } else {
-        // deploy Verifier 
+        // deploy Verifier
         let verifierContract;
         let verifierName;
         if (realVerifier === true) {
@@ -359,7 +364,13 @@ async function main() {
         }
 
         verifierAddress = verifierContract.target;
-        initializeBytesAggchain = utilsAggchain.encodeInitializeBytesLegacy(adminZkEVM, trustedSequencer, gasTokenAddress, trustedSequencerURL, networkName);
+        initializeBytesAggchainRollupManager = utilsAggchain.encodeInitializeBytesLegacy(
+            adminZkEVM,
+            trustedSequencer,
+            gasTokenAddress,
+            trustedSequencerURL,
+            networkName
+        );
         console.log("#######################\n");
         console.log("Verifier name:", verifierName);
         console.log("Verifier deployed to:", verifierAddress);
@@ -375,19 +386,19 @@ async function main() {
     }
 
     // Sanity checks
-    if(consensusContract == "PolygonPessimisticConsensus") {
-        if(genesisFinal != ethers.ZeroHash) {
+    if (consensusContract == "PolygonPessimisticConsensus") {
+        if (genesisFinal != ethers.ZeroHash) {
             throw new Error(`genesis should be 0x for ${consensusContract}`);
         }
-    } else if(arraySupportedAggchains.includes(consensusContract)) {
-        if(verifierAddress != ethers.ZeroAddress) {
+    } else if (arraySupportedAggchains.includes(consensusContract)) {
+        if (verifierAddress != ethers.ZeroAddress) {
             throw new Error(`For ${consensusContract}: verifier == address(0)`);
-        } else if(forkID != 0) {
+        } else if (forkID != 0) {
             throw new Error(`For ${consensusContract}: forkID == 0`);
-        } else if(genesisFinal != ethers.ZeroHash) {
+        } else if (genesisFinal != ethers.ZeroHash) {
             throw new Error(`For ${consensusContract}: genesis == bytes32(0)`);
         }
-    } else if(programVKey != ethers.ZeroHash) {
+    } else if (programVKey != ethers.ZeroHash) {
         throw new Error(`programVKey should be 0x for ${consensusContract}`);
     }
 
@@ -413,8 +424,9 @@ async function main() {
     const txDeployRollup = await rollupManagerContract.attachAggchainToAL(
         newRollupTypeID,
         chainID,
-        initializeBytesAggchain
+        initializeBytesAggchainRollupManager
     );
+
     const receipt = (await txDeployRollup.wait()) as any;
     const blockDeploymentRollup = await receipt?.getBlock();
     const timestampReceipt = blockDeploymentRollup.timestamp;
@@ -423,9 +435,9 @@ async function main() {
     console.log("#######################\n");
     console.log(`Created new ${consensusContract} Rollup:`, newZKEVMAddress);
 
-    if(arraySupportedAggchains.includes(consensusContract)) {
+    if (arraySupportedAggchains.includes(consensusContract)) {
         let aggchainType = utilsFEP.AGGCHAIN_TYPE_FEP;
-        if(consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA) {
+        if (consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA) {
             aggchainType = utilsECDSA.AGGCHAIN_TYPE_ECDSA;
         }
         // Load aggLayerGateway
@@ -436,12 +448,12 @@ async function main() {
 
         const defaultAggchainSelector = utilsAggchain.getAggchainVKeySelector(
             createRollupParameters.aggchainParams.initAggchainVKeyVersion,
-            aggchainType,
+            aggchainType
         );
 
         await aggLayerGateway.addDefaultAggchainVKey(
             defaultAggchainSelector,
-            createRollupParameters.aggchainParams.initOwnedAggchainVKey,
+            createRollupParameters.aggchainParams.initOwnedAggchainVKey
         );
 
         console.log("#######################\n");
@@ -452,12 +464,16 @@ async function main() {
         console.log("#######################\n");
 
         const defaultAggchainVKeyALGateway = {
-            "defaultAggchainSelector": defaultAggchainSelector,
-            "newAggchainVKey": createRollupParameters.aggchainParams.initOwnedAggchainVKey,
+            defaultAggchainSelector: defaultAggchainSelector,
+            newAggchainVKey: createRollupParameters.aggchainParams.initOwnedAggchainVKey,
         } as never;
 
         outputJson.defaultAggchainVKeyALGateway = defaultAggchainVKeyALGateway;
 
+        // initialize aggchain
+        const aggchainContract = await PolygonconsensusFactory.attach(newZKEVMAddress);
+        const txInitAggChain = await aggchainContract.initialize(initializeBytesAggchain);
+        await txInitAggChain.wait();
     }
 
     if (consensusContract.includes("PolygonValidiumEtrog") && dataAvailabilityProtocol === "PolygonDataCommittee") {
@@ -600,7 +616,7 @@ async function main() {
                 l1BlockHash: blockDeploymentRollup.hash,
                 l1ParentHash: blockDeploymentRollup.parentHash,
             };
-        } else {
+        } else if (arraySupportedLegacyConsensus.includes(consensusContract)) {
             // Add the first batch of the created rollup
             const newZKEVMContract = (await PolygonconsensusFactory.attach(newZKEVMAddress)) as PolygonZkEVMEtrog;
             batchData = {

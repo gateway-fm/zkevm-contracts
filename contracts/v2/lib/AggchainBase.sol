@@ -33,6 +33,12 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     // Flag to enable/disable the use of the custom chain gateway to handle the aggchain keys. In case  of true, the keys are managed by the aggregation layer gateway
     bool public useDefaultGateway;
 
+    /// @notice Address that manages all the functionalities related to the aggchain
+    address public aggchainManager;
+
+    /// @notice This account will be able to accept the aggchainManager role
+    address public pendingAggchainManager;
+
     ////////////////////////////////////////////////////////////
     //                       Mappings                         //
     ////////////////////////////////////////////////////////////
@@ -45,6 +51,26 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
      * variables without shifting down storage in the inheritance chain.
      */
     uint256[50] private _gap;
+
+    ////////////////////////////////////////////////////////////
+    //                        Modifiers                       //
+    ////////////////////////////////////////////////////////////
+
+    // Modifier to check if the caller is the vKeyManager
+    modifier onlyVKeyManager() {
+        if (vKeyManager != msg.sender) {
+            revert OnlyVKeyManager();
+        }
+        _;
+    }
+
+    /// @dev Only allows a function to be callable if the message sender is the aggchain manager
+    modifier onlyAggchainManager() {
+        if (aggchainManager != msg.sender) {
+            revert OnlyAggchainManager();
+        }
+        _;
+    }
 
     ////////////////////////////////////////////////////////////
     //                       Constructor                      //
@@ -80,20 +106,19 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ////////////////////////////////////////////////////////////
     //                  Initialization                        //
     ////////////////////////////////////////////////////////////
-    /**
-     * @notice Override the function to prevent the contract from being initialized with the initializer implemented at PolygonConsensusBase.
-     * @dev removing this function can cause critical security issues.
-     */
-    function initialize(
-        address, // _admin
-        address, // sequencer
-        uint32, //networkID,
-        address, // _gasTokenAddress,
-        string memory, // sequencerURL,
-        string memory // _networkName
-    ) external pure override(PolygonConsensusBase) {
-        // Set initialize variables
-        revert InvalidInitializeFunction();
+
+    /// @notice Sets the aggchain manager.
+    /// @param newAggchainManager The address of the new aggchain manager.
+    function initAggchainManager(
+        address newAggchainManager
+    ) external onlyRollupManager {
+        if (newAggchainManager == address(0)) {
+            revert AggchainManagerCannotBeZero();
+        }
+
+        aggchainManager = newAggchainManager;
+
+        emit AcceptAggchainManagerRole(address(0), aggchainManager);
     }
 
     /**
@@ -164,15 +189,48 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         vKeyManager = _vKeyManager;
     }
 
-    //////////////////////////
-    //      modifiers       //
-    /////////////////////////
-    // Modifier to check if the caller is the vKeyManager
-    modifier onlyVKeyManager() {
-        if (vKeyManager != msg.sender) {
-            revert OnlyVKeyManager();
+    /**
+     * @notice Override the function to prevent the contract from being initialized with the initializer implemented at PolygonConsensusBase.
+     * @dev removing this function can cause critical security issues.
+     */
+    function initialize(
+        address, // _admin
+        address, // sequencer
+        uint32, //networkID,
+        address, // _gasTokenAddress,
+        string memory, // sequencerURL,
+        string memory // _networkName
+    ) external pure override(PolygonConsensusBase) {
+        // Set initialize variables
+        revert InvalidInitializeFunction();
+    }
+
+    ///////////////////////////////////////////////
+    //        aggchainManager funnctions         //
+    ///////////////////////////////////////////////
+
+    /// @notice Starts the aggchainManager role transfer
+    ///         This is a two step process, the pending aggchainManager must accept to finalize the process
+    /// @param newAggchainManager Address of the new aggchainManager
+    function transferAggchainManagerRole(
+        address newAggchainManager
+    ) external onlyAggchainManager {
+        pendingAggchainManager = newAggchainManager;
+
+        emit TransferAggchainManagerRole(aggchainManager, newAggchainManager);
+    }
+
+    /// @notice Allow the current pending aggchainManager to accept the aggchainManager role
+    function acceptAggchainManagerRole() external {
+        if (pendingAggchainManager != msg.sender) {
+            revert OnlyPendingAggchainManager();
         }
-        _;
+
+        address oldAggchainManager = aggchainManager;
+        aggchainManager = pendingAggchainManager;
+        delete pendingAggchainManager;
+
+        emit AcceptAggchainManagerRole(oldAggchainManager, aggchainManager);
     }
 
     ///////////////////////////////

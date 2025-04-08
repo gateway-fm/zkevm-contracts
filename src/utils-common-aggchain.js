@@ -15,6 +15,11 @@ const AGGCHAIN_CONTRACT_NAMES = {
     FEP: 'AggchainFEP',
 };
 
+const ARRAY_AGGCHAIN_SUPPORTED_NAMES = [
+    'AggchainECDSA',
+    'AggchainFEP',
+];
+
 /// //////////////////////////////
 /// // Functions for Aggchain ////
 /// //////////////////////////////
@@ -96,10 +101,28 @@ function encodeInitializeBytesLegacy(
     );
 }
 
+/**
+ * Function to encode the initialize bytes for aggchain manager
+ * @param {String} encodeInitAggchainManager Aggchain manager address
+ * @returns {String} Encoded value in hexadecimal string
+ */
+function encodeInitAggchainManager(
+    encodeInitAggchainManager
+) {
+    return ethers.AbiCoder.defaultAbiCoder().encode(
+        ['address'],
+        [
+            encodeInitAggchainManager
+        ],
+    );
+}
+
 module.exports = {
     CONSENSUS_TYPE,
     AGGCHAIN_CONTRACT_NAMES,
     computeAggchainHash,
     getAggchainVKeySelector,
     encodeInitializeBytesLegacy,
+    encodeInitAggchainManager,
+    ARRAY_AGGCHAIN_SUPPORTED_NAMES
 };

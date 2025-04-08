@@ -647,8 +647,14 @@ contract PolygonRollupManager is
                 _NO_ADDRESS
             );
 
-            // Initialize aggchain with the custom chain bytes
-            IAggchainBase(rollupAddress).initialize(initializeBytesAggchain);
+            address aggchainManager = abi.decode(
+                initializeBytesAggchain,
+                (address)
+            );
+
+            // Set the aggchain manager, aggchain contract will be initialized later
+            // through the aggchain manager
+            IAggchainBase(rollupAddress).initAggchainManager(aggchainManager);
         } else {
             // assign non ALGateway values to rollup data
             rollup.forkID = rollupType.forkID;

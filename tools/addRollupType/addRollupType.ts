@@ -9,7 +9,6 @@ dotenv.config({path: path.resolve(__dirname, "../../.env")});
 import {ethers, run} from "hardhat";
 
 const addRollupTypeParameters = require("./add_rollup_type.json");
-const genesis = require("./genesis.json");
 
 const dateStr = new Date().toISOString();
 const pathOutputJson = addRollupTypeParameters.outputPath
@@ -30,12 +29,7 @@ async function main() {
      * Check deploy parameters
      * Check that every necessary parameter is fulfilled
      */
-    const mandatoryDeploymentParameters = [
-        "type",
-        "description",
-        "consensusContract",
-        "polygonRollupManagerAddress"
-    ];
+    const mandatoryDeploymentParameters = ["type", "description", "consensusContract", "polygonRollupManagerAddress"];
 
     // check add new rollup type
     switch (addRollupTypeParameters.type) {
@@ -62,7 +56,7 @@ async function main() {
         polygonRollupManagerAddress,
         timelockDelay,
         genesisRoot,
-        programVKey
+        programVKey,
     } = addRollupTypeParameters;
 
     const supportedConsensus = Object.values(ConsensusContracts).concat(AggchainContracts);
@@ -74,14 +68,14 @@ async function main() {
 
     // verifierAddress only mandatory if consensusContract !== Aggchain
     let verifierAddress;
-    if(!consensusContract.includes("Aggchain")) {
+    if (!consensusContract.includes("Aggchain")) {
         verifierAddress = addRollupTypeParameters.verifierAddress;
-        if(verifierAddress === undefined || verifierAddress === "") {
+        if (verifierAddress === undefined || verifierAddress === "") {
             throw new Error(`Missing parameter: verifierAddress`);
         }
     } else {
         verifierAddress = ethers.ZeroAddress;
-    }    
+    }
 
     // Load provider
     let currentProvider = ethers.provider;
@@ -150,7 +144,11 @@ async function main() {
     expect(polTokenAddress).to.not.equal(ethers.ZeroAddress);
     expect(aggLayerGatewayAddress).to.not.equal(ethers.ZeroAddress);
 
+    let genesis;
     if (!isPessimistic && !AggchainContracts.includes(consensusContract)) {
+        const pathGenesis = path.join(__dirname, "./genesis.json");
+        genesis = JSON.parse(fs.readFileSync(pathGenesis, "utf8"));
+
         // checks for rollups
         // Sanity checks genesisRoot
         if (genesisRoot !== genesis.root) {
@@ -175,7 +173,7 @@ async function main() {
         }
     }
 
-    if(type !== transactionTypes.TIMELOCK) {
+    if (type !== transactionTypes.TIMELOCK) {
         // Check roles
         const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
         if ((await rollupManagerContract.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)) == false) {
@@ -191,7 +189,7 @@ async function main() {
         if ((await rollupManagerContract.hasRole(ADD_ROLLUP_TYPE_ROLE, deployer.address)) == false)
             await rollupManagerContract.grantRole(ADD_ROLLUP_TYPE_ROLE, deployer.address);
     }
-    
+
     // Create consensus implementation if needed
     let consensusContractAddress;
 
@@ -205,7 +203,7 @@ async function main() {
         let PolygonConsensusContract;
 
         // Create consensus/aggchain implementation
-        if(!AggchainContracts.includes(consensusContract)) {
+        if (!AggchainContracts.includes(consensusContract)) {
             PolygonConsensusContract = await PolygonConsensusFactory.deploy(
                 polygonZkEVMGlobalExitRootAddress,
                 polTokenAddress,
@@ -248,7 +246,7 @@ async function main() {
                 polTokenAddress,
                 polygonZkEVMBridgeAddress,
                 polygonRollupManagerAddress,
-                aggLayerGatewayAddress,
+                aggLayerGatewayAddress
             );
             await PolygonConsensusContract.waitForDeployment();
 
@@ -313,7 +311,7 @@ async function main() {
         programVKeyFinal = ethers.ZeroHash;
     }
 
-    if(type === transactionTypes.EOA) {
+    if (type === transactionTypes.EOA) {
         console.log(
             await (
                 await rollupManagerContract.addNewRollupType(
@@ -332,7 +330,7 @@ async function main() {
         console.log("New Rollup Type deployed");
         const newRollupTypeID = await rollupManagerContract.rollupTypeCount();
 
-        outputJson.genesis = genesis.root;
+        outputJson.genesis = genesisFinal;
         outputJson.verifierAddress = verifierAddress;
         outputJson.consensusContract = consensusContract;
         outputJson.rollupTypeID = newRollupTypeID;
@@ -359,7 +357,7 @@ async function main() {
             predecessor, // predecessor
             salt // salt
         );
-    
+
         // Schedule operation
         const scheduleData = timelockContractFactory.interface.encodeFunctionData("schedule", [
             operation.target,
@@ -377,34 +375,34 @@ async function main() {
             operation.predecessor,
             operation.salt,
         ]);
-    
+
         console.log({scheduleData});
         console.log({executeData});
-    
+
         outputJson.genesis = genesis.root;
         outputJson.verifierAddress = verifierAddress;
         outputJson.consensusContract = consensusContract;
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         outputJson.id = operation.id;
-    
+
         // Decode the scheduleData for better readability
         const timelockTx = timelockContractFactory.interface.parseTransaction({data: scheduleData});
         const paramsArray = timelockTx?.fragment.inputs;
         const objectDecoded = {};
-    
+
         for (let i = 0; i < paramsArray?.length; i++) {
             const currentParam = paramsArray[i];
-    
+
             objectDecoded[currentParam.name] = timelockTx?.args[i];
-    
+
             if (currentParam.name == "data") {
                 const decodedRollupManagerData = PolygonRollupManagerFactory.interface.parseTransaction({
                     data: timelockTx?.args[i],
                 });
                 const objectDecodedData = {};
                 const paramsArrayData = decodedRollupManagerData?.fragment.inputs;
-    
+
                 for (let j = 0; j < paramsArrayData?.length; j++) {
                     const currentParam = paramsArrayData[j];
                     objectDecodedData[currentParam.name] = decodedRollupManagerData?.args[j];
@@ -412,10 +410,10 @@ async function main() {
                 objectDecoded["decodedData"] = objectDecodedData;
             }
         }
-    
+
         outputJson.decodedScheduleData = objectDecoded;
     }
-    
+
     // add time to output path
     fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 1));
 }
