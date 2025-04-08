@@ -46,9 +46,6 @@ contract BridgeL2SovereignChain is
     ///         This mechanism is used to properly select the initializer
     uint8 private _initializerVersion;
 
-    // Emergency bridge pauser address: can pause the bridge in case of emergency, both bridges and claims
-    address public emergencyBridgePauser;
-
     //  This account will be able to accept the emergencyBridgePauser role
     address public pendingEmergencyBridgePauser;
 

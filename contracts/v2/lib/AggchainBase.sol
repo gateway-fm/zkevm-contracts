@@ -233,6 +233,10 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     function transferAggchainManagerRole(
         address newAggchainManager
     ) external onlyAggchainManager {
+        if (newAggchainManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         pendingAggchainManager = newAggchainManager;
 
         emit TransferAggchainManagerRole(aggchainManager, newAggchainManager);
