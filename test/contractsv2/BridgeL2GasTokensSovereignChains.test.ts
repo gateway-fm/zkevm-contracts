@@ -1,17 +1,17 @@
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     ERC20PermitMock,
     GlobalExitRootManagerL2SovereignChain,
     BridgeL2SovereignChain,
     TokenWrapped,
 } from "../../typechain-types";
-import {takeSnapshot, time} from "@nomicfoundation/hardhat-network-helpers";
-import {processorUtils, contractUtils, MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
-const {calculateSnarkInput, calculateAccInputHash, calculateBatchHashData} = contractUtils;
+import { takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
+import { processorUtils, contractUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+const { calculateSnarkInput, calculateAccInputHash, calculateBatchHashData } = contractUtils;
 const MerkleTreeBridge = MTBridge;
-const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
-import {setBalance} from "@nomicfoundation/hardhat-network-helpers";
+const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
+import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
 
 function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
@@ -38,6 +38,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
     let rollupManager: any;
     let acc1: any;
     let bridgeManager: any;
+    let emergencyBridgePauser: any;
 
     const tokenName = "Matic Token";
     const tokenSymbol = "MATIC";
@@ -61,7 +62,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
 
     beforeEach("Deploy contracts", async () => {
         // load signers
-        [deployer, rollupManager, acc1, bridgeManager] = await ethers.getSigners();
+        [deployer, rollupManager, acc1, bridgeManager, emergencyBridgePauser] = await ethers.getSigners();
 
         // Set trusted sequencer as coinbase for sovereign chains
         await ethers.provider.send("hardhat_setCoinbase", [deployer.address]);
@@ -109,7 +110,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 metadataToken,
                 ethers.Typed.address(bridgeManager.address),
                 ethers.ZeroAddress,
-                true // Not false, revert
+                true, // Not false, revert
+                emergencyBridgePauser.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidSovereignWETHAddressParams");
 
@@ -122,7 +124,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
             metadataToken,
             ethers.Typed.address(bridgeManager.address),
             ethers.ZeroAddress,
-            false
+            false,
+            emergencyBridgePauser.address
         );
 
         // calculate the weth address:
@@ -193,7 +196,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRootContract.lastRollupExitRoot();
@@ -353,7 +356,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: 1}
+                { value: 1 }
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "MsgValueNotZero");
 
@@ -465,7 +468,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
 
-        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, {gasPrice: 0});
+        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, { gasPrice: 0 });
 
         await claimBeforeBridge(
             LEAF_TYPE_ASSET,
@@ -620,7 +623,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // Mock mint weth
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, {gasPrice: 0});
+        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, { gasPrice: 0 });
 
         await claimBeforeBridge(
             LEAF_TYPE_ASSET,
@@ -668,7 +671,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // Just to have the metric of a low cost bridge Asset
         const tokenAddress2 = WETHToken.target; // Ether
         const amount2 = ethers.parseEther("10");
-        await WETHToken.connect(bridgeMock).mint(deployer.address, amount2, {gasPrice: 0});
+        await WETHToken.connect(bridgeMock).mint(deployer.address, amount2, { gasPrice: 0 });
 
         await claimBeforeBridge(
             LEAF_TYPE_ASSET,
@@ -757,7 +760,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
 
-        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rootRollup, {gasPrice: 0});
+        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rootRollup, { gasPrice: 0 });
 
         // check roots
         const sovereignChainExitRootSC = await sovereignChainGlobalExitRootContract.lastRollupExitRoot();
@@ -906,7 +909,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rootRollup, {gasPrice: 0});
+        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rootRollup, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRootContract.lastRollupExitRoot();
@@ -1198,7 +1201,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: amount}
+                { value: amount }
             )
         )
             .to.emit(sovereignChainBridgeContract, "BridgeEvent")
@@ -1221,7 +1224,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: amount}
+                { value: amount }
             )
         )
             .to.emit(sovereignChainBridgeContract, "BridgeEvent")
@@ -1244,7 +1247,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: amount}
+                { value: amount }
             )
         )
             .to.emit(sovereignChainBridgeContract, "BridgeEvent")
@@ -1276,7 +1279,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         );
         const events = await sovereignChainBridgeContract.queryFilter(filter, 0, "latest");
         events.forEach((e) => {
-            const {args} = e;
+            const { args } = e;
             const leafValue = getLeafValue(
                 args.leafType,
                 args.originNetwork,
@@ -1334,7 +1337,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRootContract.lastRollupExitRoot();
@@ -1488,7 +1491,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRootContract.lastRollupExitRoot();
@@ -1596,7 +1599,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRootContract.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRootContract.lastRollupExitRoot();

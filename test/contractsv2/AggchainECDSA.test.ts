@@ -187,7 +187,7 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
         await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // setTrustedSequencer
@@ -232,7 +232,7 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
         await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // disableUseDefaultGatewayFlag
@@ -336,7 +336,7 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
         await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // calculate aggchainHash
@@ -372,7 +372,7 @@ describe("AggchainECDSA", () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-        aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+        await aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
         await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeyVersion, newStateRoot);

@@ -91,6 +91,7 @@ A new folder will be created with the following name `deployments/${network}_$(d
     -   `sovereignWETHAddressIsNotMintable`: Flag to indicate if the wrapped ETH is not mintable
     -   `globalExitRootUpdater`: Address of globalExitRootUpdater for sovereign chains
     -   `globalExitRootRemover`: Address of globalExitRootRemover for sovereign chains
+    -   `emergencyBridgePauser`: emergency bridge pauser address, can stop the bridge, recommended to be a multisig
 - `aggchainParams`: Only mandatory if consensusContract is AggchainECDSA or AggchainFEP
     - `initParams`: Only mandatory if consensusContract is AggchainFEP
         - `l2BlockTime`: The time between L2 blocks in seconds

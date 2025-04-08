@@ -19,7 +19,8 @@
         "sovereignWETHAddress": "0x0000000000000000000000000000000000000000",
         "sovereignWETHAddressIsNotMintable": false,
         "globalExitRootUpdater": "0xB55B27Cca633A73108893985350bc26B8A00C43a",
-        "globalExitRootRemover": "0xB55B27Cca633A73108893985350bc26B8A00C43a"
+        "globalExitRootRemover": "0xB55B27Cca633A73108893985350bc26B8A00C43a",
+        "emergencyBridgePauser": "0xB55B27Cca633A73108893985350bc26B8A00C43a"
     },
     "aggchainParams": {
         "aggchainManager": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",

@@ -6,7 +6,6 @@ import {
     GlobalExitRootManagerL2SovereignChain,
     BridgeL2SovereignChain,
     TokenWrapped,
-    ERC20Decimals,
 } from "../../typechain-types";
 import {MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
 const MerkleTreeBridge = MTBridge;
@@ -38,6 +37,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
     let rollupManager: any;
     let bridgeManager: any;
     let acc1: any;
+    let emergencyBridgePauser: any;
+    let globalExitRootRemover: any;
 
     const tokenName = "Matic Token";
     const tokenSymbol = "MATIC";
@@ -56,7 +57,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
     beforeEach("Deploy contracts", async () => {
         // load signers
-        [deployer, rollupManager, acc1, bridgeManager] = await ethers.getSigners();
+        [deployer, rollupManager, acc1, bridgeManager, emergencyBridgePauser] = await ethers.getSigners();
+        globalExitRootRemover = deployer;
         // Set trusted sequencer as coinbase for sovereign chains
         await ethers.provider.send("hardhat_setCoinbase", [deployer.address]);
         // deploy BridgeL2SovereignChain
@@ -114,7 +116,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             "0x",
             ethers.Typed.address(bridgeManager),
             ethers.ZeroAddress,
-            false
+            false,
+            emergencyBridgePauser.address
         );
 
         // deploy token
@@ -283,7 +286,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 metadataToken,
                 ethers.Typed.address(bridgeManager.address),
                 ethers.ZeroAddress,
-                false
+                false,
+                emergencyBridgePauser.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "GasTokenNetworkMustBeZeroOnEther");
 
@@ -298,7 +302,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 metadataToken,
                 ethers.Typed.address(bridgeManager.address),
                 bridge.target, // Not zero, revert
-                false
+                false,
+                emergencyBridgePauser.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidSovereignWETHAddressParams");
 
@@ -312,7 +317,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 metadataToken,
                 ethers.Typed.address(bridgeManager.address),
                 ethers.ZeroAddress,
-                true // Not false, revert,
+                true, // Not false, revert
+                emergencyBridgePauser.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidSovereignWETHAddressParams");
     });
@@ -833,7 +839,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 "0x",
                 ethers.Typed.address(bridgeManager),
                 ethers.ZeroAddress,
-                false
+                false,
+                emergencyBridgePauser.address
             )
         ).to.be.revertedWith("Initializable: contract is already initialized");
 
@@ -1670,7 +1677,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
         expect(true).to.be.equal(await sovereignChainBridgeContract.isClaimed(index2, indexRollup + 1));
 
         await sovereignChainBridgeContract
-            .connect(bridgeManager)
+            .connect(globalExitRootRemover)
             .unsetMultipleClaims([
                 computeGlobalIndex(indexLocal, indexRollup, false),
                 computeGlobalIndex(index2, indexRollup, false),
@@ -1682,7 +1689,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
         // Try to unset again
         await expect(
             sovereignChainBridgeContract
-                .connect(bridgeManager)
+                .connect(globalExitRootRemover)
                 .unsetMultipleClaims([
                     computeGlobalIndex(indexLocal, indexRollup + 1, false),
                     computeGlobalIndex(index2, indexRollup, false),
@@ -2501,12 +2508,84 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
     it("should test emergency state", async () => {
         await expect(sovereignChainBridgeContract.activateEmergencyState()).to.be.revertedWithCustomError(
             sovereignChainBridgeContract,
-            "EmergencyStateNotAllowed"
+            "OnlyEmergencyBridgePauser"
         );
 
         await expect(sovereignChainBridgeContract.deactivateEmergencyState()).to.be.revertedWithCustomError(
             sovereignChainBridgeContract,
-            "EmergencyStateNotAllowed"
+            "OnlyEmergencyBridgePauser"
         );
+
+        // Activate emergency state
+        await expect(sovereignChainBridgeContract.connect(emergencyBridgePauser).activateEmergencyState()).to.emit(
+            sovereignChainBridgeContract,
+            "EmergencyStateActivated"
+        );
+
+        const tokenAddress = polTokenContract.target;
+        const amount = ethers.parseEther("10");
+        const destinationNetwork = networkIDRollup;
+        const destinationAddress = deployer.address;
+
+        const metadata = metadataToken;
+
+        await expect(
+            sovereignChainBridgeContract.bridgeAsset(
+                destinationNetwork,
+                destinationAddress,
+                amount,
+                tokenAddress,
+                true,
+                "0x"
+            )
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyNotEmergencyState");
+
+        await expect(
+            sovereignChainBridgeContract.bridgeMessage(destinationNetwork, destinationAddress, true, "0x")
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyNotEmergencyState");
+
+        await expect(
+            sovereignChainBridgeContract.bridgeMessageWETH(destinationNetwork, destinationAddress, amount, true, "0x")
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyNotEmergencyState");
+
+        const mockMerkleProof = new Array(32).fill(ethers.ZeroHash) as any;
+        await expect(
+            sovereignChainBridgeContract.claimAsset(
+                mockMerkleProof,
+                mockMerkleProof,
+                ethers.ZeroHash,
+                ethers.ZeroHash,
+                ethers.ZeroHash,
+                0,
+                tokenAddress,
+                destinationNetwork,
+                destinationAddress,
+                amount,
+                metadata
+            )
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyNotEmergencyState");
+
+        await expect(
+            sovereignChainBridgeContract.claimMessage(
+                mockMerkleProof,
+                mockMerkleProof,
+                ethers.ZeroHash,
+                ethers.ZeroHash,
+                ethers.ZeroHash,
+                0,
+                tokenAddress,
+                destinationNetwork,
+                destinationAddress,
+                amount,
+                metadata
+            )
+        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "OnlyNotEmergencyState");
+
+        // Deactivate emergency state
+        await expect(sovereignChainBridgeContract.connect(emergencyBridgePauser).deactivateEmergencyState()).to.emit(
+            sovereignChainBridgeContract,
+            "EmergencyStateDeactivated"
+        );
+        expect(await sovereignChainBridgeContract.isEmergencyState()).to.be.equal(false);
     });
 });

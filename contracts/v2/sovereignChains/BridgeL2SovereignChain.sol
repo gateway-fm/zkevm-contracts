@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 
 import "../interfaces/IBridgeL2SovereignChains.sol";
 import "../PolygonZkEVMBridgeV2.sol";
+import "../interfaces/IGlobalExitRootManagerL2SovereignChain.sol";
 
 /**
  * Sovereign chains bridge that will be deployed on all Sovereign chains
@@ -42,10 +43,36 @@ contract BridgeL2SovereignChain is
     ///         This mechanism is used to properly select the initializer
     uint8 private _initializerVersion;
 
+    // Emergency bridge pauser address: can pause the bridge in case of emergency, both bridges and claims
+    address public emergencyBridgePauser;
+
+    //  This account will be able to accept the emergencyBridgePauser role
+    address public pendingEmergencyBridgePauser;
+
     /**
      * @dev Emitted when a bridge manager is updated
      */
     event SetBridgeManager(address bridgeManager);
+
+    /**
+     * @notice Emitted when the emergencyBridgePauser starts the two-step transfer role setting a new pending emergencyBridgePauser.
+     * @param currentEmergencyBridgePauser The current emergencyBridgePauser.
+     * @param newEmergencyBridgePauser The new pending emergencyBridgePauser.
+     */
+    event TransferEmergencyBridgePauserRole(
+        address currentEmergencyBridgePauser,
+        address newEmergencyBridgePauser
+    );
+
+    /**
+     * @notice Emitted when the pending emergencyBridgePauser accepts the emergencyBridgePauser role.
+     * @param oldEmergencyBridgePauser The previous emergencyBridgePauser.
+     * @param newEmergencyBridgePauser The new emergencyBridgePauser.
+     */
+    event AcceptEmergencyBridgePauserRole(
+        address oldEmergencyBridgePauser,
+        address newEmergencyBridgePauser
+    );
 
     /**
      * @dev Emitted when a token address is remapped by a sovereign token address
@@ -129,11 +156,12 @@ contract BridgeL2SovereignChain is
      * @param _globalExitRootManager global exit root manager address
      * @param _polygonRollupManager Rollup manager address
      * @notice The value of `_polygonRollupManager` on the L2 deployment of the contract will be address(0), so
-     * emergency state is not possible for the L2 deployment of the bridge in StateTransistion chains, intentionally
+     * emergency state is not possible for the L2 deployment of the bridge in StateTransition chains, intentionally
      * @param _gasTokenMetadata Abi encoded gas token metadata
      * @param _bridgeManager bridge manager address
      * @param _sovereignWETHAddress sovereign WETH address
      * @param _sovereignWETHAddressIsNotMintable Flag to indicate if the wrapped ETH is not mintable
+     * @param _emergencyBridgePauser emergency bridge pauser address, allowed to be zero if the chain wants to disable the feature to stop de bridge
      */
     function initialize(
         uint32 _networkID,
@@ -144,7 +172,8 @@ contract BridgeL2SovereignChain is
         bytes memory _gasTokenMetadata,
         address _bridgeManager,
         address _sovereignWETHAddress,
-        bool _sovereignWETHAddressIsNotMintable
+        bool _sovereignWETHAddressIsNotMintable,
+        address _emergencyBridgePauser
     ) public virtual getInitializedVersion reinitializer(2) {
         if (_initializerVersion != 0) {
             revert InvalidInitializeFunction();
@@ -154,6 +183,8 @@ contract BridgeL2SovereignChain is
         globalExitRootManager = _globalExitRootManager;
         polygonRollupManager = _polygonRollupManager;
         bridgeManager = _bridgeManager;
+        emergencyBridgePauser = _emergencyBridgePauser;
+        emit AcceptEmergencyBridgePauserRole(address(0), emergencyBridgePauser);
 
         // Set gas token
         if (_gasTokenAddress == address(0)) {
@@ -207,7 +238,8 @@ contract BridgeL2SovereignChain is
      */
     function initialize(
         bytes32[] calldata tokenInfoHash,
-        uint256[] calldata amount
+        uint256[] calldata amount,
+        address _emergencyBridgePauser
     ) public getInitializedVersion reinitializer(2) {
         if (_initializerVersion == 0) {
             revert InvalidInitializeFunction();
@@ -220,6 +252,13 @@ contract BridgeL2SovereignChain is
         for (uint256 i = 0; i < tokenInfoHash.length; i++) {
             _setInitialLocalBalanceTreeAmount(tokenInfoHash[i], amount[i]);
         }
+
+        // Set emergency bridge pauser
+        emergencyBridgePauser = _emergencyBridgePauser;
+        emit AcceptEmergencyBridgePauserRole(address(0), emergencyBridgePauser);
+
+        // Initialize OZ contracts
+        __ReentrancyGuard_init();
     }
 
     /**
@@ -257,6 +296,25 @@ contract BridgeL2SovereignChain is
     modifier onlyBridgeManager() {
         if (bridgeManager != msg.sender) {
             revert OnlyBridgeManager();
+        }
+        _;
+    }
+
+    modifier onlyEmergencyBridgePauser() {
+        if (emergencyBridgePauser != msg.sender) {
+            revert OnlyEmergencyBridgePauser();
+        }
+        _;
+    }
+
+    modifier onlyGlobalExitRootRemover() {
+        // Only allowed to be called by GlobalExitRootRemover
+        if (
+            IGlobalExitRootManagerL2SovereignChain(
+                address(globalExitRootManager)
+            ).globalExitRootRemover() != msg.sender
+        ) {
+            revert OnlyGlobalExitRootRemover();
         }
         _;
     }
@@ -461,7 +519,7 @@ contract BridgeL2SovereignChain is
      */
     function unsetMultipleClaims(
         uint256[] memory globalIndexes
-    ) external onlyBridgeManager {
+    ) external onlyGlobalExitRootRemover {
         for (uint256 i = 0; i < globalIndexes.length; i++) {
             uint256 globalIndex = globalIndexes[i];
 
@@ -510,6 +568,48 @@ contract BridgeL2SovereignChain is
         bridgeManager = _bridgeManager;
         emit SetBridgeManager(bridgeManager);
     }
+
+    /////////////////////////////////////////
+    //   EmergencyBridgePauser functions   //
+    ////////////////////////////////////////
+
+    /**
+     * @notice Starts the emergencyBridgePauser role transfer
+     * This is a two step process, the pending emergencyBridgePauser must accepted to finalize the process
+     * @param newEmergencyBridgePauser Address of the new pending emergencyBridgePauser
+     */
+    function transferEmergencyBridgePauserRole(
+        address newEmergencyBridgePauser
+    ) external onlyEmergencyBridgePauser {
+        pendingEmergencyBridgePauser = newEmergencyBridgePauser;
+
+        emit TransferEmergencyBridgePauserRole(
+            emergencyBridgePauser,
+            newEmergencyBridgePauser
+        );
+    }
+
+    /**
+     * @notice Allow the current pending emergencyBridgePauser to accept the emergencyBridgePauser role
+     */
+    function acceptEmergencyBridgePauserRole() external {
+        if (pendingEmergencyBridgePauser != msg.sender) {
+            revert OnlyPendingEmergencyBridgePauser();
+        }
+
+        address oldEmergencyBridgePauser = emergencyBridgePauser;
+        emergencyBridgePauser = pendingEmergencyBridgePauser;
+        delete pendingEmergencyBridgePauser;
+
+        emit AcceptEmergencyBridgePauserRole(
+            oldEmergencyBridgePauser,
+            emergencyBridgePauser
+        );
+    }
+
+    ////////////////////////////
+    //   Private functions   //
+    ///////////////////////////
 
     /**
      * @notice Burn tokens from wrapped token to execute the bridge, if the token is not mintable it will be transferred
@@ -727,18 +827,18 @@ contract BridgeL2SovereignChain is
     // @note This function is not used in the current implementation. We overwrite it to improve deployed bytecode size
     function activateEmergencyState()
         external
-        pure
         override(IPolygonZkEVMBridgeV2, PolygonZkEVMBridgeV2)
+        onlyEmergencyBridgePauser
     {
-        revert EmergencyStateNotAllowed();
+        _activateEmergencyState();
     }
 
     function deactivateEmergencyState()
         external
-        pure
         override(IPolygonZkEVMBridgeV2, PolygonZkEVMBridgeV2)
+        onlyEmergencyBridgePauser
     {
-        revert EmergencyStateNotAllowed();
+        _deactivateEmergencyState();
     }
 
     ///////////////////////////

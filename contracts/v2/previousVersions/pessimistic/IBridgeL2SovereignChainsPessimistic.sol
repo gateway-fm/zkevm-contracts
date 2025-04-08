@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 pragma solidity ^0.8.20;
-import "../../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
-import "./IPolygonZkEVMBridgeV2.sol";
+import "../../../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
+import "../../interfaces/IPolygonZkEVMBridgeV2.sol";
 
-interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
+interface IBridgeL2SovereignChainsPessimistic is IPolygonZkEVMBridgeV2 {
     /**
      * @dev Thrown when try to set a zero address to a non valid zero address field
      */
@@ -70,41 +70,6 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
      */
     error EmergencyStateNotAllowed();
 
-    /**
-     @dev Thrown when trying to substract more rather than available balance
-     */
-    error LocalBalanceTreeUnderflow(
-        uint32 originNetwork,
-        address originTokenAddress,
-        uint256 amount,
-        uint256 localBalanceTreeAmount
-    );
-
-    /**
-     @dev Thrown when trying to add an amount over the maximum allowed balance
-     */
-    error LocalBalanceTreeOverflow(
-        uint32 originNetwork,
-        address originTokenAddress,
-        uint256 amount,
-        uint256 localBalanceTreeAmount
-    );
-
-    /**
-     * @dev Thrown when the caller is not the globalExitRootRemover
-     */
-    error OnlyGlobalExitRootRemover();
-
-    /**
-     * @dev Thrown when the caller is not the emergencyBridgePauser address
-     */
-    error OnlyEmergencyBridgePauser();
-
-    /**
-     * @dev Thrown when trying to call a function that only the pending VKeyManager can call.
-     */
-    error OnlyPendingEmergencyBridgePauser();
-
     function initialize(
         uint32 _networkID,
         address _gasTokenAddress,
@@ -114,7 +79,6 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
         bytes memory _gasTokenMetadata,
         address _bridgeManager,
         address sovereignWETHAddress,
-        bool _sovereignWETHAddressIsNotMintable,
-        address _emergencyBridgePauser
+        bool _sovereignWETHAddressIsNotMintable
     ) external;
 }

@@ -30,6 +30,7 @@ describe("SovereignBridge Contract", () => {
     let deployer: any;
     let rollupManager: any;
     let acc1: any;
+    let emergencyBridgePauser: any;
 
     const tokenName = "Matic Token";
     const tokenSymbol = "MATIC";
@@ -47,7 +48,7 @@ describe("SovereignBridge Contract", () => {
 
     beforeEach("Deploy contracts", async () => {
         // load signers
-        [deployer, rollupManager, acc1] = await ethers.getSigners();
+        [deployer, rollupManager, acc1, emergencyBridgePauser] = await ethers.getSigners();
 
         // deploy PolygonZkEVMBridge
         const BridgeL2SovereignChainFactory = await ethers.getContractFactory("BridgeL2SovereignChain");
@@ -72,6 +73,7 @@ describe("SovereignBridge Contract", () => {
             ethers.Typed.address(deployer.address),
             ethers.ZeroAddress,
             false,
+            emergencyBridgePauser.address
         );
 
         // deploy token

@@ -42,8 +42,8 @@ interface IAggchainBaseEvents {
 
     /**
      * @notice Emitted when the pending vKeyManager accepts the vKeyManager role.
-     * @param newVKeyManager The new vKeyManager.
      * @param oldVKeyManager The previous vKeyManager.
+     * @param newVKeyManager The new vKeyManager.
      */
     event AcceptVKeyManagerRole(address oldVKeyManager, address newVKeyManager);
 
