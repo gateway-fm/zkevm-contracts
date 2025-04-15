@@ -24,6 +24,10 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     ////////////////////////////////////////////////////////////
     //                       Variables                        //
     ////////////////////////////////////////////////////////////
+    // Added legacy storage values to avoid storage collision with PolygonValidiumEtrog contract in case this consensus contract is upgraded to aggchain
+    address private _legacyDataAvailabilityProtocol;
+    bool private _legacyIsSequenceWithDataAvailabilityAllowed;
+
     // Address that will be able to manage the aggchain verification keys and swap the useDefaultGateway flag.
     address public vKeyManager;
 
@@ -97,8 +101,14 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         )
     {
         // Check if the gateway address is valid
-        if (address(_aggLayerGateway) == address(0)) {
-            revert InvalidAggLayerGatewayAddress();
+        if (
+            address(_aggLayerGateway) == address(0) ||
+            address(_globalExitRootManager) == address(0) ||
+            address(_pol) == address(0) ||
+            address(_bridgeAddress) == address(0) ||
+            address(_rollupManager) == address(0)
+        ) {
+            revert InvalidZeroAddress();
         }
         aggLayerGateway = _aggLayerGateway;
     }
@@ -147,6 +157,14 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
         address _vKeyManager,
         bytes2 aggchain_type
     ) internal onlyInitializing {
+        if (
+            address(_admin) == address(0) ||
+            address(sequencer) == address(0) ||
+            address(_vKeyManager) == address(0)
+        ) {
+            revert InvalidZeroAddress();
+        }
+
         // Initialize PolygonConsensusBase
         _initializePolygonConsensusBase(
             _admin,
@@ -215,6 +233,10 @@ abstract contract AggchainBase is PolygonConsensusBase, IAggchainBase {
     function transferAggchainManagerRole(
         address newAggchainManager
     ) external onlyAggchainManager {
+        if (newAggchainManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         pendingAggchainManager = newAggchainManager;
 
         emit TransferAggchainManagerRole(aggchainManager, newAggchainManager);

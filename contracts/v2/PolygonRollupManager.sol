@@ -503,6 +503,11 @@ contract PolygonRollupManager is
         string memory description,
         bytes32 programVKey
     ) external onlyRole(_ADD_ROLLUP_TYPE_ROLE) {
+        // Check proposed address is not this contract to avoid self-referential loops causing infinite delegate calls
+        if (consensusImplementation == address(this)) {
+            revert InvalidImplementationAddress();
+        }
+
         uint32 rollupTypeID = ++rollupTypeCount;
 
         if (rollupVerifierType == VerifierType.Pessimistic) {
@@ -733,6 +738,11 @@ contract PolygonRollupManager is
             revert RollupAddressAlreadyExist();
         }
 
+        // Check proposed address is not this contract to avoid self-referential loops causing infinite delegate calls
+        if (rollupAddress == address(this) || rollupAddress.code.length == 0) {
+            revert InvalidImplementationAddress();
+        }
+
         // Increment rollup count
         uint32 rollupID = ++rollupCount;
 
@@ -754,6 +764,9 @@ contract PolygonRollupManager is
             rollup.programVKey = programVKey;
             rollup.lastPessimisticRoot = initPessimisticRoot;
             rollup.lastLocalExitRoot = initRoot;
+            if (verifier.code.length == 0) {
+                revert InvalidVerifierAddress();
+            }
         } else if (rollupVerifierType == VerifierType.ALGateway) {
             if (
                 verifier != address(0) ||
@@ -773,6 +786,9 @@ contract PolygonRollupManager is
             }
 
             rollup.batchNumToStateRoot[0] = initRoot;
+            if (verifier.code.length == 0) {
+                revert InvalidVerifierAddress();
+            }
         }
 
         emit AddExistingRollup(
@@ -812,7 +828,7 @@ contract PolygonRollupManager is
             revert AllSequencedMustBeVerified();
         }
 
-        // Only allowed to update to an older rollup type id if the destination rollup type is ALGateway
+        // Not allowed to update to an older rollup type id, only supported from updateRollup function
         // Rollups added via 'addExistingRollup' has rollupTypeID = 0
         if (rollup.rollupTypeID >= newRollupTypeID) {
             revert UpdateToOldRollupTypeID();
@@ -914,7 +930,7 @@ contract PolygonRollupManager is
     function rollbackBatches(
         IPolygonRollupBase rollupContract,
         uint64 targetBatch
-    ) external {
+    ) external nonReentrant {
         // Check msg.sender has _UPDATE_ROLLUP_ROLE rol or is the admin of the network
         if (
             !hasRole(_UPDATE_ROLLUP_ROLE, msg.sender) &&

@@ -6,8 +6,8 @@ import {
     BridgeL2SovereignChain,
     TokenWrapped,
 } from "../../typechain-types";
-import {MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
-import {valueTo32BytesHex} from "../../src/utils";
+import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+import { valueTo32BytesHex } from "../../src/utils";
 import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
 const MerkleTreeBridge = MTBridge;
 const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
@@ -46,7 +46,7 @@ describe("BridgeL2SovereignChain Contract", () => {
     let acc1: any;
     let emergencyBridgePauser: any;
     let globalExitRootRemover: any;
-    
+
     const tokenName = "Matic Token";
     const tokenSymbol = "MATIC";
     const decimals = 18;
@@ -81,13 +81,20 @@ describe("BridgeL2SovereignChain Contract", () => {
         );
         sovereignChainGlobalExitRootContract = (await upgrades.deployProxy(
             GlobalExitRootManagerL2SovereignChainFactory,
-            [ethers.ZeroAddress, globalExitRootRemover.address], // Initializer params
+            [],
             {
-                initializer: "initialize", // initializer function name
+                initializer: false,
                 constructorArgs: [sovereignChainBridgeContract.target], // Constructor arguments
-                unsafeAllow: ["constructor", "state-variable-immutable"],
+                unsafeAllow: ["constructor", "missing-initializer", "state-variable-immutable"],
             }
         )) as unknown as GlobalExitRootManagerL2SovereignChain;
+
+        await expect(sovereignChainGlobalExitRootContract.initialize(ethers.ZeroAddress, globalExitRootRemover.address)).to.be.revertedWithCustomError(
+            sovereignChainGlobalExitRootContract,
+            "InvalidZeroAddress"
+        );
+
+        await expect(sovereignChainGlobalExitRootContract.initialize(globalExitRootRemover.address, globalExitRootRemover.address))
 
         // cannot initialize bridgeV2 initializer from Sovereign bridge
         await expect(
@@ -106,7 +113,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             sovereignChainBridgeContract.initialize(
                 [ethers.randomBytes(32)],
                 [42],
-                ethers.ZeroAddress,
+                emergencyBridgePauser.address,
             )
         ).to.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");
 
@@ -361,7 +368,7 @@ describe("BridgeL2SovereignChain Contract", () => {
 
         // Try migrate token that is not mapped
         await expect(
-            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount)
+            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount, '0x')
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "TokenNotMapped");
 
         // Make first remapping
@@ -400,11 +407,11 @@ describe("BridgeL2SovereignChain Contract", () => {
 
         // Try migrate a token already updated
         await expect(
-            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(updatedToken.target, migrationAmount)
+            sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(updatedToken.target, migrationAmount, '0x')
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "TokenAlreadyUpdated");
 
         // Migrate tokens
-        await sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount);
+        await sovereignChainBridgeContract.connect(acc1).migrateLegacyToken(legacyToken.target, migrationAmount, '0x');
         expect(await legacyToken.balanceOf(sovereignChainBridgeContract.target)).to.be.equal(migrationAmount);
         expect(await legacyToken.balanceOf(acc1.address)).to.be.equal(0n);
         expect(await updatedToken.balanceOf(sovereignChainBridgeContract.target)).to.be.equal(0n);
@@ -602,25 +609,47 @@ describe("BridgeL2SovereignChain Contract", () => {
 
         // Trigger OnlyGlobalExitRootRemover
         await expect(
-            sovereignChainGlobalExitRootContract.connect(rollupManager).setGlobalExitRootRemover(deployer.address)
+            sovereignChainGlobalExitRootContract.connect(rollupManager).transferGlobalExitRootRemover(deployer.address)
         ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "OnlyGlobalExitRootRemover");
+        // Trigger OnlyPendingGlobalExitRootRemover
+        await expect(
+            sovereignChainGlobalExitRootContract.connect(rollupManager).acceptGlobalExitRootRemover()
+        ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "OnlyPendingGlobalExitRootRemover");
 
         // Trigger OnlyGlobalExitRootRemover
         await expect(
-            sovereignChainGlobalExitRootContract.connect(rollupManager).setGlobalExitRootUpdater(deployer.address)
+            sovereignChainGlobalExitRootContract.connect(rollupManager).transferGlobalExitRootUpdater(deployer.address)
         ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "OnlyGlobalExitRootUpdater");
+        // Trigger OnlyPendingGlobalExitRootUpdater
+        await expect(
+            sovereignChainGlobalExitRootContract.connect(rollupManager).acceptGlobalExitRootUpdater()
+        ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "OnlyPendingGlobalExitRootUpdater");
+
 
         // Update globalExitRootRemover
-        await sovereignChainGlobalExitRootContract.setGlobalExitRootRemover(deployer.address);
+        await expect(sovereignChainGlobalExitRootContract.transferGlobalExitRootRemover(acc1.address)).to.emit(sovereignChainGlobalExitRootContract, "TransferGlobalExitRootRemover").withArgs(deployer.address, acc1.address);
+
+        await expect(sovereignChainGlobalExitRootContract.connect(acc1).acceptGlobalExitRootRemover()).to.emit(sovereignChainGlobalExitRootContract, "AcceptGlobalExitRootRemover").withArgs(deployer.address, acc1.address);
+
         // Update globalExitRootUpdater
-        await sovereignChainGlobalExitRootContract.setGlobalExitRootUpdater(deployer.address);
+        await expect(
+            sovereignChainGlobalExitRootContract.transferGlobalExitRootUpdater(ethers.ZeroAddress)
+        ).to.revertedWithCustomError(sovereignChainGlobalExitRootContract, "InvalidZeroAddress");
+
+        await expect(
+            sovereignChainGlobalExitRootContract.transferGlobalExitRootUpdater(acc1.address)
+        ).to.emit(sovereignChainGlobalExitRootContract, "TransferGlobalExitRootUpdater").withArgs(deployer.address, acc1.address);
+
+        await expect(
+            sovereignChainGlobalExitRootContract.connect(acc1).acceptGlobalExitRootUpdater()
+        ).to.emit(sovereignChainGlobalExitRootContract, "AcceptGlobalExitRootUpdater").withArgs(deployer.address, acc1.address);
 
         // Remove global exit root
         let removalHashChainValue = ethers.solidityPackedKeccak256(
             ["bytes32", "bytes32"],
             [ethers.ZeroHash, computedGlobalExitRoot]
         );
-        await expect(sovereignChainGlobalExitRootContract.removeGlobalExitRoots([computedGlobalExitRoot]))
+        await expect(sovereignChainGlobalExitRootContract.connect(acc1).removeGlobalExitRoots([computedGlobalExitRoot]))
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateRemovalHashChainValue")
             .withArgs(computedGlobalExitRoot, removalHashChainValue);
 
@@ -629,7 +658,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             ["bytes32", "bytes32"],
             [hashChainValue, computedGlobalExitRoot]
         );
-        await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
+        await expect(sovereignChainGlobalExitRootContract.connect(acc1).insertGlobalExitRoot(computedGlobalExitRoot))
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
         const computedGlobalExitRoot2 = "0x5946741ff5ff7732e1c7614ae327543a1d9f5870fcb8afbf146bd5ea75d6d519"; // Random 32 bytes
@@ -637,7 +666,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             ["bytes32", "bytes32"],
             [hashChainValue, computedGlobalExitRoot2]
         );
-        await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot2))
+        await expect(sovereignChainGlobalExitRootContract.connect(acc1).insertGlobalExitRoot(computedGlobalExitRoot2))
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot2, hashChainValue);
         const lastBlock2 = (await ethers.provider.getBlock("latest")) as any;
@@ -653,7 +682,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             [removalHashChainValue, computedGlobalExitRoot]
         );
         await expect(
-            sovereignChainGlobalExitRootContract.removeGlobalExitRoots([
+            sovereignChainGlobalExitRootContract.connect(acc1).removeGlobalExitRoots([
                 computedGlobalExitRoot2,
                 computedGlobalExitRoot,
             ])
@@ -671,7 +700,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             ["bytes32", "bytes32"],
             [hashChainValue, computedGlobalExitRoot]
         );
-        await expect(sovereignChainGlobalExitRootContract.insertGlobalExitRoot(computedGlobalExitRoot))
+        await expect(sovereignChainGlobalExitRootContract.connect(acc1).insertGlobalExitRoot(computedGlobalExitRoot))
             .to.emit(sovereignChainGlobalExitRootContract, "UpdateHashChainValue")
             .withArgs(computedGlobalExitRoot, hashChainValue);
         // Check GER has value in mapping
@@ -2716,5 +2745,31 @@ describe("BridgeL2SovereignChain Contract", () => {
             "EmergencyStateDeactivated"
         );
         expect(await sovereignChainBridgeContract.isEmergencyState()).to.be.equal(false);
+
+        // Transfer emergency bridge pauser role
+        await expect(
+            sovereignChainBridgeContract
+                .connect(emergencyBridgePauser)
+                .transferEmergencyBridgePauserRole(deployer.address)
+        ).to.emit(sovereignChainBridgeContract, "TransferEmergencyBridgePauserRole").withArgs
+            (emergencyBridgePauser.address, deployer.address);
+
+        await expect(
+            sovereignChainBridgeContract
+                .connect(emergencyBridgePauser)
+                .acceptEmergencyBridgePauserRole()
+        ).to.revertedWithCustomError(
+            sovereignChainBridgeContract,
+            "OnlyPendingEmergencyBridgePauser"
+        );
+
+        await expect(
+            sovereignChainBridgeContract
+                .connect(deployer)
+                .acceptEmergencyBridgePauserRole()
+        ).to.emit(sovereignChainBridgeContract, "AcceptEmergencyBridgePauserRole").withArgs(
+            emergencyBridgePauser.address,
+            deployer.address
+        );
     });
 });

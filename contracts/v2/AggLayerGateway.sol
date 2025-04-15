@@ -88,6 +88,15 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         address verifier,
         bytes32 pessimisticVKey
     ) external initializer {
+        if (
+            defaultAdmin == address(0) ||
+            aggchainDefaultVKeyRole == address(0) ||
+            addRouteRole == address(0) ||
+            freezeRouteRole == address(0)
+        ) {
+            revert InvalidZeroAddress();
+        }
+
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(AGGCHAIN_DEFAULT_VKEY_ROLE, aggchainDefaultVKeyRole);
         _grantRole(AL_ADD_PP_ROUTE_ROLE, addRouteRole);
@@ -116,6 +125,11 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         bytes calldata publicValues,
         bytes calldata proofBytes
     ) external view {
+        /// @dev By protocol the proof should at least have the 4 bytes selector, the other bytes are not part of our protocol
+        if (proofBytes.length < 4) {
+            revert InvalidProofBytesLength();
+        }
+
         bytes4 ppSelector = bytes4(proofBytes[:4]);
 
         AggLayerVerifierRoute memory route = pessimisticVKeyRoutes[ppSelector];
@@ -143,6 +157,10 @@ contract AggLayerGateway is Initializable, AccessControl, IAggLayerGateway {
         address verifier,
         bytes32 pessimisticVKey
     ) internal {
+        if (verifier == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         if (pessimisticVKeySelector == bytes4(0)) {
             revert PPSelectorCannotBeZero();
         }

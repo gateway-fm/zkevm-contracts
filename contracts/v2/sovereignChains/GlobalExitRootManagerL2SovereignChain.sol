@@ -34,6 +34,18 @@ contract GlobalExitRootManagerL2SovereignChain is
     // Value of the removed global exit roots hash chain after last removal
     bytes32 public removedGERHashChain;
 
+    // This account will be able to accept globalExitRootUpdater role
+    address public pendingGlobalExitRootUpdater;
+
+    // This account will be able to accept globalExitRootRemover role
+    address public pendingGlobalExitRootRemover;
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     */
+    uint256[50] private _gap;
+
     /**
      * @dev Emitted when a new global exit root is inserted and added to the hash chain
      */
@@ -51,14 +63,44 @@ contract GlobalExitRootManagerL2SovereignChain is
     );
 
     /**
-     * @dev Emitted when the globalExitRootUpdater is set
+     * @dev Emitted when the GlobalExitRootUpdater starts the two-step transfer role setting a new pending GlobalExitRootUpdater.
+     * @param currentGlobalExitRootUpdater The current GlobalExitRootUpdater.
+     * @param pendingGlobalExitRootUpdater The new pending GlobalExitRootUpdater.
      */
-    event SetGlobalExitRootUpdater(address indexed newGlobalExitRootUpdater);
+    event TransferGlobalExitRootUpdater(
+        address currentGlobalExitRootUpdater,
+        address pendingGlobalExitRootUpdater
+    );
 
     /**
-     * @dev Emitted when the globalExitRootRemover is set
+     * @dev Emitted when the GlobalExitRootRemover starts the two-step transfer role setting a new pending GlobalExitRootRemover.
+     * @param currentGlobalExitRootRemover The current GlobalExitRootUpdater.
+     * @param pendingGlobalExitRootRemover The new pending GlobalExitRootUpdater.
      */
-    event SetGlobalExitRootRemover(address indexed newGlobalExitRootRemover);
+    event TransferGlobalExitRootRemover(
+        address currentGlobalExitRootRemover,
+        address pendingGlobalExitRootRemover
+    );
+
+    /**
+     * @dev Emitted when the pending GlobalExitRootUpdater accepts the GlobalExitRootUpdater role.
+     * @param oldGlobalExitRootUpdater The previous GlobalExitRootUpdater.
+     * @param newGlobalExitRootUpdater The new GlobalExitRootUpdater.
+     */
+    event AcceptGlobalExitRootUpdater(
+        address oldGlobalExitRootUpdater,
+        address newGlobalExitRootUpdater
+    );
+
+    /**
+     * @dev Emitted when the pending GlobalExitRootRemover accepts the GlobalExitRootRemover role.
+     * @param oldGlobalExitRootRemover The previous GlobalExitRootRemover.
+     * @param newGlobalExitRootRemover The new GlobalExitRootRemover.
+     */
+    event AcceptGlobalExitRootRemover(
+        address oldGlobalExitRootRemover,
+        address newGlobalExitRootRemover
+    );
 
     /**
      * @param _bridgeAddress PolygonZkEVMBridge contract address
@@ -79,10 +121,18 @@ contract GlobalExitRootManagerL2SovereignChain is
         address _globalExitRootUpdater,
         address _globalExitRootRemover
     ) external virtual initializer {
+        /// @dev _globalExitRootRemover can be set to zero if the chain doesn't want to have this feature
+        if (_globalExitRootUpdater == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         // set globalExitRootUpdater
         globalExitRootUpdater = _globalExitRootUpdater;
+        emit AcceptGlobalExitRootUpdater(address(0), globalExitRootUpdater);
+
         // set globalExitRootRemover
         globalExitRootRemover = _globalExitRootRemover;
+        emit AcceptGlobalExitRootRemover(address(0), globalExitRootRemover);
     }
 
     modifier onlyGlobalExitRootUpdater() {
@@ -141,7 +191,7 @@ contract GlobalExitRootManagerL2SovereignChain is
     function removeGlobalExitRoots(
         bytes32[] calldata gersToRemove
     ) external onlyGlobalExitRootRemover {
-        // @dev A memory variable is used to reduce sload/sstore operations while the loop
+        // @dev A memory variable is used to reduce sload/sstore operations while looping
         bytes32 nextRemovalHashChainValue = removedGERHashChain;
         for (uint256 i = 0; i < gersToRemove.length; i++) {
             // Check if the GER exists
@@ -168,25 +218,78 @@ contract GlobalExitRootManagerL2SovereignChain is
         removedGERHashChain = nextRemovalHashChainValue;
     }
 
+    ///////////////////////////////////
+    //   Role transfer functions    //
+    /////////////////////////////////
+
     /**
-     * @notice Set the globalExitRootUpdater
-     * @param _globalExitRootUpdater new globalExitRootUpdater address
+     * @notice Starts the globalExitRootUpdater role transfer
+     * This is a two step process, the pending globalExitRootUpdater must accepted to finalize the process
+     * @param _newGlobalExitRootUpdater Address of the new globalExitRootUpdater
      */
-    function setGlobalExitRootUpdater(
-        address _globalExitRootUpdater
+    function transferGlobalExitRootUpdater(
+        address _newGlobalExitRootUpdater
     ) external onlyGlobalExitRootUpdater {
-        globalExitRootUpdater = _globalExitRootUpdater;
-        emit SetGlobalExitRootUpdater(_globalExitRootUpdater);
+        if (_newGlobalExitRootUpdater == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
+        pendingGlobalExitRootUpdater = _newGlobalExitRootUpdater;
+
+        emit TransferGlobalExitRootUpdater(
+            globalExitRootUpdater,
+            _newGlobalExitRootUpdater
+        );
     }
 
     /**
-     * @notice Set the globalExitRootRemover
-     * @param _globalExitRootRemover new globalExitRootRemover address
+     * @notice Allow the current pending globalExitRootUpdater to accept the globalExitRootUpdater role
      */
-    function setGlobalExitRootRemover(
-        address _globalExitRootRemover
+    function acceptGlobalExitRootUpdater() external {
+        if (msg.sender != pendingGlobalExitRootUpdater) {
+            revert OnlyPendingGlobalExitRootUpdater();
+        }
+
+        address oldGlobalExitRootUpdater = globalExitRootUpdater;
+        globalExitRootUpdater = pendingGlobalExitRootUpdater;
+        pendingGlobalExitRootUpdater = address(0);
+
+        emit AcceptGlobalExitRootUpdater(
+            oldGlobalExitRootUpdater,
+            globalExitRootUpdater
+        );
+    }
+
+    /**
+     * @notice Start the globalExitRootRemover role transfer in a two-step process
+     * @param _newGlobalExitRootRemover new pending globalExitRootRemover address
+     */
+    function transferGlobalExitRootRemover(
+        address _newGlobalExitRootRemover
     ) external onlyGlobalExitRootRemover {
-        globalExitRootRemover = _globalExitRootRemover;
-        emit SetGlobalExitRootRemover(_globalExitRootRemover);
+        pendingGlobalExitRootRemover = _newGlobalExitRootRemover;
+
+        emit TransferGlobalExitRootRemover(
+            globalExitRootRemover,
+            _newGlobalExitRootRemover
+        );
+    }
+
+    /**
+     * @notice Allow the current pending globalExitRootRemover to accept the globalExitRootRemover role
+     */
+    function acceptGlobalExitRootRemover() external {
+        if (msg.sender != pendingGlobalExitRootRemover) {
+            revert OnlyPendingGlobalExitRootRemover();
+        }
+
+        address oldGlobalExitRootRemover = globalExitRootRemover;
+        globalExitRootRemover = pendingGlobalExitRootRemover;
+        pendingGlobalExitRootRemover = address(0);
+
+        emit AcceptGlobalExitRootRemover(
+            oldGlobalExitRootRemover,
+            globalExitRootRemover
+        );
     }
 }

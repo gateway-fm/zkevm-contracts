@@ -80,6 +80,12 @@ interface IAggLayerGatewayErrors {
 
     /// @notice Thrown when trying to retrieve an aggchain verification key from the mapping that doesn't exists
     error AggchainVKeyNotFound();
+
+    /// @notice Thrown when trying to call a function with an input zero address
+    error InvalidZeroAddress();
+
+    /// @notice Thrown when the input proof bytes are invalid.
+    error InvalidProofBytesLength();
 }
 
 /// @title IAggLayerGateway

@@ -321,6 +321,19 @@ describe("Polygon Rollup Manager", () => {
             )
         ).to.be.revertedWithCustomError(rollupManagerContract, "AddressDoNotHaveRequiredRole");
 
+        // check InvalidImplementationAddress
+        await expect(
+            rollupManagerContract.connect(timelock).addNewRollupType(
+                rollupManagerContract.target,
+                verifierContract.target,
+                forkID,
+                rollupVerifierType,
+                genesisRandom,
+                description,
+                programVKey
+            )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidImplementationAddress");
+
         // Add a new rollup type with timelock
         const newRollupTypeID = 1;
         await expect(
@@ -3010,6 +3023,70 @@ describe("Polygon Rollup Manager", () => {
                     computeRandomBytes(32) // invalid initPessimisticRoot, should be zero
                 )
         ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
+
+        // Should revert with InvalidImplementationAddress because implementation address == rollupManager address
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    rollupManagerContract.target,
+                    verifierContract.target,
+                    forkID,
+                    chainID,
+                    genesisRandom,
+                    rollupVerifierType,
+                    programVKey,
+                    computeRandomBytes(32) // invalid initPessimisticRoot, should be zero
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidImplementationAddress");
+
+        // Should revert with InvalidImplementationAddress because implementation contract code length is 0
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    computeRandomBytes(20),
+                    verifierContract.target,
+                    forkID,
+                    chainID,
+                    genesisRandom,
+                    rollupVerifierType,
+                    programVKey,
+                    computeRandomBytes(32) // invalid initPessimisticRoot, should be zero
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidImplementationAddress");
+
+        // Should revert with InvalidVerifierAddress because verifier contract code length is 0
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    PolygonZKEVMV2Contract.target,
+                    computeRandomBytes(20), // wrong
+                    forkID,
+                    chainID,
+                    genesisRandom,
+                    1, // pessimistic
+                    programVKey,
+                    ethers.ZeroHash
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidVerifierAddress");
+
+        await expect(
+            rollupManagerContract
+                .connect(timelock)
+                .addExistingRollup(
+                    PolygonZKEVMV2Contract.target,
+                    computeRandomBytes(20), // wrong
+                    forkID,
+                    chainID,
+                    genesisRandom,
+                    rollupVerifierType,
+                    ethers.ZeroHash,
+                    ethers.ZeroHash
+                )
+        ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidVerifierAddress");
+
         await expect(
             rollupManagerContract
                 .connect(timelock)
@@ -3021,9 +3098,10 @@ describe("Polygon Rollup Manager", () => {
                     genesisRandom,
                     rollupVerifierType,
                     computeRandomBytes(32), // invalid programVKey, should be zero
-                    ethers.ZeroHash 
+                    ethers.ZeroHash
                 )
         ).to.be.revertedWithCustomError(rollupManagerContract, "InvalidInputsForRollupType");
+
         await expect(
             rollupManagerContract.addExistingRollup(
                 PolygonZKEVMV2Contract.target,

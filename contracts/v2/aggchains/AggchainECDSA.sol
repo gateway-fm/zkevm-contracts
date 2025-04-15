@@ -173,6 +173,10 @@ contract AggchainECDSA is AggchainBase {
     function getAggchainHash(
         bytes memory aggchainData
     ) external view returns (bytes32) {
+        if (aggchainData.length != 32 * 2) {
+            revert InvalidAggchainDataLength();
+        }
+
         // The second param is the new state root used at onVerifyPessimistic callback but now only aggchainVKeySelector is required
         (bytes2 aggchainVKeyVersion, ) = abi.decode(
             aggchainData,
@@ -202,6 +206,10 @@ contract AggchainECDSA is AggchainBase {
     function onVerifyPessimistic(
         bytes calldata aggchainData
     ) external onlyRollupManager {
+        if (aggchainData.length != 32 * 2) {
+            revert InvalidAggchainDataLength();
+        }
+
         (, bytes32 newStateRoot) = abi.decode(aggchainData, (bytes2, bytes32));
 
         // Emit event

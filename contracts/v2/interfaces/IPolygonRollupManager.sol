@@ -324,6 +324,16 @@ interface IPolygonRollupManager {
      */
     error InvalidInputsForRollupType();
 
+    /**
+     * @dev Thrown when trying to add an existing rollup or create a new rollup type with an invalid consensus implementation address
+     */
+    error InvalidImplementationAddress();
+
+    /**
+     * @dev Thrown when trying to create rollup or rollup type with an invalid verifier address
+     */
+    error InvalidVerifierAddress();
+
     enum VerifierType {
         StateTransition,
         Pessimistic,

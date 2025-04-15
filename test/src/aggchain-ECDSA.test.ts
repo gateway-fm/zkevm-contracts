@@ -116,6 +116,11 @@ describe("Test vectors aggchain ECDSA", () => {
                 aggchainParams
             );
             // get aggchainHash from contract
+            // Check InvalidAggchainDataLength
+            await expect(
+                aggchainECDSAContract.getAggchainHash("0x", {gasPrice: 0})
+            ).to.be.revertedWithCustomError(aggchainECDSAContract, "InvalidAggchainDataLength");
+
             const aggchainHashContract = await aggchainECDSAContract.getAggchainHash(aggchainData, {
                 gasPrice: 0,
             });

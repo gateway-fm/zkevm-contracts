@@ -1,5 +1,7 @@
 import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
+import { setCode } from "@nomicfoundation/hardhat-network-helpers";
+
 import {
     AggLayerGateway,
     ERC20PermitMock,
@@ -262,7 +264,7 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
             polygonZkEVMBridgeContract.target,
             rollupManagerContract.target,
             ethers.ZeroAddress // invalid zero address fo aggLayerGateway
-        )).to.be.revertedWithCustomError(aggchainFEPFactory, "InvalidAggLayerGatewayAddress");
+        )).to.be.revertedWithCustomError(aggchainFEPFactory, "InvalidZeroAddress");
     });
 
     it("should create a FEP rollup type", async () => {
@@ -720,6 +722,8 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
         const initPessimisticRoot = computeRandomBytes(32);
         // add existing rollup: pessimistic type
         const newCreatedRollupID = 1;
+        // Add arbitrary bytecode to the implementation
+        await setCode(rollupAddress, computeRandomBytes(32))
         // Should revert with InvalidInputsForRollupType
         await expect(
             rollupManagerContract

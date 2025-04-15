@@ -248,12 +248,17 @@ contract PolygonZkEVMBridgeV2 is
             if (msg.value != 0) {
                 revert MsgValueNotZero();
             }
-
+            // Use permit if any
+            if (permitData.length != 0) {
+                _permit(token, amount, permitData);
+            }
             // Check if it's WETH, this only applies on L2 networks with gasTokens
             // In case ether is the native token, WETHToken will be 0, and the address 0 is already checked
             if (token == address(WETHToken)) {
                 // Burn tokens
-                _bridgeWrappedAsset(TokenWrapped(token), amount);
+                /// @dev in case this function is called from a sovereign bridge that has remapped wethToken with a non-standard token,
+                /// we have to add to the leaf the amount received to the bridge, not the amount sent
+                leafAmount = _bridgeWrappedAsset(TokenWrapped(token), amount);
 
                 // Both origin network and originTokenAddress will be 0
                 // Metadata will be empty
@@ -267,17 +272,16 @@ contract PolygonZkEVMBridgeV2 is
                     tokenInfo.originNetwork != _MAINNET_NETWORK_ID
                 ) {
                     // The token is a wrapped token from another network
-
-                    _bridgeWrappedAsset(TokenWrapped(token), amount);
+                    /// @dev in case this function is called from a sovereign bridge that has remapped the token with a non-standard token,
+                    /// we have to add to the leaf the amount received to the bridge, not the amount sent
+                    leafAmount = _bridgeWrappedAsset(
+                        TokenWrapped(token),
+                        amount
+                    );
 
                     originTokenAddress = tokenInfo.originTokenAddress;
                     originNetwork = tokenInfo.originNetwork;
                 } else {
-                    // Use permit if any
-                    if (permitData.length != 0) {
-                        _permit(token, amount, permitData);
-                    }
-
                     // In order to support fee tokens check the amount received, not the transferred
                     uint256 balanceBefore = IERC20Upgradeable(token).balanceOf(
                         address(this)
@@ -379,12 +383,14 @@ contract PolygonZkEVMBridgeV2 is
         }
 
         // Burn wETH tokens
-        _bridgeWrappedAsset(WETHToken, amountWETH);
+        /// @dev in case this function is called from a sovereign bridge that has remapped wethToken with a non-standard token,
+        /// we have to add to the leaf the amount received to the bridge, not the amount sent
+        uint256 leafAmount = _bridgeWrappedAsset(WETHToken, amountWETH);
 
         _bridgeMessage(
             destinationNetwork,
             destinationAddress,
-            amountWETH,
+            leafAmount,
             forceUpdateGlobalExitRoot,
             metadata
         );
@@ -996,13 +1002,15 @@ contract PolygonZkEVMBridgeV2 is
      * note This  function has been extracted to be able to override it by other contracts like Bridge2SovereignChain
      * @param tokenWrapped Wrapped token to burnt
      * @param amount Amount of tokens
+     * @return Amount of tokens that must be added to the leaf after the bridge operation
      */
     function _bridgeWrappedAsset(
         TokenWrapped tokenWrapped,
         uint256 amount
-    ) internal virtual {
+    ) internal virtual returns (uint256) {
         // Burn tokens
         tokenWrapped.burn(msg.sender, amount);
+        return amount;
     }
 
     /**
@@ -1072,9 +1080,11 @@ contract PolygonZkEVMBridgeV2 is
                 revert NotValidSpender();
             }
 
-            if (value != amount) {
-                revert NotValidAmount();
-            }
+            /// @dev To be more aligned with the latest OpenZeppelin ERC20 implementation where ERC20 tokens allow approvals of uint.max and it is widely adopted by DeFi,
+            ///  this check has been removed. Important to warn that removing it is not the most secure approach but has been applied because it is widely used and reduce friction and gas cost
+            // if (value != amount) {
+            //     revert NotValidAmount();
+            // }
 
             // we call without checking the result, in case it fails and he doesn't have enough balance
             // the following transferFrom should be fail. This prevents DoS attacks from using a signature

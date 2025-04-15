@@ -188,7 +188,7 @@ contract AggchainFEP is AggchainBase {
     error L2BlockTimeMustBeGreaterThanZero();
 
     /// @notice starting L2 timestamp must be less than current time
-    error StartL2TimestampMustBeGreaterThanCurrentTime();
+    error StartL2TimestampMustBeLessThanCurrentTime();
 
     /// @notice rollup config hash must be different than 0
     error RollupConfigHashMustBeDifferentThanZero();
@@ -358,6 +358,10 @@ contract AggchainFEP is AggchainBase {
     /// @notice Initializer AggchainFEP storage
     /// @param _initParams The initialization parameters for the contract.
     function _initializeAggchain(InitParams memory _initParams) internal {
+        if (_initParams.optimisticModeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         if (_initParams.submissionInterval == 0) {
             revert SubmissionIntervalMustBeGreaterThanZero();
         }
@@ -367,7 +371,7 @@ contract AggchainFEP is AggchainBase {
         }
 
         if (_initParams.startingTimestamp > block.timestamp) {
-            revert StartL2TimestampMustBeGreaterThanCurrentTime();
+            revert StartL2TimestampMustBeLessThanCurrentTime();
         }
 
         if (_initParams.rollupConfigHash == bytes32(0)) {
@@ -427,6 +431,10 @@ contract AggchainFEP is AggchainBase {
     function getAggchainHash(
         bytes memory aggchainData
     ) external view returns (bytes32) {
+        if (aggchainData.length != 32 * 3) {
+            revert InvalidAggchainDataLength();
+        }
+
         // decode the aggchainData
         (
             bytes2 _aggchainVKeyVersion,
@@ -549,6 +557,10 @@ contract AggchainFEP is AggchainBase {
     function onVerifyPessimistic(
         bytes memory aggchainData
     ) external onlyRollupManager {
+        if (aggchainData.length != 32 * 3) {
+            revert InvalidAggchainDataLength();
+        }
+
         // decode the aggchainData
         (, bytes32 _outputRoot, uint256 _l2BlockNumber) = abi.decode(
             aggchainData,
@@ -653,13 +665,16 @@ contract AggchainFEP is AggchainBase {
     ////////////////////////////////////////////////////////////
     //         optimisticModeManager functions                //
     ////////////////////////////////////////////////////////////
-
     /// @notice Starts the optimisticModeManager role transfer
     /// This is a two step process, the pending optimisticModeManager must accepted to finalize the process
     /// @param newOptimisticModeManager Address of the new optimisticModeManager
     function transferOptimisticModeManagerRole(
         address newOptimisticModeManager
     ) external onlyOptimisticModeManager {
+        if (newOptimisticModeManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
         pendingOptimisticModeManager = newOptimisticModeManager;
 
         emit TransferOptimisticModeManagerRole(
