@@ -18,7 +18,7 @@ contract BridgeL2SovereignChain is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // Current bridge version
-    string public constant BRIDGE_SOVEREIGN_VERSION = "al-v0.3.0";
+    string public constant BRIDGE_SOVEREIGN_VERSION = "al-v0.3.1";
 
     // Map to store wrappedAddresses that are not mintable
     mapping(address wrappedAddress => bool isNotMintable)
@@ -53,7 +53,7 @@ contract BridgeL2SovereignChain is
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      */
-    uint256[50] private _gap;
+    uint256[50] private __gap;
 
     /**
      * @dev Emitted when a bridge manager is updated
@@ -155,7 +155,7 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @dev initilaizer function to set the initial values of the contract when the contract is deployed for the first time
+     * @dev initializer function to set the initial values of the contract when the contract is deployed for the first time
      * @param _networkID networkID
      * @param _gasTokenAddress gas token address
      * @param _gasTokenNetwork gas token network
@@ -168,6 +168,7 @@ contract BridgeL2SovereignChain is
      * @param _sovereignWETHAddress sovereign WETH address
      * @param _sovereignWETHAddressIsNotMintable Flag to indicate if the wrapped ETH is not mintable
      * @param _emergencyBridgePauser emergency bridge pauser address, allowed to be zero if the chain wants to disable the feature to stop de bridge
+     * @param _proxiedTokensManager address of the proxied tokens manager
      */
     function initialize(
         uint32 _networkID,
@@ -179,7 +180,8 @@ contract BridgeL2SovereignChain is
         address _bridgeManager,
         address _sovereignWETHAddress,
         bool _sovereignWETHAddressIsNotMintable,
-        address _emergencyBridgePauser
+        address _emergencyBridgePauser,
+        address _proxiedTokensManager
     ) public virtual getInitializedVersion reinitializer(2) {
         if (_initializerVersion != 0) {
             revert InvalidInitializeFunction();
@@ -191,6 +193,8 @@ contract BridgeL2SovereignChain is
         bridgeManager = _bridgeManager;
         emergencyBridgePauser = _emergencyBridgePauser;
         emit AcceptEmergencyBridgePauserRole(address(0), emergencyBridgePauser);
+        proxiedTokensManager = _proxiedTokensManager;
+        emit AcceptProxiedTokensManagerRole(address(0), proxiedTokensManager);
 
         // Set gas token
         if (_gasTokenAddress == address(0)) {
@@ -241,11 +245,14 @@ contract BridgeL2SovereignChain is
      * Allow to initialize the LocalBalanceTree with the initial balances
      * @param tokenInfoHash Array of tokenInfoHash
      * @param amount Array of amount
+     * @param _emergencyBridgePauser Address of the emergencyBridgePauser role
+     * @param _proxiedTokensManager Address of the proxiedTokensManager role
      */
     function initialize(
         bytes32[] calldata tokenInfoHash,
         uint256[] calldata amount,
-        address _emergencyBridgePauser
+        address _emergencyBridgePauser,
+        address _proxiedTokensManager
     ) public getInitializedVersion reinitializer(2) {
         if (_initializerVersion == 0) {
             revert InvalidInitializeFunction();
@@ -262,6 +269,10 @@ contract BridgeL2SovereignChain is
         // Set emergency bridge pauser
         emergencyBridgePauser = _emergencyBridgePauser;
         emit AcceptEmergencyBridgePauserRole(address(0), emergencyBridgePauser);
+
+        // set proxied tokens manager
+        proxiedTokensManager = _proxiedTokensManager;
+        emit AcceptProxiedTokensManagerRole(address(0), proxiedTokensManager);
 
         // Initialize OZ contracts
         __ReentrancyGuard_init();
@@ -296,6 +307,15 @@ contract BridgeL2SovereignChain is
         override(IPolygonZkEVMBridgeV2, PolygonZkEVMBridgeV2)
         initializer
     {
+        revert InvalidInitializeFunction();
+    }
+
+    /**
+     * @notice Override the function to prevent the contract from being initialized with this initializer
+     */
+    function initialize(
+        address //proxiedTokensManager
+    ) external override(PolygonZkEVMBridgeV2) initializer {
         revert InvalidInitializeFunction();
     }
 
@@ -452,7 +472,7 @@ contract BridgeL2SovereignChain is
     /**
      * @notice Set the custom wrapper for weth
      * @notice If this function is called multiple times this will override the previous calls and only keep the last WETHToken.
-     * @notice WETH will not maintain legacy versions.Users easily should be able to unwrapp the legacy WETH and unwrapp it with the new one.
+     * @notice WETH will not maintain legacy versions.Users easily should be able to unwrap the legacy WETH and unwrapp it with the new one.
      * @param sovereignWETHTokenAddress Address of the sovereign weth token
      * @param isNotMintable Flag to indicate if the wrapped token is not mintable
      */
@@ -900,7 +920,7 @@ contract BridgeL2SovereignChain is
         );
 
         // revert due to an underflow explicitly
-        // custom error added to not wait for the EVM to revert when substracting from uint256
+        // custom error added to not wait for the EVM to revert when subtracting from uint256
         if (amount > localBalanceTree[tokenInfoHash]) {
             revert LocalBalanceTreeUnderflow(
                 originNetwork,

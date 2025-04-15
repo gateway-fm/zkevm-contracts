@@ -3,16 +3,16 @@
 pragma solidity 0.8.28;
 
 import "./lib/DepositContractV2.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable4/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable4/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 import "../lib/TokenWrapped.sol";
 import "../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
 import "../interfaces/IBridgeMessageReceiver.sol";
 import "./interfaces/IPolygonZkEVMBridgeV2.sol";
 import "../lib/EmergencyManager.sol";
 import "../lib/GlobalExitRootLib.sol";
-import "./interfaces/ITokenWrappedBridgeInitCode.sol";
-import "./lib/TokenWrappedBridgeInitCode.sol";
+import "./lib/BytecodeStorer.sol";
+import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable} from "./lib/TokenWrappedBridgeUpgradeable.sol";
 
 /**
  * PolygonZkEVMBridge that will be deployed on Ethereum and all Polygon rollups
@@ -31,10 +31,14 @@ contract PolygonZkEVMBridgeV2 is
         address originTokenAddress;
     }
 
-    // Address of the contract that contains the BASE_INIT_BYTECODE_WRAPPED_TOKEN: Init code of the erc20 wrapped token, to deploy a wrapped token the constructor parameters must be appended
+    // Address of the contract that contains the bytecodes to deploy wrapped tokens, upgradeable tokens and the code of the transparent proxy
     /// @dev the constant has been exported to a separate contract to improve this bytecode length.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    ITokenWrappedBridgeInitCode public immutable wrappedTokenBytecodeStorer;
+    IBytecodeStorer public immutable wrappedTokenBytecodeStorer;
+
+    /// Address of the wrappedToken implementation, it is set at constructor and all proxied wrapped tokens will point to this implementation
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    address public immutable wrappedTokenBridgeImplementation;
 
     // bytes4(keccak256(bytes("permit(address,address,uint256,uint256,uint8,bytes32,bytes32)")));
     bytes4 internal constant _PERMIT_SIGNATURE = 0xd505accf;
@@ -62,6 +66,10 @@ contract PolygonZkEVMBridgeV2 is
 
     // Current bridge version
     string public constant BRIDGE_VERSION = "al-v0.3.0";
+
+    // address 1 is set as proxy admin to not allow the proxy to be upgraded on mainnet
+    address public constant INVALID_WTOKEN_PROXY_ADMIN =
+        0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
     // Network identifier
     uint32 public networkID;
@@ -99,11 +107,17 @@ contract PolygonZkEVMBridgeV2 is
     // This variable is set at the initialization of the contract in case there's a gas token different than ether, (gasTokenAddress != address(0) ) so a new wrapped Token will be deployed to handle ether that came from other networks
     TokenWrapped public WETHToken;
 
+    // Address of the proxied tokens manager, is the admin of proxied wrapped tokens
+    address proxiedTokensManager;
+
+    //  This account will be able to accept the proxiedTokensManager role
+    address pendingProxiedTokensManager;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      */
-    uint256[50] private _gap;
+    uint256[48] private __gap;
 
     /**
      * @dev Emitted when bridge assets or messages to another network
@@ -140,10 +154,36 @@ contract PolygonZkEVMBridgeV2 is
         bytes metadata
     );
 
+    /**
+     * @notice Emitted when the pending ProxiedTokensManager accepts the ProxiedTokensManager role.
+     * @param oldProxiedTokensManager The previous ProxiedTokensManager.
+     * @param newProxiedTokensManager The new ProxiedTokensManager.
+     */
+    event AcceptProxiedTokensManagerRole(
+        address oldProxiedTokensManager,
+        address newProxiedTokensManager
+    );
+
+    /**
+     * @notice Emitted when the proxiedTokensManager starts the two-step transfer role setting a new pending proxiedTokensManager.
+     * @param currentProxiedTokensManager The current proxiedTokensManager.
+     * @param newProxiedTokensManager The new pending proxiedTokensManager.
+     */
+    event TransferProxiedTokensManagerRole(
+        address currentProxiedTokensManager,
+        address newProxiedTokensManager
+    );
+
     constructor() {
         // Deploy the wrapped token contract
         /// @dev this contract is used to store the bytecode of the wrapped token contract, previously stored in the bridge contract but moved to a separate contract to reduce the bytecode size.
-        wrappedTokenBytecodeStorer = new TokenWrappedBridgeInitCode();
+        wrappedTokenBytecodeStorer = new BytecodeStorer();
+
+        // Deploy the implementation of the wrapped token contract
+        /// @dev its the address where proxy wrapped tokens with deterministic address will point
+        wrappedTokenBridgeImplementation = address(
+            new TokenWrappedBridgeUpgradeable()
+        );
         // Disable initializers on the implementation following the best practices
         _disableInitializers();
     }
@@ -195,9 +235,33 @@ contract PolygonZkEVMBridgeV2 is
         __ReentrancyGuard_init();
     }
 
+    /**
+     * @notice initializer to set the proxiedTokensManager
+     * @param _proxiedTokensManager Address of the proxied tokens manager
+     * @dev This function is INSECURE in case you are deploying this contract in mainnet. This contract should only be used for testing or to upgrade productive bridge already deployed on mainnet
+     */
+    function initialize(
+        address _proxiedTokensManager
+    ) external virtual reinitializer(2) {
+        // It's not allowed proxiedTokensManager to be zero on mainnet
+        if (_proxiedTokensManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        proxiedTokensManager = _proxiedTokensManager;
+
+        emit AcceptProxiedTokensManagerRole(address(0), _proxiedTokensManager);
+    }
+
     modifier onlyRollupManager() {
         if (polygonRollupManager != msg.sender) {
             revert OnlyRollupManager();
+        }
+        _;
+    }
+
+    modifier onlyProxiedTokensManager() {
+        if (proxiedTokensManager != msg.sender) {
+            revert OnlyProxiedTokensManager();
         }
         _;
     }
@@ -742,46 +806,6 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice Returns the precalculated address of a wrapper using the token information
-     * Note Updating the metadata of a token is not supported.
-     * Since the metadata has relevance in the address deployed, this function will not return a valid
-     * wrapped address if the metadata provided is not the original one.
-     * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
-     * @param name Name of the token
-     * @param symbol Symbol of the token
-     * @param decimals Decimals of the token
-     */
-    function precalculatedWrapperAddress(
-        uint32 originNetwork,
-        address originTokenAddress,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
-    ) public view returns (address) {
-        bytes32 salt = keccak256(
-            abi.encodePacked(originNetwork, originTokenAddress)
-        );
-
-        bytes32 hashCreate2 = keccak256(
-            abi.encodePacked(
-                bytes1(0xff),
-                address(this),
-                salt,
-                keccak256(
-                    abi.encodePacked(
-                        BASE_INIT_BYTECODE_WRAPPED_TOKEN(),
-                        abi.encode(name, symbol, decimals)
-                    )
-                )
-            )
-        );
-
-        // Last 20 bytes of hash to address
-        return address(uint160(uint256(hashCreate2)));
-    }
-
-    /**
      * @notice Returns the address of a wrapper using the token information if already exist
      * @param originNetwork Origin network
      * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
@@ -980,6 +1004,44 @@ contract PolygonZkEVMBridgeV2 is
         }
     }
 
+    /////////////////////////////////////////
+    //   ProxiedTokensManager functions   //
+    ////////////////////////////////////////
+
+    /**
+     * @notice Starts the ProxiedTokensManager role transfer
+     * This is a two step process, the pending ProxiedTokensManager must accepted to finalize the process
+     * @param newProxiedTokensManager Address of the new pending ProxiedTokensManager
+     */
+    function transferProxiedTokensManagerRole(
+        address newProxiedTokensManager
+    ) external onlyProxiedTokensManager {
+        pendingProxiedTokensManager = newProxiedTokensManager;
+
+        emit TransferProxiedTokensManagerRole(
+            proxiedTokensManager,
+            newProxiedTokensManager
+        );
+    }
+
+    /**
+     * @notice Allow the current pending ProxiedTokensManagerR to accept the emergencyBridgeProxiedTokensManagerRePauser role
+     */
+    function acceptProxiedTokensManagerRole() external {
+        if (pendingProxiedTokensManager != msg.sender) {
+            revert OnlyPendingProxiedTokensManager();
+        }
+
+        address oldProxiedTokensManager = proxiedTokensManager;
+        proxiedTokensManager = pendingProxiedTokensManager;
+        delete pendingProxiedTokensManager;
+
+        emit AcceptProxiedTokensManagerRole(
+            oldProxiedTokensManager,
+            proxiedTokensManager
+        );
+    }
+
     /**
      * @notice Function to update the globalExitRoot if the last deposit is not submitted
      */
@@ -1159,35 +1221,64 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice Internal function that uses create2 to deploy the wrapped tokens
+     * @notice Internal function that uses create2 to deploy the upgradable wrapped tokens
      * @param salt Salt used in create2 params,
-     * tokenInfoHash will be used as salt for all wrappeds except for bridge native WETH, that will be bytes32(0)
+     * tokenInfoHash will be used as salt for all wrapped except for bridge native WETH, that will be bytes32(0)
      * @param constructorArgs Encoded constructor args for the wrapped token
      */
     function _deployWrappedToken(
         bytes32 salt,
         bytes memory constructorArgs
-    ) internal returns (TokenWrapped newWrappedToken) {
-        bytes memory initBytecode = abi.encodePacked(
-            BASE_INIT_BYTECODE_WRAPPED_TOKEN(),
-            constructorArgs
+    ) internal returns (TokenWrapped newWrappedTokenProxy) {
+        /// @dev A bytecode stored on chain used to deploy the proxy in a way that ALWAYS it's used the same
+        /// bytecode, therefore the proxy addresses are the same in all chains
+        /// @dev there is no constructor args as the implementation address + owner of the proxied are set at constructor level and taken from the bridge itself
+        bytes memory proxyInitBytecode = abi.encodePacked(
+            INIT_BYTECODE_TRANSPARENT_PROXY()
         );
 
+        // Deploy wrapped token proxy
         /// @solidity memory-safe-assembly
         assembly {
-            newWrappedToken := create2(
+            newWrappedTokenProxy := create2(
                 0,
-                add(initBytecode, 0x20),
-                mload(initBytecode),
+                add(proxyInitBytecode, 0x20),
+                mload(proxyInitBytecode),
                 salt
             )
         }
-        if (address(newWrappedToken) == address(0))
-            revert FailedTokenWrappedDeployment();
+        if (address(newWrappedTokenProxy) == address(0))
+            revert FailedProxyDeployment();
+
+        // Initialize the wrapped token
+        (string memory name, string memory symbol, uint8 decimals) = abi.decode(
+            constructorArgs,
+            (string, string, uint8)
+        );
+        ITokenWrappedBridgeUpgradeable(address(newWrappedTokenProxy))
+            .initialize(name, symbol, decimals);
+    }
+
+    function getProxiedTokensManager()
+        external
+        view
+        returns (address finalProxiedTokensManager)
+    {
+        finalProxiedTokensManager = proxiedTokensManager;
+        if (finalProxiedTokensManager == address(0)) {
+            finalProxiedTokensManager = INVALID_WTOKEN_PROXY_ADMIN;
+        }
+    }
+
+    function getWrappedTokenBridgeImplementation()
+        external
+        view
+        returns (address)
+    {
+        return wrappedTokenBridgeImplementation;
     }
 
     // Helpers to safely get the metadata from a token, inspired by https://github.com/traderjoe-xyz/joe-core/blob/main/contracts/MasterChefJoeV3.sol#L55-L95
-
     /**
      * @notice Provides a safe ERC20.symbol version which returns 'NO_SYMBOL' as fallback string
      * @param token The address of the ERC-20 token contract
@@ -1254,6 +1345,10 @@ contract PolygonZkEVMBridgeV2 is
         }
     }
 
+    ////////////////////////////////
+    ////    View functions    /////
+    ///////////////////////////////
+
     /**
      * @notice Returns the encoded token metadata
      * @param token Address of the token
@@ -1271,40 +1366,44 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice Returns the precalculated address of a wrapper using the token address
-     * Note Updating the metadata of a token is not supported.
-     * Since the metadata has relevance in the address deployed, this function will not return a valid
-     * wrapped address if the metadata provided is not the original one.
-     * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
-     * @param token Address of the token to calculate the wrapper address
+     * @notice Returns the INIT_BYTECODE_TRANSPARENT_PROXY from the BytecodeStorer
+     * @dev BytecodeStorer is a contract that contains PolygonTransparentProxy as constant, it has done this way to have more bytecode available.
+     *  Using the on chain bytecode, we assure that transparent proxy is always deployed with the exact same bytecode, necessary to have all deployed wrapped token
+     *  with the same address on all the chains.
      */
-    function calculateTokenWrapperAddress(
-        uint32 originNetwork,
-        address originTokenAddress,
-        address token
-    ) external view returns (address) {
-        return
-            precalculatedWrapperAddress(
-                originNetwork,
-                originTokenAddress,
-                _safeName(token),
-                _safeSymbol(token),
-                _safeDecimals(token)
-            );
-    }
-
-    /**
-     * @notice Returns the BASE_INIT_BYTECODE_WRAPPED_TOKEN from the TokenWrappedBridgeInitCode
-     * @dev TokenWrappedBridgeInitCode is a contract that contains BASE_INIT_BYTECODE_WRAPPED_TOKEN as constant, it has done this way to have more bytecode available
-     */
-    function BASE_INIT_BYTECODE_WRAPPED_TOKEN()
+    function INIT_BYTECODE_TRANSPARENT_PROXY()
         public
         view
         returns (bytes memory)
     {
         return
-            ITokenWrappedBridgeInitCode(wrappedTokenBytecodeStorer)
-                .BASE_INIT_BYTECODE_WRAPPED_TOKEN();
+            IBytecodeStorer(wrappedTokenBytecodeStorer)
+                .INIT_BYTECODE_TRANSPARENT_PROXY();
+    }
+
+    /**
+     * @notice Returns the precalculated address of a upgradeable wrapped token using the token information
+     * @param originNetwork Origin network
+     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
+     */
+    function precalculatedWrapperProxyAddress(
+        uint32 originNetwork,
+        address originTokenAddress
+    ) public view returns (address) {
+        bytes32 salt = keccak256(
+            abi.encodePacked(originNetwork, originTokenAddress)
+        );
+
+        bytes32 hashCreate2 = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                address(this),
+                salt,
+                keccak256(abi.encodePacked(INIT_BYTECODE_TRANSPARENT_PROXY()))
+            )
+        );
+
+        // Last 20 bytes of hash to address
+        return address(uint160(uint256(hashCreate2)));
     }
 }

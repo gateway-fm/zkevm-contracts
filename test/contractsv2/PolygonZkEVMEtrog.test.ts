@@ -1,6 +1,6 @@
 /* eslint-disable no-plusplus, no-await-in-loop */
-import {expect} from "chai";
-import {ethers, network, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     VerifierRollupHelperMock,
     ERC20PermitMock,
@@ -11,17 +11,15 @@ import {
     PolygonRollupBaseEtrog,
     TokenWrapped,
     Address,
-    PolygonRollupManagerEmptyMock__factory,
 } from "../../typechain-types";
-import {takeSnapshot, time} from "@nomicfoundation/hardhat-network-helpers";
-import {processorUtils, contractUtils, MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
-import {array} from "yargs";
-const {calculateSnarkInput, calculateAccInputHash, calculateBatchHashData} = contractUtils;
+import { processorUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
+
 
 type BatchDataStructEtrog = PolygonRollupBaseEtrog.BatchDataStruct;
 
 const MerkleTreeBridge = MTBridge;
-const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
+const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
 
 function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
     return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [mainnetExitRoot, rollupExitRoot]);
@@ -96,7 +94,7 @@ describe("PolygonZkEVMEtrog", () => {
         const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
         polygonZkEVMBridgeContract = await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], {
             initializer: false,
-            unsafeAllow: ["constructor", "missing-initializer"],
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
         });
 
         const currentDeployerNonce = await ethers.provider.getTransactionCount(deployer.address);
@@ -174,7 +172,7 @@ describe("PolygonZkEVMEtrog", () => {
                 gasTokenAddress,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.emit(PolygonZKEVMV2Contract, "InitialSequenceBatches");
 
@@ -193,7 +191,7 @@ describe("PolygonZkEVMEtrog", () => {
                 gasTokenAddress,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.be.revertedWith("Initializable: contract is already initialized");
     });
@@ -210,7 +208,7 @@ describe("PolygonZkEVMEtrog", () => {
                 gasTokenAddress,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.emit(PolygonZKEVMV2Contract, "InitialSequenceBatches");
 
@@ -322,7 +320,7 @@ describe("PolygonZkEVMEtrog", () => {
                 gasTokenAddress,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.emit(PolygonZKEVMV2Contract, "InitialSequenceBatches");
         const timestampCreatedRollup = (await ethers.provider.getBlock("latest"))?.timestamp;
@@ -336,7 +334,7 @@ describe("PolygonZkEVMEtrog", () => {
 
         // Check transaction
         const bridgeL2Factory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize", [
+        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
             networkID,
             gasTokenAddress,
             gasTokenNetwork,
@@ -663,7 +661,7 @@ describe("PolygonZkEVMEtrog", () => {
         // Assert global exit root
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerContract.target]);
         const rolllupManagerSigner = await ethers.getSigner(rollupManagerContract.target as any);
-        await polygonZkEVMGlobalExitRoot.connect(rolllupManagerSigner).updateExitRoot(rootRollups, {gasPrice: 0});
+        await polygonZkEVMGlobalExitRoot.connect(rolllupManagerSigner).updateExitRoot(rootRollups, { gasPrice: 0 });
 
         expect(await polygonZkEVMGlobalExitRoot.lastMainnetExitRoot()).to.be.equal(ethers.ZeroHash);
         expect(await polygonZkEVMGlobalExitRoot.lastRollupExitRoot()).to.be.equal(rootRollups);
@@ -690,25 +688,17 @@ describe("PolygonZkEVMEtrog", () => {
 
         // claim
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
-        // create2 parameters
-        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
-        const minimalBytecodeProxy = await polygonZkEVMBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.getCreate2Address(
-            polygonZkEVMBridgeContract.target as string,
-            salt,
-            hashInitCode
-        );
+
+        // Compute wrapped token proxy address
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract);
+
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperAddress(
+            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                tokenName,
-                tokenSymbol,
-                decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
 
@@ -747,6 +737,7 @@ describe("PolygonZkEVMEtrog", () => {
             precalculateWrappedErc20
         );
 
+        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
         expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
@@ -764,7 +755,7 @@ describe("PolygonZkEVMEtrog", () => {
                 newWrappedToken.target,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.emit(PolygonZKEVMV2Contract, "InitialSequenceBatches");
 
@@ -779,7 +770,7 @@ describe("PolygonZkEVMEtrog", () => {
 
         // Check transaction
         const bridgeL2Factory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize", [
+        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
             networkID,
             tokenAddress,
             originNetwork,
@@ -832,7 +823,7 @@ describe("PolygonZkEVMEtrog", () => {
                 gasTokenAddress,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.emit(PolygonZKEVMV2Contract, "InitialSequenceBatches");
 
@@ -846,7 +837,7 @@ describe("PolygonZkEVMEtrog", () => {
 
         // Check transaction
         const bridgeL2Factory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize", [
+        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
             networkID,
             gasTokenAddress,
             gasTokenNetwork,
@@ -945,7 +936,7 @@ describe("PolygonZkEVMEtrog", () => {
                 gasTokenAddress,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.emit(PolygonZKEVMV2Contract, "InitialSequenceBatches");
 
@@ -959,7 +950,7 @@ describe("PolygonZkEVMEtrog", () => {
 
         // Check transaction
         const bridgeL2Factory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize", [
+        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
             networkID,
             gasTokenAddress,
             gasTokenNetwork,
@@ -1047,7 +1038,7 @@ describe("PolygonZkEVMEtrog", () => {
                 gasTokenAddress,
                 urlSequencer,
                 networkName,
-                {gasPrice: 0}
+                { gasPrice: 0 }
             )
         ).to.emit(PolygonZKEVMV2Contract, "InitialSequenceBatches");
 
@@ -1061,7 +1052,7 @@ describe("PolygonZkEVMEtrog", () => {
 
         // Check transaction
         const bridgeL2Factory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize", [
+        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
             networkID,
             gasTokenAddress,
             gasTokenNetwork,
