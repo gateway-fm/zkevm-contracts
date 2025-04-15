@@ -144,7 +144,7 @@ async function main() {
 
     // Deploy proxy admin:
     const proxyAdminFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
+        "@openzeppelin/contracts4/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
         deployer
     );
     const deployTransactionAdmin = (await proxyAdminFactory.getDeployTransaction()).data;
@@ -199,7 +199,7 @@ async function main() {
      * Do not initialize directly the proxy since we want to deploy the same code on L2 and this will alter the bytecode deployed of the proxy
      */
     const transparentProxyFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+        "@openzeppelin/contracts4/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
         deployer
     );
     const initializeEmptyDataProxy = "0x";
@@ -243,7 +243,7 @@ async function main() {
             //  - 'proxyAdminAddress' will be used a the ProxyAdmin
             // TransparentUpgradeableProxy:
             //   - internally it uses the following artifact when deploying the 'TransparentUpgradeableProxy'
-            //   - artifact: @openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json
+            //   - artifact: @openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts4/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json
             //   - build-info: @openzeppelin/upgrades-core/artifacts/build-info.json
             //      - "solcVersion": "0.8.9",
             //      - "solcLongVersion": "0.8.9+commit.e5eed63a",

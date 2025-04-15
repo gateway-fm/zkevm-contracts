@@ -21,9 +21,9 @@ const DEFAULT_MNEMONIC = "test test test test test test test test test test test
 const config: HardhatUserConfig = {
     dependencyCompiler: {
         paths: [
-            "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol",
-            "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol",
-            "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol",
+            "@openzeppelin/contracts4/token/ERC20/presets/ERC20PresetFixedSupply.sol",
+            "@openzeppelin/contracts4/proxy/transparent/ProxyAdmin.sol",
+            "@openzeppelin/contracts4/proxy/transparent/TransparentUpgradeableProxy.sol",
         ], // ,
         // keep: true
     },
@@ -99,7 +99,7 @@ const config: HardhatUserConfig = {
                     //viaIR: true,
                 },
             },
-            "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol": {
+            "@openzeppelin/contracts4/proxy/transparent/ProxyAdmin.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {
@@ -109,7 +109,7 @@ const config: HardhatUserConfig = {
                     evmVersion: "shanghai",
                 }, // try yul optimizer
             },
-            "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol": {
+            "@openzeppelin/contracts4/proxy/transparent/TransparentUpgradeableProxy.sol": {
                 version: "0.8.28",
                 settings: {
                     optimizer: {

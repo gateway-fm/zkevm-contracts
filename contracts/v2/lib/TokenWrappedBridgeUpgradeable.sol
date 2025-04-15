@@ -2,7 +2,7 @@
 // Implementation of permit based on https://github.com/WETH10/WETH10/blob/main/contracts/WETH10.sol
 pragma solidity 0.8.28;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable4/token/ERC20/ERC20Upgradeable.sol";
 import "../interfaces/ITokenWrappedBridgeUpgradeable.sol";
 
 // This contract contains the solidity code that compiles into the BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE constant on the PolygonZkEVMBridgeV2

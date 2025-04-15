@@ -53,7 +53,7 @@ async function main() {
 
     const proxyAdminAddress = await upgrades.erc1967.getAdminAddress(gerManagerL2SovereignContractPessimistic.target);
     const proxyAdminFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
+        "@openzeppelin/contracts4/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
     );
     const proxyAdmin = proxyAdminFactory.attach(proxyAdminAddress);
     const ownerAddress = await proxyAdmin.owner();

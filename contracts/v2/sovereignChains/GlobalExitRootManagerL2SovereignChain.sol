@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import "../../PolygonZkEVMGlobalExitRootL2.sol";
 import "../lib/Hashes.sol";
 import "../../v2/interfaces/IGlobalExitRootManagerL2SovereignChain.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable4/proxy/utils/Initializable.sol";
 
 /**
  * Contract responsible for managing the exit roots for the Sovereign chains and global exit roots

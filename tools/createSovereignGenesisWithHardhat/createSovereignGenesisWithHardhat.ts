@@ -84,7 +84,7 @@ async function main() {
 
     // Deploy proxy admin:
     const proxyAdminFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
+        "@openzeppelin/contracts4/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
         deployer
     );
     const deployTransactionAdmin = (await proxyAdminFactory.getDeployTransaction()).data;
@@ -137,7 +137,7 @@ async function main() {
      * deploy bridge proxy and initialize
      */
     const transparentProxyFactory = await ethers.getContractFactory(
-        "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+        "@openzeppelin/contracts4/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
         deployer
     );
     const initializeEmptyDataProxy = "0x";
