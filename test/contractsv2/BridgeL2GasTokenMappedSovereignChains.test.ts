@@ -1,17 +1,16 @@
-import {expect} from "chai";
-import {ethers, upgrades} from "hardhat";
+import { expect } from "chai";
+import { ethers, upgrades } from "hardhat";
 import {
     ERC20PermitMock,
     GlobalExitRootManagerL2SovereignChain,
     BridgeL2SovereignChain,
     TokenWrapped,
 } from "../../typechain-types";
-import {takeSnapshot, time} from "@nomicfoundation/hardhat-network-helpers";
-import {processorUtils, contractUtils, MTBridge, mtBridgeUtils} from "@0xpolygonhermez/zkevm-commonjs";
-const {calculateSnarkInput, calculateAccInputHash, calculateBatchHashData} = contractUtils;
+import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
 const MerkleTreeBridge = MTBridge;
-const {verifyMerkleProof, getLeafValue} = mtBridgeUtils;
-import {setBalance} from "@nomicfoundation/hardhat-network-helpers";
+const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
+import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
 
 function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
@@ -94,7 +93,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
         WETHToken = await tokenWrappedFactory
             .connect(bridgeMock)
-            .deploy(tokenName, tokenSymbol, decimals, {gasPrice: 0});
+            .deploy(tokenName, tokenSymbol, decimals, { gasPrice: 0 });
 
         gasTokenAddress = polTokenContract.target;
         gasTokenNetwork = 0;
@@ -159,7 +158,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRoot.lastRollupExitRoot();
@@ -313,7 +312,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: 1}
+                { value: 1 }
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "MsgValueNotZero");
 
@@ -425,7 +424,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
 
-        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, {gasPrice: 0});
+        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, { gasPrice: 0 });
 
         // Check LBT underflow
         await expect(
@@ -437,7 +436,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
                 metadata
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeUnderflow")
-        .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
+            .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
 
         // increase LBT to allow bridge action afterwards
         await claimBeforeBridge(
@@ -593,7 +592,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         // Mock mint weth
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, {gasPrice: 0});
+        await WETHToken.connect(bridgeMock).mint(deployer.address, amount, { gasPrice: 0 });
 
         await claimBeforeBridge(
             LEAF_TYPE_ASSET,
@@ -641,7 +640,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         // Just to have the metric of a low cost bridge Asset
         const tokenAddress2 = WETHToken.target; // Ether
         const amount2 = ethers.parseEther("10");
-        await WETHToken.connect(bridgeMock).mint(deployer.address, amount2, {gasPrice: 0});
+        await WETHToken.connect(bridgeMock).mint(deployer.address, amount2, { gasPrice: 0 });
 
         // Check LBT underflow
         await expect(
@@ -653,7 +652,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
                 metadata
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeUnderflow")
-        .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
+            .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
 
         // increase LBT to allow bridge action afterwards
         await claimBeforeBridge(
@@ -743,7 +742,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
 
-        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rootRollup, {gasPrice: 0});
+        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rootRollup, { gasPrice: 0 });
 
         // check roots
         const sovereignChainExitRootSC = await sovereignChainGlobalExitRoot.lastRollupExitRoot();
@@ -892,7 +891,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rootRollup, {gasPrice: 0});
+        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rootRollup, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRoot.lastRollupExitRoot();
@@ -931,25 +930,17 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
 
         // claim
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
-        // create2 parameters
-        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
-        const minimalBytecodeProxy = await sovereignChainBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.getCreate2Address(
-            sovereignChainBridgeContract.target as string,
-            salt,
-            hashInitCode
-        );
+
+        // Compute wrapped token proxy address
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperAddress(
+            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                tokenName,
-                tokenSymbol,
-                decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
 
@@ -986,6 +977,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
             precalculateWrappedErc20
         );
 
+        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
         expect(await sovereignChainBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
@@ -1142,7 +1134,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         const tokenAddress = ethers.ZeroAddress; // gasToken
         const amountEther = 10;
         const amount = ethers.parseEther(amountEther.toString());
-        const amount3x = ethers.parseEther((amountEther*3).toString());
+        const amount3x = ethers.parseEther((amountEther * 3).toString());
         const destinationNetwork = networkIDRollup;
         const destinationAddress = deployer.address;
 
@@ -1169,7 +1161,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: amount}
+                { value: amount }
             )
         )
             .to.emit(sovereignChainBridgeContract, "BridgeEvent")
@@ -1192,7 +1184,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: amount}
+                { value: amount }
             )
         )
             .to.emit(sovereignChainBridgeContract, "BridgeEvent")
@@ -1215,7 +1207,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: amount}
+                { value: amount }
             )
         )
             .to.emit(sovereignChainBridgeContract, "BridgeEvent")
@@ -1247,7 +1239,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         );
         const events = await sovereignChainBridgeContract.queryFilter(filter, 0, "latest");
         events.forEach((e) => {
-            const {args} = e;
+            const { args } = e;
             const leafValue = getLeafValue(
                 args.leafType,
                 args.originNetwork,
@@ -1305,7 +1297,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRoot.lastRollupExitRoot();
@@ -1459,7 +1451,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRoot.lastRollupExitRoot();
@@ -1567,7 +1559,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         // add rollup Merkle root
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);
         const bridgeMock = await ethers.getSigner(sovereignChainBridgeContract.target as any);
-        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, {gasPrice: 0});
+        await sovereignChainGlobalExitRoot.connect(bridgeMock).updateExitRoot(rollupRoot, { gasPrice: 0 });
 
         // check roots
         const rollupExitRootSC = await sovereignChainGlobalExitRoot.lastRollupExitRoot();

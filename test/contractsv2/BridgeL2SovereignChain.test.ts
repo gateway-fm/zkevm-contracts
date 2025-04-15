@@ -9,6 +9,8 @@ import {
 import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
 import { valueTo32BytesHex } from "../../src/utils";
 import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
+
 const MerkleTreeBridge = MTBridge;
 const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
 
@@ -515,7 +517,7 @@ describe("BridgeL2SovereignChain Contract", () => {
                 "0x"
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeUnderflow")
-        .withArgs(originNetwork, tokenAddress, amount, ethers.toBeHex(0));
+            .withArgs(originNetwork, tokenAddress, amount, ethers.toBeHex(0));
 
         // increase LBT to allow bridge action afterwards
         await claimBeforeBridge(
@@ -1236,7 +1238,7 @@ describe("BridgeL2SovereignChain Contract", () => {
                 value: amount,
             })
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeUnderflow")
-        .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
+            .withArgs(0, ethers.ZeroAddress, amount, ethers.toBeHex(0));
 
         // increase LBT to allow bridge action afterwards
         await claimBeforeBridge(
@@ -1554,25 +1556,17 @@ describe("BridgeL2SovereignChain Contract", () => {
 
         // claim
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
-        // create2 parameters
-        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
-        const minimalBytecodeProxy = await sovereignChainBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.getCreate2Address(
-            sovereignChainBridgeContract.target as string,
-            salt,
-            hashInitCode
-        );
+
+        // Compute wrapped token proxy address
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperAddress(
+            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                tokenName,
-                tokenSymbol,
-                decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
 
@@ -1604,10 +1598,9 @@ describe("BridgeL2SovereignChain Contract", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.calculateTokenWrapperAddress(
+            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                precalculateWrappedErc20
             )
         ).to.be.equal(precalculateWrappedErc20);
 
@@ -1620,6 +1613,7 @@ describe("BridgeL2SovereignChain Contract", () => {
             precalculateWrappedErc20
         );
 
+        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
         expect(await sovereignChainBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
@@ -1939,23 +1933,8 @@ describe("BridgeL2SovereignChain Contract", () => {
                 decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
-
-        await expect(
-            sovereignChainBridgeContract.claimAsset(
-                proofLocal,
-                proofRollup,
-                globalIndex,
-                mainnetExitRoot,
-                rollupExitRootSC,
-                originNetwork,
-                tokenAddress,
-                destinationNetwork,
-                destinationAddress,
-                amount,
-                metadata
-            )
-        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "FailedTokenWrappedDeployment");
     });
+
     it("should sovereignChainBridge and sync the current root with events", async () => {
         const depositCount = await sovereignChainBridgeContract.depositCount();
         const originNetwork = networkIDMainnet;

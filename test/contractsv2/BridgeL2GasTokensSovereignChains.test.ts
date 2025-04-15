@@ -6,13 +6,12 @@ import {
     BridgeL2SovereignChain,
     TokenWrapped,
 } from "../../typechain-types";
-import { takeSnapshot, time } from "@nomicfoundation/hardhat-network-helpers";
-import { processorUtils, contractUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
-const { calculateSnarkInput, calculateAccInputHash, calculateBatchHashData } = contractUtils;
+import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
 const MerkleTreeBridge = MTBridge;
 const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
 
 function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
     return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [mainnetExitRoot, rollupExitRoot]);
@@ -130,22 +129,8 @@ describe("SovereignChainBridge Gas tokens tests", () => {
 
         // calculate the weth address:
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
-        // create2 parameters
-        const minimalBytecodeProxy = await sovereignChainBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const WETHName = "Wrapped Ether";
-        const WETHSymbol = "WETH";
-        const WETHDecimals = 18;
-        const metadataWETH = ethers.AbiCoder.defaultAbiCoder().encode(
-            ["string", "string", "uint8"],
-            [WETHName, WETHSymbol, WETHDecimals]
-        );
 
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataWETH]);
-        const precalculatedWeth = await ethers.getCreate2Address(
-            sovereignChainBridgeContract.target as string,
-            ethers.ZeroHash, // salt is zero
-            hashInitCode
-        );
+        const precalculatedWeth = await computeWrappedTokenProxyAddress(networkIDRollup, ethers.ZeroAddress, sovereignChainBridgeContract, bridgeManager.address, true);
         WETHToken = tokenWrappedFactory.attach(precalculatedWeth) as TokenWrapped;
 
         expect(await sovereignChainBridgeContract.WETHToken()).to.be.equal(WETHToken.target);
@@ -948,25 +933,17 @@ describe("SovereignChainBridge Gas tokens tests", () => {
 
         // claim
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
-        // create2 parameters
-        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
-        const minimalBytecodeProxy = await sovereignChainBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.getCreate2Address(
-            sovereignChainBridgeContract.target as string,
-            salt,
-            hashInitCode
-        );
+
+        // Compute wrapped token proxy address
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperAddress(
+            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                tokenName,
-                tokenSymbol,
-                decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
 
@@ -1003,6 +980,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
             precalculateWrappedErc20
         );
 
+        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
         expect(await sovereignChainBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
@@ -1159,7 +1137,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         const tokenAddress = ethers.ZeroAddress; // gasToken
         const amountEther = 10;
         const amount = ethers.parseEther(amountEther.toString());
-        const amount3x = ethers.parseEther((amountEther*3).toString());
+        const amount3x = ethers.parseEther((amountEther * 3).toString());
         const destinationNetwork = networkIDRollup;
         const destinationAddress = deployer.address;
 
@@ -1172,10 +1150,10 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 tokenAddress,
                 true,
                 "0x",
-                {value: amount}
+                { value: amount }
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "LocalBalanceTreeUnderflow")
-        .withArgs(originNetwork, gasTokenAddress, amount, ethers.toBeHex(0));
+            .withArgs(originNetwork, gasTokenAddress, amount, ethers.toBeHex(0));
 
         // increase LBT to allow bridge action afterwards
         await claimBeforeBridge(

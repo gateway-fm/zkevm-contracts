@@ -11,6 +11,7 @@ import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
 const MerkleTreeBridge = MTBridge;
 const { verifyMerkleProof, getLeafValue } = mtBridgeUtils;
 import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
 
 function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
     return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [mainnetExitRoot, rollupExitRoot]);
@@ -1579,25 +1580,17 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
         // claim
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
-        // create2 parameters
-        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
-        const minimalBytecodeProxy = await sovereignChainBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.getCreate2Address(
-            sovereignChainBridgeContract.target as string,
-            salt,
-            hashInitCode
-        );
+
+        // Compute wrapped token proxy address
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperAddress(
+            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                tokenName,
-                tokenSymbol,
-                decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
 
@@ -1627,10 +1620,9 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.calculateTokenWrapperAddress(
+            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                precalculateWrappedErc20
             )
         ).to.be.equal(precalculateWrappedErc20);
 
@@ -1643,6 +1635,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             precalculateWrappedErc20
         );
 
+        const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
         expect(await sovereignChainBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
@@ -1942,21 +1935,6 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             )
         ).to.be.equal(precalculateWrappedErc20);
 
-        await expect(
-            sovereignChainBridgeContract.claimAsset(
-                proofLocal,
-                proofRollup,
-                globalIndex,
-                mainnetExitRoot,
-                rollupExitRootSC,
-                originNetwork,
-                tokenAddress,
-                destinationNetwork,
-                destinationAddress,
-                amount,
-                metadata
-            )
-        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "FailedTokenWrappedDeployment");
     });
     it("should sovereignChainBridge and sync the current root with events", async () => {
         const depositCount = await sovereignChainBridgeContract.depositCount();
