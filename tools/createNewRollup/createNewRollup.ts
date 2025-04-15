@@ -11,10 +11,9 @@ import {VerifierType, ConsensusContracts} from "../../src/pessimistic-utils";
 const createRollupParameters = require("./create_new_rollup.json");
 import {genOperation, transactionTypes, convertBigIntsToNumbers} from "../utils";
 import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
-import {AGGCHAIN_CONTRACT_NAMES, encodeInitializeBytesLegacy} from "../../src/utils-common-aggchain";
-import utilsECDSA from "../../src/utils-aggchain-ECDSA";
-import utilsFEP from "../../src/utils-aggchain-FEP";
+import {AGGCHAIN_CONTRACT_NAMES, encodeInitializeBytesLegacy, GENESIS_CONTRACT_NAMES} from "../../src/utils-common-aggchain";
 import utilsAggchain from "../../src/utils-common-aggchain";
+import { logger } from "../../src/logger";
 
 import {
     PolygonRollupManager,
@@ -25,7 +24,7 @@ import {
 } from "../../typechain-types";
 
 async function main() {
-    console.log(`Starting script to create new rollup from ${createRollupParameters.type}...`);
+    logger.info(`Starting script to create new rollup from ${createRollupParameters.type}...`);
     const outputJson = {} as any;
     const dateStr = new Date().toISOString();
     const destPath = createRollupParameters.outputPath
@@ -74,6 +73,7 @@ async function main() {
         consensusContractName,
         isVanillaClient,
         sovereignParams,
+        proxiedTokensManager
     } = createRollupParameters;
 
     // Check supported consensus is correct
@@ -139,7 +139,7 @@ async function main() {
                 `https://${process.env.HARDHAT_NETWORK}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
             ) as any;
             if (createRollupParameters.maxPriorityFeePerGas && createRollupParameters.maxFeePerGas) {
-                console.log(
+                logger.info(
                     `Hardcoded gas used: MaxPriority${createRollupParameters.maxPriorityFeePerGas} gwei, MaxFee${createRollupParameters.maxFeePerGas} gwei`
                 );
                 const FEE_DATA = new ethers.FeeData(
@@ -150,7 +150,7 @@ async function main() {
 
                 currentProvider.getFeeData = async () => FEE_DATA;
             } else {
-                console.log("Multiplier gas used: ", createRollupParameters.multiplierGas);
+                logger.info(`Multiplier gas used: ${createRollupParameters.multiplierGas}`);
                 async function overrideFeeData() {
                     const feeData = await ethers.provider.getFeeData();
                     return new ethers.FeeData(
@@ -243,7 +243,7 @@ async function main() {
         try {
             hasMethodImplemented = await polygonValidiumConsensusContract.isSequenceWithDataAvailabilityAllowed();
         } catch (error) {
-            console.log("RollupTypeID selected ");
+            logger.info("RollupTypeID selected ");
         }
 
         // Consensus PolygonZkEVMEtrog: if 'hasMethodImplemented' does not have any value
@@ -301,7 +301,7 @@ async function main() {
     }
 
     if (createRollupParameters.type === transactionTypes.TIMELOCK) {
-        console.log("Creating timelock txs for rollup creation...");
+        logger.info("Creating timelock txs for rollup creation...");
         const salt = createRollupParameters.timelockSalt || ethers.ZeroHash;
         const predecessor = ethers.ZeroHash;
         const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
@@ -333,8 +333,8 @@ async function main() {
             operation.predecessor,
             operation.salt,
         ]);
-        console.log({scheduleData});
-        console.log({executeData});
+        logger.info({scheduleData});
+        logger.info({executeData});
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
@@ -363,10 +363,10 @@ async function main() {
 
         outputJson.decodedScheduleData = convertBigIntsToNumbers(objectDecoded);
         fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
-        console.log("Finished script, output saved at: ", destPath);
+        logger.info(`Finished script, output saved at: ${destPath}`);
         process.exit(0);
     } else if (createRollupParameters.type === transactionTypes.MULTISIG) {
-        console.log("Creating calldata for rollup creation from multisig...");
+        logger.info("Creating calldata for rollup creation from multisig...");
         const txDeployRollupCalldata = PolygonRollupManagerFactory.interface.encodeFunctionData("attachAggchainToAL", [
             createRollupParameters.rollupTypeId,
             chainID,
@@ -374,10 +374,10 @@ async function main() {
         ]);
         outputJson.txDeployRollupCalldata = txDeployRollupCalldata;
         fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
-        console.log("Finished script, output saved at: ", destPath);
+        logger.info(`Finished script, output saved at: ${destPath}`);
         process.exit(0);
     } else {
-        console.log("Deploying rollup....");
+        logger.info("Deploying rollup....");
         // Create new rollup
         const txDeployRollup = await rollupManagerContract.attachAggchainToAL(
             createRollupParameters.rollupTypeId,
@@ -395,8 +395,8 @@ async function main() {
             l1ParentHash: blockDeploymentRollup.parentHash,
         };
         outputJson.createRollupBlockNumber = blockDeploymentRollup.number;
-        console.log("#######################\n");
-        console.log(
+        logger.info("#######################\n");
+        logger.info(
             `Created new ${consensusContractName} Rollup: ${createdRollupAddress} with rollupTypeId: ${createRollupParameters.rollupTypeId}`
         );
 
@@ -421,14 +421,14 @@ async function main() {
     // If is a validium, data committee must be set up
     const dataAvailabilityProtocol = createRollupParameters.dataAvailabilityProtocol || "PolygonDataCommittee";
     if (consensusContractName.includes("PolygonValidiumEtrog") && dataAvailabilityProtocol === "PolygonDataCommittee") {
-        console.log("Is a validium, setting up data committee...");
+        logger.info("Is a validium, setting up data committee...");
         // deploy data committee
         const PolygonDataCommitteeContract = (await ethers.getContractFactory("PolygonDataCommittee", deployer)) as any;
         let polygonDataCommittee = await upgrades.deployProxy(PolygonDataCommitteeContract, [], {
             unsafeAllow: ["constructor"],
         });
         await polygonDataCommittee?.waitForDeployment();
-        console.log(`Deployed PolygonDataCommittee at ${polygonDataCommittee?.address}`);
+        logger.info(`Deployed PolygonDataCommittee at ${polygonDataCommittee?.address}`);
         // Load data committee
         const PolygonValidiumContract = (await polygonConsensusFactory.attach(
             createdRollupAddress
@@ -439,9 +439,9 @@ async function main() {
                 await PolygonValidiumContract.setDataAvailabilityProtocol(polygonDataCommittee?.target as any)
             ).wait();
         } else {
-            console.log("Is a validium, setting up data committee...");
+            logger.info("Is a validium, setting up data committee...");
             await (await polygonDataCommittee?.transferOwnership(rollupAdminAddress)).wait();
-            console.log(`Transferred ownership of PolygonDataCommittee to ${rollupAdminAddress}`);
+            logger.info(`Transferred ownership of PolygonDataCommittee to ${rollupAdminAddress}`);
         }
         outputJson.polygonDataCommitteeAddress = polygonDataCommittee?.target;
     }
@@ -486,7 +486,7 @@ async function main() {
     */
 
     if (isVanillaClient) {
-        console.log("Vanilla client detected, updating genesis...");
+        logger.info("Vanilla client detected, updating genesis...");
         const pathGenesis = path.join(__dirname, "./genesis.json");
         let genesis = JSON.parse(fs.readFileSync(pathGenesis, "utf8"));
         const initializeParams = {
@@ -500,6 +500,9 @@ async function main() {
             sovereignWETHAddressIsNotMintable: sovereignParams.sovereignWETHAddressIsNotMintable,
             globalExitRootUpdater: sovereignParams.globalExitRootUpdater,
             globalExitRootRemover: sovereignParams.globalExitRootRemover,
+            proxiedTokensManager,
+            emergencyBridgePauser: sovereignParams.emergencyBridgePauser,
+
         };
         try {
             genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);
@@ -510,19 +513,19 @@ async function main() {
                 (sovereignParams.sovereignWETHAddress === ethers.ZeroAddress ||
                     !ethers.isAddress(sovereignParams.sovereignWETHAddress))
             ) {
-                console.log("Rollup with custom gas token, adding WETH address to deployment output...");
+                logger.info("Rollup with custom gas token, adding WETH proxy address to deployment output...");
                 const wethObject = genesis.genesis.find(function (obj: {contractName: string}) {
-                    return obj.contractName == "WETH";
+                    return obj.contractName == GENESIS_CONTRACT_NAMES.WETH_PROXY;
                 });
                 outputJson.WETHAddress = wethObject.address;
             }
             outputJson.genesis_sovereign = genesis;
         } catch (e) {
-            console.log("ERROR UPDATING GENESIS: ", e);
+            logger.info(`ERROR UPDATING GENESIS: ${e}`);
         }
     } else {
         if (consensusContractName === "PolygonPessimisticConsensus") {
-            console.log("Pessimistic rollup detected, injecting initialization batch...");
+            logger.info("Pessimistic rollup detected, injecting initialization batch...");
             // Add the first batch of the created rollup
             const newPessimisticRollup = (await polygonConsensusFactory.attach(
                 createdRollupAddress
@@ -572,7 +575,7 @@ async function main() {
                 sequencer: trustedSequencer,
             });
         } else if (supportedConsensusArray.includes(consensusContractName)) {
-            console.log("Setting initialization batch for the rollup...");
+            logger.info("Setting initialization batch for the rollup...");
             // Add the first batch of the created rollup
             const newRollupContract = (await polygonConsensusFactory.attach(createdRollupAddress)) as PolygonZkEVMEtrog;
             batchData = Object.assign(batchData, {
@@ -591,7 +594,7 @@ async function main() {
     outputJson.rollupID = Number(rollupID);
 
     fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
-    console.log("Finished script, output saved at: ", destPath);
+    logger.info(`Finished script, output saved at: ${destPath}`);
 }
 
 main().catch((e) => {

@@ -53,6 +53,7 @@ async function main() {
         "forkID",
         "consensusContract",
         "programVKey",
+        "proxiedTokensManager",
     ];
 
     for (const parameterName of mandatoryDeploymentParameters) {
@@ -553,9 +554,10 @@ async function main() {
             globalExitRootUpdater: sovereignParams.globalExitRootUpdater,
             globalExitRootRemover: sovereignParams.globalExitRootRemover,
             emergencyBridgePauser: sovereignParams.emergencyBridgePauser,
+            proxiedTokensManager: createRollupParameters.proxiedTokensManager,
         };
         genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);
-        // Add weth address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
+        // Add weth proxy and implementation address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
         if (
             gasTokenAddress !== ethers.ZeroAddress &&
             ethers.isAddress(gasTokenAddress) &&
@@ -563,9 +565,14 @@ async function main() {
                 !ethers.isAddress(sovereignParams.sovereignWETHAddress))
         ) {
             const wethObject = genesis.genesis.find(function (obj) {
-                return obj.contractName == "WETH";
+                return obj.contractName == utilsAggchain.GENESIS_CONTRACT_NAMES.WETH_PROXY;
             });
-            outputJson.WETHAddress = wethObject.address;
+            outputJson.WETHProxyAddress = wethObject.address;
+
+            const wethImpObject = genesis.genesis.find(function (obj) {
+                return obj.contractName ==utilsAggchain.GENESIS_CONTRACT_NAMES.TOKEN_WRAPPED_IMPLEMENTATION;
+            });
+            outputJson.WETHImplementationAddress = wethImpObject.address;
         }
     } else {
         if (consensusContract === "PolygonPessimisticConsensus") {

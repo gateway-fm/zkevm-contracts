@@ -17,6 +17,8 @@ import {
 } from "../../typechain-types";
 import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
 import { processorUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
+
 const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
 
 type BatchDataStructEtrog = PolygonRollupBaseEtrog.BatchDataStruct;
@@ -154,7 +156,7 @@ describe("Polygon Rollup manager upgraded", () => {
         const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
         polygonZkEVMBridgeContract = (await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], {
             initializer: false,
-            unsafeAllow: ["constructor", "missing-initializer"],
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
         })) as any;
 
         // deploy PolygonZkEVM
@@ -558,7 +560,7 @@ describe("Polygon Rollup manager upgraded", () => {
 
         // Check transaction
         const bridgeL2Factory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize", [
+        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
             newCreatedRollupID,
             gasTokenAddress,
             gasTokenNetwork,
@@ -825,23 +827,17 @@ describe("Polygon Rollup manager upgraded", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
         // create2 parameters
         const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
-        const minimalBytecodeProxy = await polygonZkEVMBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.getCreate2Address(
-            polygonZkEVMBridgeContract.target as string,
-            salt,
-            hashInitCode
-        );
+
+        // Compute wrapped token proxy address
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract);
+
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperAddress(
+            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                tokenName,
-                tokenSymbol,
-                decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
 

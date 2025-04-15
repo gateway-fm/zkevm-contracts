@@ -6,11 +6,6 @@ import "./IPolygonZkEVMBridgeV2.sol";
 
 interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
     /**
-     * @dev Thrown when try to set a zero address to a non valid zero address field
-     */
-    error InvalidZeroAddress();
-
-    /**
      * @dev Thrown when the origin network is invalid
      */
     error OriginNetworkInvalid();
@@ -115,6 +110,7 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
         address _bridgeManager,
         address sovereignWETHAddress,
         bool _sovereignWETHAddressIsNotMintable,
-        address _emergencyBridgePauser
+        address _emergencyBridgePauser,
+        address _proxiedTokensManager
     ) external;
 }
