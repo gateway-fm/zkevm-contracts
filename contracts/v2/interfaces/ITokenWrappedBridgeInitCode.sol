@@ -7,4 +7,14 @@ interface ITokenWrappedBridgeInitCode {
         external
         pure
         returns (bytes memory);
+
+    function BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE()
+        external
+        pure
+        returns (bytes memory);
+
+    function POLYGON_TRANSPARENT_PROXY_INIT()
+        external
+        pure
+        returns (bytes memory);
 }

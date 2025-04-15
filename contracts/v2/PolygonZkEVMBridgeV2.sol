@@ -31,7 +31,7 @@ contract PolygonZkEVMBridgeV2 is
         address originTokenAddress;
     }
 
-    // Address of the contract that contains the BASE_INIT_BYTECODE_WRAPPED_TOKEN: Init code of the erc20 wrapped token, to deploy a wrapped token the constructor parameters must be appended
+    // Address of the contract that contains the bytecodes to deploy wrapped tokens, upgradeable tokens and the code of the transparent proxy
     /// @dev the constant has been exported to a separate contract to improve this bytecode length.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ITokenWrappedBridgeInitCode public immutable wrappedTokenBytecodeStorer;
@@ -1167,7 +1167,7 @@ contract PolygonZkEVMBridgeV2 is
     function _deployWrappedToken(
         bytes32 salt,
         bytes memory constructorArgs
-    ) internal returns (TokenWrapped newWrappedToken) {
+    ) internal virtual returns (TokenWrapped newWrappedToken) {
         bytes memory initBytecode = abi.encodePacked(
             BASE_INIT_BYTECODE_WRAPPED_TOKEN(),
             constructorArgs

@@ -139,16 +139,6 @@ const config: HardhatUserConfig = {
                     evmVersion: "shanghai",
                 },
             },
-            "contracts/v2/lib/TokenWrappedBridgeInitCode.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 999,
-                    },
-                    evmVersion: "shanghai",
-                },
-            },
             "contracts/v2/sovereignChains/BridgeL2SovereignChain.sol": {
                 version: "0.8.28",
                 settings: {
@@ -219,6 +209,16 @@ const config: HardhatUserConfig = {
                     optimizer: {
                         enabled: true,
                         runs: 500,
+                    },
+                    evmVersion: "cancun",
+                }, // try yul optimizer
+            },
+            "contracts/v2/lib/TokenWrappedBridge.sol": {
+                version: "0.8.28",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999,
                     },
                     evmVersion: "cancun",
                 }, // try yul optimizer
