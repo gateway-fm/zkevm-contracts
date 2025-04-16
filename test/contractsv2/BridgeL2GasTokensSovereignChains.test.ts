@@ -439,6 +439,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         ).to.be.reverted;
 
         // Use bridgeMessageWETH instead!
+        const tokenWrappedBridgeUpgradeableFactory = await ethers.getContractFactory("TokenWrappedBridgeUpgradeable");
         await expect(
             sovereignChainBridgeContract.bridgeMessageWETH(
                 destinationNetwork,
@@ -447,7 +448,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 true,
                 metadata
             )
-        ).to.be.revertedWith("ERC20: burn amount exceeds balance");
+        ).to.be.revertedWithCustomError(tokenWrappedBridgeUpgradeableFactory, "ERC20InsufficientBalance");
 
         // Mock mint weth
         await ethers.provider.send("hardhat_impersonateAccount", [sovereignChainBridgeContract.target]);

@@ -1,52 +1,53 @@
 // SPDX-License-Identifier: GPL-3.0
-// Implementation of permit based on https://github.com/WETH10/WETH10/blob/main/contracts/WETH10.sol
 pragma solidity 0.8.28;
 
-import "@openzeppelin/contracts-upgradeable4/token/ERC20/ERC20Upgradeable.sol";
-import "../interfaces/ITokenWrappedBridgeUpgradeable.sol";
+// Main functionality.
+import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable5/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+
+// Other functionality.
+import {Initializable} from "@openzeppelin/contracts-upgradeable5/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable5/access/OwnableUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable5/utils/PausableUpgradeable.sol";
+
+// Interfaces
+import {ITokenWrappedBridgeUpgradeable} from "../interfaces/ITokenWrappedBridgeUpgradeable.sol";
 
 // This contract contains the solidity code that compiles into the BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE constant on the PolygonZkEVMBridgeV2
 // This contract should remain untouched, even if it's not used directly as dependency. The main use is to verify on block explorers
 // and check the implementation.
 contract TokenWrappedBridgeUpgradeable is
     Initializable,
-    ERC20Upgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    ERC20PermitUpgradeable,
     ITokenWrappedBridgeUpgradeable
 {
-    // Domain typehash
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-        );
-    // Permit typehash
-    bytes32 public constant PERMIT_TYPEHASH =
-        keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
+    /// @dev Storage of TokenWrappedBridgeUpgradeable contract.
+    /// @dev It's implemented on a custom ERC-7201 namespace to reduce the risk of storage collisions when using with upgradeable contracts.
+    /// @custom:storage-location erc7201:agglayer.storage.TokenWrappedBridgeUpgradeable
+    struct TokenWrappedBridgeUpgradeableStorage {
+        uint8 decimals;
+        address bridgeAddress;
+    }
 
-    // Version
-    string public constant VERSION = "1";
+    /// @dev The storage slot at which Custom Token storage starts, following the EIP-7201 standard.
+    /// @dev Calculated as `keccak256(abi.encode(uint256(keccak256("agglayer.storage.TokenWrappedBridgeUpgradeable")) - 1)) & ~bytes32(uint256(0xff))`.
+    bytes32 private constant TOKEN_WRAPPED_BRIDGE_UPGRADEABLE_STORAGE =
+        hex"863b064fe9383d75d38f584f64f1aaba4520e9ebc98515fa15bdeae8c4274d00";
 
-    // Chain id on deployment
-    uint256 public deploymentChainId;
+    // Errors.
+    error InvalidName();
+    error InvalidSymbol();
+    error OnlyBridge();
 
-    // Domain separator calculated on deployment
-    bytes32 private _DEPLOYMENT_DOMAIN_SEPARATOR;
-
-    // PolygonZkEVM Bridge address
-    address public bridgeAddress;
-
-    // Decimals
-    uint8 private _decimals;
-
-    // Permit nonces
-    mapping(address => uint256) public nonces;
-
+    // Checks if the sender is the bridge
     modifier onlyBridge() {
-        require(
-            msg.sender == bridgeAddress,
-            "TokenWrapped::onlyBridge: Not PolygonZkEVMBridge"
-        );
+        TokenWrappedBridgeUpgradeableStorage
+            storage $ = _getTokenWrappedBridgeUpgradeableStorage();
+
+        // Only bridge can mint and burn tokens
+        require(msg.sender == $.bridgeAddress, OnlyBridge());
+
         _;
     }
 
@@ -69,89 +70,64 @@ contract TokenWrappedBridgeUpgradeable is
         string memory symbol,
         uint8 __decimals
     ) external initializer {
+        // Check inputs
+        require(bytes(name).length > 0, InvalidName());
+        require(bytes(symbol).length > 0, InvalidSymbol());
+
+        // Initialize the ERC20 token with the name and symbol
         __ERC20_init(name, symbol);
-        bridgeAddress = msg.sender;
-        _decimals = __decimals;
-        deploymentChainId = block.chainid;
-        _DEPLOYMENT_DOMAIN_SEPARATOR = _calculateDomainSeparator(block.chainid);
+        // Initialize the ERC20Permit with the name
+        __ERC20Permit_init(name);
+        // Owner is the bridge (msg.sender)
+        __Ownable_init(msg.sender);
+        __Pausable_init();
+
+        // Initialize storage
+        TokenWrappedBridgeUpgradeableStorage
+            storage $ = _getTokenWrappedBridgeUpgradeableStorage();
+        $.decimals = __decimals;
+        $.bridgeAddress = msg.sender;
     }
 
+    /// @notice Mints Custom Tokens to the recipient.
+    /// @notice This function is only callable by the bridge.
+    /// @param to The address of the recipient.
+    /// @param value The amount of tokens to mint.
     function mint(address to, uint256 value) external onlyBridge {
         _mint(to, value);
     }
 
-    // Notice that is not require to approve wrapped tokens to use the bridge
+    /// @notice Notice that is not require to approve wrapped tokens to use the bridge
+    /// @notice burns Custom Tokens from the account.
+    /// @notice This function is only callable by the bridge.
+    /// @param account The address of the account.
+    /// @param value The amount of tokens to burn.
     function burn(address account, uint256 value) external onlyBridge {
         _burn(account, value);
     }
 
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
+    /// @notice The number of decimals of the token.
+    function decimals() public view override returns (uint8) {
+        TokenWrappedBridgeUpgradeableStorage
+            storage $ = _getTokenWrappedBridgeUpgradeableStorage();
+        return $.decimals;
     }
 
-    // Permit relative functions
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        require(
-            block.timestamp <= deadline,
-            "TokenWrapped::permit: Expired permit"
-        );
-
-        bytes32 hashStruct = keccak256(
-            abi.encode(
-                PERMIT_TYPEHASH,
-                owner,
-                spender,
-                value,
-                nonces[owner]++,
-                deadline
-            )
-        );
-
-        bytes32 digest = keccak256(
-            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR(), hashStruct)
-        );
-
-        address signer = ecrecover(digest, v, r, s);
-        require(
-            signer != address(0) && signer == owner,
-            "TokenWrapped::permit: Invalid signature"
-        );
-
-        _approve(owner, spender, value);
+    /// @notice The address of the bridge contract.
+    function bridgeAddress() public view returns (address) {
+        TokenWrappedBridgeUpgradeableStorage
+            storage $ = _getTokenWrappedBridgeUpgradeableStorage();
+        return $.bridgeAddress;
     }
 
-    /**
-     * @notice Calculate domain separator, given a chainID.
-     * @param chainId Current chainID
-     */
-    function _calculateDomainSeparator(
-        uint256 chainId
-    ) private view returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    DOMAIN_TYPEHASH,
-                    keccak256(bytes(name())),
-                    keccak256(bytes(VERSION)),
-                    chainId,
-                    address(this)
-                )
-            );
-    }
-
-    /// @dev Return the DOMAIN_SEPARATOR.
-    function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        return
-            block.chainid == deploymentChainId
-                ? _DEPLOYMENT_DOMAIN_SEPARATOR
-                : _calculateDomainSeparator(block.chainid);
+    /// @dev A function to return a pointer for the TokenWrappedBridgeUpgradeableStorageLocation.
+    function _getTokenWrappedBridgeUpgradeableStorage()
+        internal
+        pure
+        returns (TokenWrappedBridgeUpgradeableStorage storage $)
+    {
+        assembly {
+            $.slot := TOKEN_WRAPPED_BRIDGE_UPGRADEABLE_STORAGE
+        }
     }
 }

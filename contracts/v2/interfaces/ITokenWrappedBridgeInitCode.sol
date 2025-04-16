@@ -13,8 +13,5 @@ interface ITokenWrappedBridgeInitCode {
         pure
         returns (bytes memory);
 
-    function POLYGON_TRANSPARENT_PROXY_INIT()
-        external
-        pure
-        returns (bytes memory);
+    function TOKEN_WRAPPED_PROXY_INIT() external pure returns (bytes memory);
 }

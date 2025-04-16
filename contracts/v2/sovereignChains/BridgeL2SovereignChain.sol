@@ -735,7 +735,7 @@ contract BridgeL2SovereignChain is
         /// @dev A bytecode stored on chain us used to dep`loy the proxy in a way that ALWAYS it's used the same
         /// bytecode, therefore the same proxy addresses are the same in all chains
         bytes memory proxyInitBytecode = abi.encodePacked(
-            POLYGON_TRANSPARENT_PROXY_INIT(),
+            TOKEN_WRAPPED_PROXY_INIT(),
             proxyConstructorArgs
         );
 
@@ -1127,19 +1127,15 @@ contract BridgeL2SovereignChain is
     ////    View functions    /////
     ///////////////////////////////
     /**
-     * @notice Returns the POLYGON_TRANSPARENT_PROXY_INIT from the TokenWrappedBridgeInitCode
+     * @notice Returns the TOKEN_WRAPPED_PROXY_INIT from the TokenWrappedBridgeInitCode
      * @dev TokenWrappedBridgeInitCode is a contract that contains PolygonTransparentProxy as constant, it has done this way to have more bytecode available.
      *  Using the on chain bytecode, we assure that transparent proxy is always deployed with the exact same bytecode, necessary to have all deployed wrapped token
      *  with the same address on all the chains.
      */
-    function POLYGON_TRANSPARENT_PROXY_INIT()
-        public
-        view
-        returns (bytes memory)
-    {
+    function TOKEN_WRAPPED_PROXY_INIT() public view returns (bytes memory) {
         return
             ITokenWrappedBridgeInitCode(wrappedTokenBytecodeStorer)
-                .POLYGON_TRANSPARENT_PROXY_INIT();
+                .TOKEN_WRAPPED_PROXY_INIT();
     }
 
     /**
@@ -1199,7 +1195,7 @@ contract BridgeL2SovereignChain is
                 salt,
                 keccak256(
                     abi.encodePacked(
-                        POLYGON_TRANSPARENT_PROXY_INIT(),
+                        TOKEN_WRAPPED_PROXY_INIT(),
                         proxyConstructorArgs
                     )
                 )

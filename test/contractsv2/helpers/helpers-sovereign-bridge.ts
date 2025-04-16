@@ -199,7 +199,7 @@ async function computeWrappedTokenProxyAddress(networkId: any, tokenAddress: str
         hashInitCodeImplementation
     );
 
-    const minimalBytecodeProxy = await sovereignChainBridgeContract.POLYGON_TRANSPARENT_PROXY_INIT();
+    const minimalBytecodeProxy = await sovereignChainBridgeContract.TOKEN_WRAPPED_PROXY_INIT();
     const proxyConstructorArgs = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "address", "bytes"],
         [precalculateWrappedErc20Implementation, bridgeManager, "0x"]);
