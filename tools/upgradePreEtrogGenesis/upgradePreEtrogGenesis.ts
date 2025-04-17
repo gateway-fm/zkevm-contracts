@@ -141,7 +141,7 @@ async function main() {
     const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2", deployer);
     const deployTransactionBridge = (await polygonZkEVMBridgeFactory.getDeployTransaction()).data;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
-    const overrideGasLimit = BigInt(5500000);
+    const overrideGasLimit = BigInt(10500000);
     [bridgeImplementationAddress] = await create2Deployment(
         zkEVMDeployerContract,
         salt,

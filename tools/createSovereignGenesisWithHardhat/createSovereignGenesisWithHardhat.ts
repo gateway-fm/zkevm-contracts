@@ -103,7 +103,7 @@ async function main() {
     const sovereignBridgeFactory = await ethers.getContractFactory(bridgeContractName, deployer);
     const deployTransactionBridge = (await sovereignBridgeFactory.getDeployTransaction()).data;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
-    const overrideGasLimit = BigInt(5500000);
+    const overrideGasLimit = BigInt(10500000);
     let [bridgeImplementationAddress] = await create2Deployment(
         zkEVMDeployerContract,
         salt,

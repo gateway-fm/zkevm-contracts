@@ -204,7 +204,7 @@ async function main() {
     const deployTransactionBridge = (await polygonZkEVMBridgeFactory.getDeployTransaction()).data;
     const dataCallNull = null;
     // Mandatory to override the gasLimit since the estimation with create are mess up D:
-    const overrideGasLimit = 5500000n;
+    const overrideGasLimit = 10500000n;
     const [bridgeImplementationAddress, isBridgeImplDeployed] = await create2Deployment(
         zkEVMDeployerContract,
         salt,

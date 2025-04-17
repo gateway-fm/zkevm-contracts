@@ -1,10 +1,10 @@
-import {expect} from "chai";
-import {ethers} from "hardhat";
+import { expect } from "chai";
+import { ethers } from "hardhat";
 
-import {MemDB, ZkEVMDB, getPoseidon, smtUtils, processorUtils} from "@0xpolygonhermez/zkevm-commonjs";
-const {getContractAddress} = require("@ethersproject/address");
+import { MemDB, ZkEVMDB, getPoseidon, smtUtils, processorUtils } from "@0xpolygonhermez/zkevm-commonjs";
+const { getContractAddress } = require("@ethersproject/address");
 
-import {padTo32Bytes, padTo20Bytes} from "./deployment-utils";
+import { padTo32Bytes, padTo20Bytes } from "./deployment-utils";
 
 // constants
 // Those contracts names came from the genesis creation:
@@ -22,7 +22,7 @@ const TokenWrappedBridgeInitCodeContractName = "TokenWrappedBridgeInitCode";
 async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Load genesis on a zkEVMDB
     const poseidon = await getPoseidon();
-    const {F} = poseidon;
+    const { F } = poseidon;
     const db = new MemDB(F);
     const genesisRoot = [F.zero, F.zero, F.zero, F.zero];
     const accHashInput = [F.zero, F.zero, F.zero, F.zero];
@@ -39,7 +39,14 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     const batch = await zkEVMDB.buildBatch(
         1000, //limitTimestamp
         ethers.ZeroAddress, //trustedSequencer
-        smtUtils.stringToH4(ethers.ZeroHash) // l1InfoRoot
+        smtUtils.stringToH4(ethers.ZeroHash), // l1InfoRoot
+        ethers.ZeroHash, // Forced block hash
+        undefined,
+        {
+            vcmConfig: {
+                skipCounters: true,
+            },
+        },
     );
     // Add changeL2Block tx
     const txChangeL2Block = {
@@ -79,7 +86,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Check ecrecover
     expect(txObject.from).to.equal(ethers.recoverAddress(txObject.unsignedHash, txObject.signature as any));
     batch.addRawTx(txDeployBridge);
-    const sovereignBridgeAddress = getContractAddress({from: txObject.from, nonce: injectedTx.nonce});
+    const sovereignBridgeAddress = getContractAddress({ from: txObject.from, nonce: injectedTx.nonce });
 
     // Create deploy GER transaction
     const gerContractName = "GlobalExitRootManagerL2SovereignChain";
@@ -98,7 +105,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Check ecrecover
     expect(txObject.from).to.equal(ethers.recoverAddress(txObject.unsignedHash, txObject.signature as any));
     batch.addRawTx(txDeployGER);
-    const GERAddress = getContractAddress({from: txObject.from, nonce: injectedTx.nonce});
+    const GERAddress = getContractAddress({ from: txObject.from, nonce: injectedTx.nonce });
 
     await batch.executeTxs();
     await zkEVMDB.consolidate(batch);
@@ -158,7 +165,14 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     const batch2 = await zkEVMDB2.buildBatch(
         1000, //limitTimestamp
         ethers.ZeroAddress, //trustedSequencer
-        smtUtils.stringToH4(ethers.ZeroHash) // l1InfoRoot
+        smtUtils.stringToH4(ethers.ZeroHash), // l1InfoRoot
+        ethers.ZeroHash, // Forced block hash
+        undefined,
+        {
+            vcmConfig: {
+                skipCounters: true,
+            },
+        },
     );
     // Add changeL2Block tx
     batch2.addRawTx(`0x${rawChangeL2BlockTx}`);
@@ -196,6 +210,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     );
     injectedTx.to = bridgeProxy.address;
     injectedTx.data = initializeData;
+    injectedTx.gasPrice = 0;
     txObject = ethers.Transaction.from(injectedTx);
     const txInitializeBridge = processorUtils.rawTxToCustomRawTx(txObject.serialized);
     // Check ecrecover
@@ -227,29 +242,48 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Update nonce, in case weth is deployed at initialize, it is increased
     const bridgeProxyState = await zkEVMDB2.getCurrentAccountState(bridgeProxy.address)
     bridgeProxy.nonce = String(Number(bridgeProxyState.nonce));
-    // If bridge initialized with a zero sovereign weth address and a non zero gas token, we should add created erc20 weth contract to the genesis
+    // If bridge initialized with a zero sovereign weth address and a non zero gas token, we should add created erc20 weth contract implementation and proxy to the genesis
     let wethAddress;
+    const WETHProxyContractName = "WETH proxy";
     if (
         gasTokenAddress !== ethers.ZeroAddress &&
         ethers.isAddress(gasTokenAddress) &&
         (sovereignWETHAddress === ethers.ZeroAddress || !ethers.isAddress(sovereignWETHAddress))
     ) {
+        // Add proxy
         wethAddress = padTo20Bytes(
             bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006f"]
         );
-        const wethGenesis = {
-            contractName: "WETH",
+        const wethGenesisProxy = {
+            contractName: WETHProxyContractName,
             balance: "0",
             nonce: "1",
             address: wethAddress,
             bytecode: `0x${await zkEVMDB2.getBytecode(wethAddress)}`,
         };
         const wethStorage = await zkEVMDB2.dumpStorage(wethAddress);
-        wethGenesis.storage = Object.entries(wethStorage).reduce((acc, [key, value]) => {
+        wethGenesisProxy.storage = Object.entries(wethStorage).reduce((acc, [key, value]) => {
             acc[key] = padTo32Bytes(value);
             return acc;
         }, {});
-        genesis.genesis.push(wethGenesis);
+        genesis.genesis.push(wethGenesisProxy);
+
+        // Add implementation
+        const _IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+        const wethGenesisImplementationAddress = wethStorage[_IMPLEMENTATION_SLOT];
+        const wethGenesisImplementation = {
+            contractName: "WETH implementation",
+            balance: "0",
+            nonce: "1",
+            address: wethGenesisImplementationAddress,
+            bytecode: `0x${await zkEVMDB2.getBytecode(wethGenesisImplementationAddress)}`,
+        };
+        const wethStorageImplementation = await zkEVMDB2.dumpStorage(wethGenesisImplementationAddress);
+        wethGenesisImplementation.storage = Object.entries(wethStorageImplementation).reduce((acc, [key, value]) => {
+            acc[key] = padTo32Bytes(value);
+            return acc;
+        }, {});
+        genesis.genesis.push(wethGenesisImplementation);
     }
 
     // Pad storage values with zeros
@@ -310,7 +344,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
             ethers.toBigInt(`${ethers.toBeHex(gasTokenNetwork)}${gasTokenAddress.replace(/^0x/, "")}`.toLowerCase())
         );
         if (ethers.isAddress(sovereignWETHAddress) && sovereignWETHAddress !== ethers.ZeroAddress) {
-            // Storage value for sovereignWETH address (ony if network with native gas token) and sovereignWethAddress is set
+            // Storage value for sovereignWETH address (only if network with native gas token) and sovereignWethAddress is set
             expect(
                 bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006f"]
             ).to.include(sovereignWETHAddress.toLowerCase().slice(2));
@@ -330,27 +364,31 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
                 );
             }
         } else {
-            // Storage value for WETH address (ony if network with native gas token), deployed at bridge initialization
+            // Storage value for WETH address (only if network with native gas token), deployed at bridge initialization
             expect(
                 bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006f"]
             ).to.include(wethAddress.toLowerCase().slice(2));
 
             // CHECK WETH STORAGE
             const wethOject = genesis.genesis.find(function (obj) {
-                return obj.contractName == "WETH";
+                return obj.contractName == WETHProxyContractName;
             });
 
             // Storage for erc20 name 'Wrapped Ether'
-            expect(wethOject.storage["0x0000000000000000000000000000000000000000000000000000000000000003"]).to.equal(
+            expect(wethOject.storage["0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace03"]).to.equal(
                 "0x577261707065642045746865720000000000000000000000000000000000001a"
             );
 
             // Storage for erc20 code 'WETH'
-            expect(wethOject.storage["0x0000000000000000000000000000000000000000000000000000000000000004"]).to.equal(
+            expect(wethOject.storage["0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace04"]).to.equal(
                 "0x5745544800000000000000000000000000000000000000000000000000000008"
             );
-        }
 
+            // Storage for erc20 decimals 18 and bridgeAddress
+            expect(wethOject.storage["0x863b064fe9383d75d38f584f64f1aaba4520e9ebc98515fa15bdeae8c4274d00"]).to.include(
+                `${bridgeProxy.address.slice(2).toLowerCase()}${ethers.toBeHex(18).slice(2).toLowerCase()}`
+            );
+        }
         // Storage values for gasTokenMetadata, its a bytes variable
         let offset = 2 + 64;
         expect(bridgeProxy.storage["0x9930d9ff0dee0ef5ca2f7710ea66b8f84dd0f5f5351ecffe72b952cd9db7142a"]).to.include(

@@ -552,7 +552,7 @@ async function main() {
             emergencyBridgePauser: sovereignParams.emergencyBridgePauser,
         };
         genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);
-        // Add weth address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
+        // Add weth proxy and implementation address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
         if (
             gasTokenAddress !== ethers.ZeroAddress &&
             ethers.isAddress(gasTokenAddress) &&
@@ -560,9 +560,14 @@ async function main() {
                 !ethers.isAddress(sovereignParams.sovereignWETHAddress))
         ) {
             const wethObject = genesis.genesis.find(function (obj) {
-                return obj.contractName == "WETH";
+                return obj.contractName == "WETH proxy";
             });
-            outputJson.WETHAddress = wethObject.address;
+            outputJson.WETHProxyAddress = wethObject.address;
+
+            const wethImpObject = genesis.genesis.find(function (obj) {
+                return obj.contractName == "WETH implementation";
+            });
+            outputJson.WETHImplementationAddress = wethImpObject.address;
         }
     } else {
         if (consensusContract === "PolygonPessimisticConsensus") {
