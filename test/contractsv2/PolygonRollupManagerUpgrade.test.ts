@@ -17,6 +17,8 @@ import {
 } from "../../typechain-types";
 import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
 import { processorUtils, MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
+
 const { encodeInitializeBytesLegacy } = require("../../src/utils-common-aggchain");
 
 type BatchDataStructEtrog = PolygonRollupBaseEtrog.BatchDataStruct;
@@ -825,23 +827,17 @@ describe("Polygon Rollup manager upgraded", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
         // create2 parameters
         const salt = ethers.solidityPackedKeccak256(["uint32", "address"], [networkIDRollup, tokenAddress]);
-        const minimalBytecodeProxy = await polygonZkEVMBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-        const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, metadataToken]);
-        const precalculateWrappedErc20 = await ethers.getCreate2Address(
-            polygonZkEVMBridgeContract.target as string,
-            salt,
-            hashInitCode
-        );
+
+        // Compute wrapped token proxy address
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract, "0x0000000000000000000000000000000000000001");
+
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperAddress(
+            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
                 networkIDRollup,
                 tokenAddress,
-                tokenName,
-                tokenSymbol,
-                decimals
             )
         ).to.be.equal(precalculateWrappedErc20);
 

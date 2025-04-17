@@ -1,8 +1,7 @@
-import { expect } from "chai";
 import { ethers } from "hardhat";
 import { MTBridge, mtBridgeUtils } from "@0xpolygonhermez/zkevm-commonjs";
 import {
-    BridgeL2SovereignChain,
+    PolygonZkEVMBridgeV2,
 } from "../../../typechain-types";
 
 const { getLeafValue } = mtBridgeUtils;
@@ -188,24 +187,24 @@ function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
     return ethers.solidityPackedKeccak256(["bytes32", "bytes32"], [mainnetExitRoot, rollupExitRoot]);
 }
 
-async function computeWrappedTokenProxyAddress(networkId: any, tokenAddress: string, sovereignChainBridgeContract: BridgeL2SovereignChain, bridgeManager: string, isWETH: boolean) {
+async function computeWrappedTokenProxyAddress(networkId: any, tokenAddress: string, bridgeContract: any, bridgeManager: string, isWETH: boolean) {
     const salt = isWETH ? ethers.ZeroHash : ethers.solidityPackedKeccak256(["uint32", "address"], [networkId, tokenAddress]);
 
-    const bytecodeWrappedImplementation = await sovereignChainBridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE();
+    const bytecodeWrappedImplementation = await bridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE();
     const hashInitCodeImplementation = ethers.solidityPackedKeccak256(["bytes"], [bytecodeWrappedImplementation]);
     const precalculateWrappedErc20Implementation = await ethers.getCreate2Address(
-        sovereignChainBridgeContract.target as string,
+        bridgeContract.target as string,
         salt,
         hashInitCodeImplementation
     );
 
-    const minimalBytecodeProxy = await sovereignChainBridgeContract.TOKEN_WRAPPED_PROXY_INIT();
+    const minimalBytecodeProxy = await bridgeContract.TOKEN_WRAPPED_PROXY_INIT();
     const proxyConstructorArgs = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "address", "bytes"],
         [precalculateWrappedErc20Implementation, bridgeManager, "0x"]);
     const hashInitCode = ethers.solidityPackedKeccak256(["bytes", "bytes"], [minimalBytecodeProxy, proxyConstructorArgs]);
     return await ethers.getCreate2Address(
-        sovereignChainBridgeContract.target as string,
+        bridgeContract.target as string,
         salt,
         hashInitCode
     );

@@ -5,7 +5,6 @@ pragma solidity 0.8.28;
 import "../interfaces/IBridgeL2SovereignChains.sol";
 import "../PolygonZkEVMBridgeV2.sol";
 import "../interfaces/IGlobalExitRootManagerL2SovereignChain.sol";
-import "../interfaces/ITokenWrappedBridgeUpgradeable.sol";
 
 /**
  * Sovereign chains bridge that will be deployed on all Sovereign chains
@@ -696,72 +695,6 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @notice Internal function that uses create2 to deploy the upgradable wrapped tokens
-     * @param salt Salt used in create2 params,
-     * tokenInfoHash will be used as salt for all wrappeds except for bridge native WETH, that will be bytes32(0)
-     * @param constructorArgs Encoded constructor args for the wrapped token
-     */
-    function _deployWrappedToken(
-        bytes32 salt,
-        bytes memory constructorArgs
-    ) internal override returns (TokenWrapped newWrappedTokenProxy) {
-        bytes memory implementationInitBytecode = abi.encodePacked(
-            BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE()
-        );
-
-        // Deploy erc20 wrapped token implementation
-        /// @dev the create2 is being used to keep the same implementation address at all chain although it's not necessary
-        /// the implementation could be deployed with a create
-        address newWrappedTokenImplementation;
-        /// @solidity memory-safe-assembly
-        assembly {
-            newWrappedTokenImplementation := create2(
-                0,
-                add(implementationInitBytecode, 0x20),
-                mload(implementationInitBytecode),
-                salt
-            )
-        }
-
-        if (address(newWrappedTokenImplementation) == address(0))
-            revert FailedTokenWrappedDeployment();
-
-        // Deploy wrapped token proxy
-        bytes memory proxyConstructorArgs = abi.encode(
-            newWrappedTokenImplementation,
-            bridgeManager,
-            new bytes(0)
-        );
-        /// @dev A bytecode stored on chain us used to dep`loy the proxy in a way that ALWAYS it's used the same
-        /// bytecode, therefore the same proxy addresses are the same in all chains
-        bytes memory proxyInitBytecode = abi.encodePacked(
-            TOKEN_WRAPPED_PROXY_INIT(),
-            proxyConstructorArgs
-        );
-
-        /// @solidity memory-safe-assembly
-        assembly {
-            newWrappedTokenProxy := create2(
-                0,
-                add(proxyInitBytecode, 0x20),
-                mload(proxyInitBytecode),
-                salt
-            )
-        }
-
-        if (address(newWrappedTokenProxy) == address(0))
-            revert FailedTokenWrappedDeployment();
-
-        // Initialize the wrapped token
-        (string memory name, string memory symbol, uint8 decimals) = abi.decode(
-            constructorArgs,
-            (string, string, uint8)
-        );
-        ITokenWrappedBridgeUpgradeable(address(newWrappedTokenProxy))
-            .initialize(name, symbol, decimals);
-    }
-
-    /**
      * @notice unset a claim from the claimedBitmap
      * @param leafIndex Index
      * @param sourceBridgeNetwork Origin network
@@ -1123,86 +1056,19 @@ contract BridgeL2SovereignChain is
         }
     }
 
-    ////////////////////////////////
-    ////    View functions    /////
-    ///////////////////////////////
     /**
-     * @notice Returns the TOKEN_WRAPPED_PROXY_INIT from the TokenWrappedBridgeInitCode
-     * @dev TokenWrappedBridgeInitCode is a contract that contains PolygonTransparentProxy as constant, it has done this way to have more bytecode available.
-     *  Using the on chain bytecode, we assure that transparent proxy is always deployed with the exact same bytecode, necessary to have all deployed wrapped token
-     *  with the same address on all the chains.
+     * @notice Function to encode the constructor args of the proxy
+     * @param wrappedTokenImplementation Address of the implementation
+     * @dev override from bridgeV2 contract to set bridge manager as proxy admin
      */
-    function TOKEN_WRAPPED_PROXY_INIT() public view returns (bytes memory) {
-        return
-            ITokenWrappedBridgeInitCode(wrappedTokenBytecodeStorer)
-                .TOKEN_WRAPPED_PROXY_INIT();
-    }
-
-    /**
-     * @notice Returns the BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE from the TokenWrappedBridgeInitCode
-     * @dev TokenWrappedBridgeInitCode is a contract that contains BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE as constant, it has done this way to have more bytecode available
-     */
-    function BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE()
-        public
-        view
-        returns (bytes memory)
-    {
-        return
-            ITokenWrappedBridgeInitCode(wrappedTokenBytecodeStorer)
-                .BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE();
-    }
-
-    /**
-     * @notice Returns the precalculated address of a upgradeable wrapped token using the token information
-     * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
-     */
-    function precalculatedWrapperProxyAddress(
-        uint32 originNetwork,
-        address originTokenAddress
-    ) public view returns (address) {
-        bytes32 salt = keccak256(
-            abi.encodePacked(originNetwork, originTokenAddress)
-        );
-
-        bytes32 hashCreate2Implementation = keccak256(
-            abi.encodePacked(
-                bytes1(0xff),
-                address(this),
-                salt,
-                keccak256(
-                    abi.encodePacked(
-                        BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE()
-                    )
-                )
-            )
-        );
-
-        address newWrappedTokenImplementation = address(
-            uint160(uint256(hashCreate2Implementation))
-        );
-
-        bytes memory proxyConstructorArgs = abi.encode(
-            newWrappedTokenImplementation,
-            bridgeManager,
-            new bytes(0)
-        );
-
-        bytes32 hashCreate2 = keccak256(
-            abi.encodePacked(
-                bytes1(0xff),
-                address(this),
-                salt,
-                keccak256(
-                    abi.encodePacked(
-                        TOKEN_WRAPPED_PROXY_INIT(),
-                        proxyConstructorArgs
-                    )
-                )
-            )
-        );
-
-        // Last 20 bytes of hash to address
-        return address(uint160(uint256(hashCreate2)));
+    function _encodeProxyConstructorArgs(
+        address wrappedTokenImplementation
+    ) internal view override returns (bytes memory) {
+        /// @dev in case a chain has set bridge manager as zero address (for more decentralization) we set the proxy admin as address(1) because proxy contract doesn't support zero address as admin
+        address proxyAdmin = bridgeManager;
+        if (bridgeManager == address(0)) {
+            proxyAdmin = address(1);
+        }
+        return abi.encode(wrappedTokenImplementation, proxyAdmin, new bytes(0));
     }
 }
