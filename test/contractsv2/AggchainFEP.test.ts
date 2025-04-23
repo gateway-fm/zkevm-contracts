@@ -35,7 +35,7 @@ describe("AggchainFEP", () => {
 
     // aggchain variables
     const useDefaultGateway = false;
-    const aggchainVKeyVersion = "0x1234";
+    const aggchainVKeySelector = "0x12340001";
     const newAggchainVKey = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 
     beforeEach("Deploy contract", async () => {
@@ -87,7 +87,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -113,7 +113,7 @@ describe("AggchainFEP", () => {
             initParamsCp,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -134,7 +134,7 @@ describe("AggchainFEP", () => {
             initParamsCp,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -154,7 +154,7 @@ describe("AggchainFEP", () => {
             initParamsCp,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -174,7 +174,7 @@ describe("AggchainFEP", () => {
             initParamsCp,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -196,7 +196,7 @@ describe("AggchainFEP", () => {
             initParamsCp,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -214,7 +214,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -246,8 +246,6 @@ describe("AggchainFEP", () => {
         // aggchainBase
         expect(await aggchainFEPContract.useDefaultGateway()).to.be.equal(useDefaultGateway);
         expect(await aggchainFEPContract.useDefaultGateway()).to.be.equal(useDefaultGateway);
-        const aggchainType = await aggchainFEPContract.AGGCHAIN_TYPE();
-        const aggchainVKeySelector = utilsAggchain.getAggchainVKeySelector(aggchainVKeyVersion, aggchainType);
         expect(await aggchainFEPContract.ownedAggchainVKeys(aggchainVKeySelector)).to.be.equal(newAggchainVKey);
 
         // PolygonConsensusBase
@@ -322,7 +320,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address
         );
 
@@ -349,8 +347,6 @@ describe("AggchainFEP", () => {
         // aggchainBase
         expect(await aggchainFEPContract.useDefaultGateway()).to.be.equal(useDefaultGateway);
         expect(await aggchainFEPContract.useDefaultGateway()).to.be.equal(useDefaultGateway);
-        const aggchainType = await aggchainFEPContract.AGGCHAIN_TYPE();
-        const aggchainVKeySelector = utilsAggchain.getAggchainVKeySelector(aggchainVKeyVersion, aggchainType);
         expect(await aggchainFEPContract.ownedAggchainVKeys(aggchainVKeySelector)).to.be.equal(newAggchainVKey);
 
         // PolygonConsensusBase
@@ -387,7 +383,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -406,7 +402,7 @@ describe("AggchainFEP", () => {
         let bytesAggchainData;
 
         // getAggchainHash: L2BlockNumberLessThanNextBlockNumber error
-        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeyVersion, newStateRoot, newl2BlockNumber);
+        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeySelector, newStateRoot, newl2BlockNumber);
 
         await expect(aggchainFEPContract.getAggchainHash(bytesAggchainData)).to.be.revertedWithCustomError(
             aggchainFEPContract,
@@ -420,7 +416,7 @@ describe("AggchainFEP", () => {
 
         // getAggchainHash: CannotProposeFutureL2Output error
         newl2BlockNumber = 1200;
-        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeyVersion, newStateRoot, newl2BlockNumber);
+        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeySelector, newStateRoot, newl2BlockNumber);
 
         await expect(aggchainFEPContract.getAggchainHash(bytesAggchainData)).to.be.revertedWithCustomError(
             aggchainFEPContract,
@@ -430,7 +426,7 @@ describe("AggchainFEP", () => {
         // getAggchainHash: L2OutputRootCannotBeZero error
         newStateRoot = ethers.ZeroHash;
         newl2BlockNumber = 105;
-        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeyVersion, newStateRoot, newl2BlockNumber);
+        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeySelector, newStateRoot, newl2BlockNumber);
 
         await expect(aggchainFEPContract.getAggchainHash(bytesAggchainData)).to.be.revertedWithCustomError(
             aggchainFEPContract,
@@ -440,18 +436,18 @@ describe("AggchainFEP", () => {
         // getAggchainHash: correct aggchainHash
         newStateRoot = ethers.id("newStateRoot");
         newl2BlockNumber = 105;
-        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeyVersion, newStateRoot, newl2BlockNumber);
+        bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeySelector, newStateRoot, newl2BlockNumber);
         const aggchainHashSC = await aggchainFEPContract.getAggchainHash(bytesAggchainData);
 
         // calculate aggchainHash JS
-        const aggchainType = await aggchainFEPContract.AGGCHAIN_TYPE();
-        const aggchainVKeySelector = utilsAggchain.getAggchainVKeySelector(aggchainVKeyVersion, aggchainType);
         const finakVKey = await aggchainFEPContract.ownedAggchainVKeys(aggchainVKeySelector);
 
         const oldL2Output = await aggchainFEPContract.getL2Output(0);
         const rollupConfigHash = await aggchainFEPContract.rollupConfigHash();
         const optimisticMode = await aggchainFEPContract.optimisticMode();
         const trustedSequencerSC = await aggchainFEPContract.trustedSequencer();
+        const rangeVkeyCommitment = await aggchainFEPContract.rangeVkeyCommitment();
+        const aggregationVkey = await aggchainFEPContract.aggregationVkey();
 
         const aggchainParamsBytes = utilsFEP.computeHashAggchainParamsFEP(
             oldL2Output.outputRoot,
@@ -459,7 +455,9 @@ describe("AggchainFEP", () => {
             newl2BlockNumber,
             rollupConfigHash,
             optimisticMode,
-            trustedSequencerSC
+            trustedSequencerSC,
+            rangeVkeyCommitment,
+            aggregationVkey,
         );
 
         const consensusTypeSC = await aggchainFEPContract.CONSENSUS_TYPE();
@@ -494,7 +492,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -559,7 +557,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -574,7 +572,7 @@ describe("AggchainFEP", () => {
 
         let newStateRoot = ethers.id("newStateRoot");
         let newl2BlockNumber = 104;
-        let bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeyVersion, newStateRoot, newl2BlockNumber);
+        let bytesAggchainData = utilsFEP.encodeAggchainDataFEP(aggchainVKeySelector, newStateRoot, newl2BlockNumber);
 
         // get nextOutputIndex for the event
         const nextOutputIndex = await aggchainFEPContract.nextOutputIndex();
@@ -629,7 +627,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,
@@ -770,7 +768,7 @@ describe("AggchainFEP", () => {
             initParams,
             useDefaultGateway,
             newAggchainVKey,
-            aggchainVKeyVersion,
+            aggchainVKeySelector,
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,

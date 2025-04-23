@@ -56,21 +56,55 @@ function computeAggchainHash(
  */
 function getAggchainVKeySelector(_aggchainVKeyVersion, _aggchainType) {
     // remove "0x" if ot exist on aggchainSelector with startWith method
-    const aggchainVKeySelector = _aggchainVKeyVersion.startsWith('0x') ? _aggchainVKeyVersion.slice(2) : _aggchainVKeyVersion;
+    const aggchainVKeyVersion = _aggchainVKeyVersion.startsWith('0x') ? _aggchainVKeyVersion.slice(2) : _aggchainVKeyVersion;
 
     // remove "0x" if ot exist on _aggchainType with startWith method
     const aggchainType = _aggchainType.startsWith('0x') ? _aggchainType.slice(2) : _aggchainType;
 
-    // check lenght ois 2 bytes
+    // check lenght is 2 bytes
     if (aggchainType.length !== 4) {
         throw new Error('aggchainType must be 2 bytes long');
     }
 
-    if (aggchainVKeySelector.length !== 4) {
-        throw new Error('aggchainVKeySelector must be 2 bytes long');
+    if (aggchainVKeyVersion.length !== 4) {
+        throw new Error('aggchainVKeyVersion must be 2 bytes long');
     }
 
-    return `0x${aggchainVKeySelector}${aggchainType}`;
+    return `0x${aggchainVKeyVersion}${aggchainType}`;
+}
+
+/**
+ * Extract the aggchainType from the selector
+ * @param {String} _aggchainVKeySelector aggchain vkey selector
+ * @returns AggchainType
+ */
+function getAggchainTypeFromSelector(_aggchainVKeySelector) {
+    // remove "0x" if ot exist on aggchainVKeySelector with startWith method
+    const aggchainVKeySelector = _aggchainVKeySelector.startsWith('0x') ? _aggchainVKeySelector.slice(2) : _aggchainVKeySelector;
+
+    // check lenght is 8 bytes
+    if (aggchainVKeySelector.length !== 8) {
+        throw new Error('aggchainVKeySelector must be 4 bytes long');
+    }
+
+    return `0x${aggchainVKeySelector.slice(4, 8)}`;
+}
+
+/**
+ * Extract the aggchainType from the selector
+ * @param {String} _aggchainVKeySelector aggchain vkey selector
+ * @returns AggchainType
+ */
+function getAggchainVKeyVersionFromSelector(_aggchainVKeySelector) {
+    // remove "0x" if ot exist on aggchainVKeySelector with startWith method
+    const aggchainVKeySelector = _aggchainVKeySelector.startsWith('0x') ? _aggchainVKeySelector.slice(2) : _aggchainVKeySelector;
+
+    // check lenght is 4 bytes
+    if (aggchainVKeySelector.length !== 8) {
+        throw new Error('aggchainVKeySelector must be 4 bytes long');
+    }
+
+    return `0x${aggchainVKeySelector.slice(0, 4)}`;
 }
 
 /**
@@ -125,4 +159,6 @@ module.exports = {
     encodeInitializeBytesLegacy,
     encodeInitAggchainManager,
     ARRAY_AGGCHAIN_SUPPORTED_NAMES,
+    getAggchainTypeFromSelector,
+    getAggchainVKeyVersionFromSelector,
 };

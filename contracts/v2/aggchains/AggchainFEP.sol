@@ -282,7 +282,7 @@ contract AggchainFEP is AggchainBase {
                 // aggchainBase params
                 bool _useDefaultGateway,
                 bytes32 _initOwnedAggchainVKey,
-                bytes2 _initAggchainVKeyVersion,
+                bytes4 _initAggchainVKeySelector,
                 address _vKeyManager,
                 // PolygonConsensusBase params
                 address _admin,
@@ -296,7 +296,7 @@ contract AggchainFEP is AggchainBase {
                         InitParams,
                         bool,
                         bytes32,
-                        bytes2,
+                        bytes4,
                         address,
                         address,
                         address,
@@ -305,6 +305,14 @@ contract AggchainFEP is AggchainBase {
                         string
                     )
                 );
+
+            // Check the aggchainType embedded the _initAggchainVKeySelector is valid
+            if (
+                getAggchainTypeFromSelector(_initAggchainVKeySelector) !=
+                AGGCHAIN_TYPE
+            ) {
+                revert InvalidAggchainType();
+            }
 
             // init FEP params
             _initializeAggchain(_initParams);
@@ -318,9 +326,8 @@ contract AggchainFEP is AggchainBase {
                 _networkName,
                 _useDefaultGateway,
                 _initOwnedAggchainVKey,
-                _initAggchainVKeyVersion,
-                _vKeyManager,
-                AGGCHAIN_TYPE
+                _initAggchainVKeySelector,
+                _vKeyManager
             );
         } else if (_initializerVersion == 1) {
             // contract has been previously initialized with all parameters in the PolygonConsensusBase.sol
@@ -331,12 +338,20 @@ contract AggchainFEP is AggchainBase {
                 // aggchainBase params
                 bool _useDefaultGateway,
                 bytes32 _initOwnedAggchainVKey,
-                bytes2 _initAggchainVKeyVersion,
+                bytes4 _initAggchainVKeySelector,
                 address _vKeyManager
             ) = abi.decode(
                     initializeBytesAggchain,
-                    (InitParams, bool, bytes32, bytes2, address)
+                    (InitParams, bool, bytes32, bytes4, address)
                 );
+
+            // Check the aggchainType embedded the _initAggchainVKeySelector is valid
+            if (
+                getAggchainTypeFromSelector(_initAggchainVKeySelector) !=
+                AGGCHAIN_TYPE
+            ) {
+                revert InvalidAggchainType();
+            }
 
             // init FEP params
             _initializeAggchain(_initParams);
@@ -345,9 +360,8 @@ contract AggchainFEP is AggchainBase {
             _initializeAggchainBase(
                 _useDefaultGateway,
                 _initOwnedAggchainVKey,
-                _initAggchainVKeyVersion,
-                _vKeyManager,
-                AGGCHAIN_TYPE
+                _initAggchainVKeySelector,
+                _vKeyManager
             );
         } else {
             // This case should never happen because reinitializer is 2 so initializer version is 0 or 1, but it's here to avoid any possible future issue if the reinitializer version is increased
@@ -415,8 +429,8 @@ contract AggchainFEP is AggchainBase {
     ///     length (bits):   | 32             | 256            | 256              |
     ///
     ///     aggchain_params:
-    ///     Field:           | l2PreRoot         | claimRoot          | claimBlockNum      | rollupConfigHash     | optimisticMode  | trustedSequencer |
-    ///     length (bits):   | 256               | 256                | 256                | 256                  | 8               | 160              |
+    ///     Field:           | l2PreRoot         | claimRoot          | claimBlockNum      | rollupConfigHash     | optimisticMode  | trustedSequencer | rangeVkeyCommitment | aggregationVkey |
+    ///     length (bits):   | 256               | 256                | 256                | 256                  | 8               | 160              | 256                 | 256             |
     ///
     /// @param aggchainData custom bytes provided by the chain
     ///     aggchainData:
@@ -437,10 +451,17 @@ contract AggchainFEP is AggchainBase {
 
         // decode the aggchainData
         (
-            bytes2 _aggchainVKeyVersion,
+            bytes4 _aggchainVKeySelector,
             bytes32 _outputRoot,
             uint256 _l2BlockNumber
-        ) = abi.decode(aggchainData, (bytes2, bytes32, uint256));
+        ) = abi.decode(aggchainData, (bytes4, bytes32, uint256));
+
+        // Check the aggchainType embedded the _aggchainVKeySelector is valid
+        if (
+            getAggchainTypeFromSelector(_aggchainVKeySelector) != AGGCHAIN_TYPE
+        ) {
+            revert InvalidAggchainType();
+        }
 
         // check blockNumber
         if (_l2BlockNumber < nextBlockNumber()) {
@@ -457,11 +478,6 @@ contract AggchainFEP is AggchainBase {
             revert L2OutputRootCannotBeZero();
         }
 
-        bytes4 aggchainVKeySelector = getAggchainVKeySelector(
-            _aggchainVKeyVersion,
-            AGGCHAIN_TYPE
-        );
-
         bytes32 aggchainParams = keccak256(
             abi.encodePacked(
                 l2Outputs[latestOutputIndex()].outputRoot,
@@ -469,7 +485,9 @@ contract AggchainFEP is AggchainBase {
                 _l2BlockNumber,
                 rollupConfigHash,
                 optimisticMode,
-                trustedSequencer
+                trustedSequencer,
+                rangeVkeyCommitment,
+                aggregationVkey
             )
         );
 
@@ -477,7 +495,7 @@ contract AggchainFEP is AggchainBase {
             keccak256(
                 abi.encodePacked(
                     CONSENSUS_TYPE,
-                    getAggchainVKey(aggchainVKeySelector),
+                    getAggchainVKey(_aggchainVKeySelector),
                     aggchainParams
                 )
             );
@@ -564,7 +582,7 @@ contract AggchainFEP is AggchainBase {
         // decode the aggchainData
         (, bytes32 _outputRoot, uint256 _l2BlockNumber) = abi.decode(
             aggchainData,
-            (bytes2, bytes32, uint256)
+            (bytes4, bytes32, uint256)
         );
 
         emit OutputProposed(

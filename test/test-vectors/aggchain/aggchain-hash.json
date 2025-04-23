@@ -1,7 +1,7 @@
 [
   {
     "input": {
-      "aggchainType": 1,
+      "consensusType": 1,
       "aggchainVKey": "0x6666666666666666666666666666666666666666666666666666666666666666",
       "hashAggchainParams": "0x2ab0a4443bbea3fbe4d0e1503d11ff1367842fb0c8b28a5c8550f27599a40751"
     },
@@ -11,7 +11,7 @@
   },
   {
     "input": {
-      "aggchainType": 1,
+      "consensusType": 1,
       "aggchainVKey": "0x1111111111111111111111111111111111111111111111111111111111111111",
       "hashAggchainParams": "0x1234567891234567891234567891234567891234567891234567891234567891"
     },
@@ -21,7 +21,7 @@
   },
   {
     "input": {
-      "aggchainType": 1,
+      "consensusType": 1,
       "aggchainVKey": "0x2222222222222222222222222222222222222222222222222222222222222222",
       "hashAggchainParams": "0x3333333333333333333333333333333333333333333333333333333333333333"
     },
@@ -31,7 +31,7 @@
   },
   {
     "input": {
-      "aggchainType": 1,
+      "consensusType": 1,
       "aggchainVKey": "0x1234567891234567891234567891234567891234567891234567891234567891",
       "hashAggchainParams": "0x1111111111111111111111111111111111111111111111111111111111111111"
     },
@@ -41,7 +41,7 @@
   },
   {
     "input": {
-      "aggchainType": 1,
+      "consensusType": 1,
       "aggchainVKey": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
       "hashAggchainParams": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
     },
@@ -51,7 +51,7 @@
   },
   {
     "input": {
-      "aggchainType": 1,
+      "consensusType": 1,
       "aggchainVKey": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "hashAggchainParams": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },

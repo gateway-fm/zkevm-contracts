@@ -61,7 +61,7 @@ describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
     const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
     const PESSIMISTIC_SELECTOR = "0x00000001";
     // AGGCHAIN CONSTANTS
-    const AGGCHAIN_VKEY_SELECTOR = "0x0001";
+    const AGGCHAIN_VKEY_SELECTOR = "0x00010000";
     const randomNewStateRoot = computeRandomBytes(32);
     const CUSTOM_DATA_ECDSA = encodeAggchainDataECDSA(AGGCHAIN_VKEY_SELECTOR, randomNewStateRoot);
     const randomPessimisticVKey = computeRandomBytes(32);
@@ -362,28 +362,24 @@ describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
         const aggchainVKey = computeRandomBytes(32);
 
         // Compose selector for generated aggchain verification key
-        const defaultAggchainSelector = getAggchainVKeySelector(
-            AGGCHAIN_VKEY_SELECTOR,
-            AGGCHAIN_TYPE_ECDSA
-        );
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(AGGCHAIN_VKEY_SELECTOR, aggchainVKey)
         )
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
-            .withArgs(defaultAggchainSelector, aggchainVKey);
+            .withArgs(AGGCHAIN_VKEY_SELECTOR, aggchainVKey);
 
         // Try to add same key with same selector for reverting
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(AGGCHAIN_VKEY_SELECTOR, aggchainVKey)
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyAlreadyExists");
 
         // Try to add same key with wrong role
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(AGGCHAIN_VKEY_SELECTOR, aggchainVKey)
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyAlreadyExists");
 
         // Check added vkey
-        expect(await aggLayerGatewayContract.getDefaultAggchainVKey(defaultAggchainSelector)).to.be.equal(aggchainVKey);
+        expect(await aggLayerGatewayContract.getDefaultAggchainVKey(AGGCHAIN_VKEY_SELECTOR)).to.be.equal(aggchainVKey);
 
         // Create ECDSA aggchain
         const rollupTypeIdECDSA = await createECDSARollupType();
@@ -437,17 +433,15 @@ describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
                 CUSTOM_DATA_ECDSA
             )
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
+
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getAggchainVKeySelector(
-            AGGCHAIN_VKEY_SELECTOR,
-            AGGCHAIN_TYPE_ECDSA
-        );
+
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(AGGCHAIN_VKEY_SELECTOR, aggchainVKey)
         )
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
-            .withArgs(defaultAggchainSelector, aggchainVKey);
+            .withArgs(AGGCHAIN_VKEY_SELECTOR, aggchainVKey);
 
         // verify pessimist proof with the new ECDSA rollup
         const rollupECDSAData = await rollupManagerContract.rollupIDToRollupData(aggchainECDSAId);
@@ -556,7 +550,7 @@ describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
         const initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv1(
             true, //useDefaultGateway
             ethers.ZeroHash, //ownedAggchainVKey
-            "0x0000", // aggchainVkeySelector
+            "0x00000000", // aggchainVkeySelector
             vKeyManager.address
         );
 
@@ -638,17 +632,15 @@ describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
                 CUSTOM_DATA_ECDSA
             )
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
+
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getAggchainVKeySelector(
-            AGGCHAIN_VKEY_SELECTOR,
-            AGGCHAIN_TYPE_ECDSA
-        );
+
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(AGGCHAIN_VKEY_SELECTOR, aggchainVKey)
         )
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
-            .withArgs(defaultAggchainSelector, aggchainVKey);
+            .withArgs(AGGCHAIN_VKEY_SELECTOR, aggchainVKey);
         // verify pessimist proof with the new ECDSA rollup
         await expect(
             rollupManagerContract.connect(trustedAggregator).verifyPessimisticTrustedAggregator(
@@ -845,6 +837,7 @@ describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
 
         return Number(lastRollupTypeID) + 1;
     }
+
     async function createECDSARollupType() {
         // Create rollup type for  ECDSA
         const lastRollupTypeID = await rollupManagerContract.rollupTypeCount();
@@ -878,7 +871,7 @@ describe("Polygon rollup manager aggregation layer v3: ECDSA", () => {
         const initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv0(
             true, // useDefaultGateway
             ethers.ZeroHash, // ownedAggchainVKeys
-            "0x0000", //aggchainVKeysSelectors
+            "0x00000000", //aggchainVKeysSelectors
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,

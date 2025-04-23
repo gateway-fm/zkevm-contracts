@@ -39,15 +39,10 @@ describe("Test vectors aggchain ECDSA", () => {
             // load signers
             [vKeyManager, admin, aggchainManager] = await ethers.getSigners();
 
-            aggchainVKeySelector = utilsCommon.getAggchainVKeySelector(
-                data.initAggchainVKeyVersion,
-                utilsECDSA.AGGCHAIN_TYPE_ECDSA
-            );
+            aggchainVKeySelector = data.initAggchainVKeySelector;
 
             // check final aggchainSelector
-            expect(aggchainVKeySelector).to.be.equal(
-                `${data.initAggchainVKeyVersion}${utilsECDSA.AGGCHAIN_TYPE_ECDSA.slice(2)}`
-            );
+            expect(aggchainVKeySelector).to.be.equal(data.initAggchainVKeySelector);
 
             // deploy aggchain
             // create aggchainECDSA implementation
@@ -69,7 +64,7 @@ describe("Test vectors aggchain ECDSA", () => {
             initializeBytesAggchainV0 = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 data.useDefaultGateway,
                 data.initOwnedAggchainVKey,
-                data.initAggchainVKeyVersion,
+                data.initAggchainVKeySelector,
                 vKeyManager.address,
                 admin.address,
                 data.trustedSequencer,
@@ -108,7 +103,7 @@ describe("Test vectors aggchain ECDSA", () => {
             }
 
             // encode aggchainData
-            aggchainData = utilsECDSA.encodeAggchainDataECDSA(data.initAggchainVKeyVersion, data.newStateRoot);
+            aggchainData = utilsECDSA.encodeAggchainDataECDSA(data.initAggchainVKeySelector, data.newStateRoot);
             // get aggchainHash
             aggchainHash = utilsCommon.computeAggchainHash(
                 utilsCommon.CONSENSUS_TYPE.GENERIC,
@@ -177,7 +172,7 @@ describe("Test vectors aggchain ECDSA", () => {
             initializeBytesAggchainV1 = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
                 data.useDefaultGateway,
                 data.initOwnedAggchainVKey,
-                data.initAggchainVKeyVersion,
+                data.initAggchainVKeySelector,
                 vKeyManager.address
             );
 

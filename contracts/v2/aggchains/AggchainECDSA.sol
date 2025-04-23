@@ -94,7 +94,7 @@ contract AggchainECDSA is AggchainBase {
                 // aggchainBase params
                 bool _useDefaultGateway,
                 bytes32 _initOwnedAggchainVKey,
-                bytes2 _initAggchainVKeyVersion,
+                bytes4 _initAggchainVKeySelector,
                 address _vKeyManager,
                 // PolygonConsensusBase params
                 address _admin,
@@ -107,7 +107,7 @@ contract AggchainECDSA is AggchainBase {
                     (
                         bool,
                         bytes32,
-                        bytes2,
+                        bytes4,
                         address,
                         address,
                         address,
@@ -116,6 +116,15 @@ contract AggchainECDSA is AggchainBase {
                         string
                     )
                 );
+
+            // Check the aggchainType embedded the _initAggchainVKeySelector is valid
+            if (
+                getAggchainTypeFromSelector(_initAggchainVKeySelector) !=
+                AGGCHAIN_TYPE
+            ) {
+                revert InvalidAggchainType();
+            }
+
             // Set aggchainBase variables
             _initializeAggchainBaseAndConsensusBase(
                 _admin,
@@ -125,9 +134,8 @@ contract AggchainECDSA is AggchainBase {
                 _networkName,
                 _useDefaultGateway,
                 _initOwnedAggchainVKey,
-                _initAggchainVKeyVersion,
-                _vKeyManager,
-                AGGCHAIN_TYPE
+                _initAggchainVKeySelector,
+                _vKeyManager
             );
         } else if (_initializerVersion == 1) {
             // Only need to initialize values that are specific for ECDSA because we are performing an upgrade from a Pessimistic chain
@@ -135,19 +143,28 @@ contract AggchainECDSA is AggchainBase {
             (
                 bool _useDefaultGateway,
                 bytes32 _initOwnedAggchainVKey,
-                bytes2 _initAggchainVKeyVersion,
+                bytes4 _initAggchainVKeySelector,
                 address _vKeyManager
             ) = abi.decode(
                     initializeBytesAggchain,
-                    (bool, bytes32, bytes2, address)
+                    (bool, bytes32, bytes4, address)
                 );
+
+            // Check the aggchainType embedded the _initAggchainVKeySelector is valid
+
+            if (
+                getAggchainTypeFromSelector(_initAggchainVKeySelector) !=
+                AGGCHAIN_TYPE
+            ) {
+                revert InvalidAggchainType();
+            }
+
             // Set aggchainBase variables
             _initializeAggchainBase(
                 _useDefaultGateway,
                 _initOwnedAggchainVKey,
-                _initAggchainVKeyVersion,
-                _vKeyManager,
-                AGGCHAIN_TYPE
+                _initAggchainVKeySelector,
+                _vKeyManager
             );
         } else {
             // This case should never happen because reinitializer is 2 so initializer version is 0 or 1, but it's here to avoid any possible future issue if the reinitializer version is increased
@@ -178,15 +195,16 @@ contract AggchainECDSA is AggchainBase {
         }
 
         // The second param is the new state root used at onVerifyPessimistic callback but now only aggchainVKeySelector is required
-        (bytes2 aggchainVKeyVersion, ) = abi.decode(
+        (bytes4 aggchainVKeySelector, ) = abi.decode(
             aggchainData,
-            (bytes2, bytes32)
+            (bytes4, bytes32)
         );
 
-        bytes4 aggchainVKeySelector = getAggchainVKeySelector(
-            aggchainVKeyVersion,
-            AGGCHAIN_TYPE
-        );
+        if (
+            getAggchainTypeFromSelector(aggchainVKeySelector) != AGGCHAIN_TYPE
+        ) {
+            revert InvalidAggchainType();
+        }
 
         return
             keccak256(
@@ -210,7 +228,7 @@ contract AggchainECDSA is AggchainBase {
             revert InvalidAggchainDataLength();
         }
 
-        (, bytes32 newStateRoot) = abi.decode(aggchainData, (bytes2, bytes32));
+        (, bytes32 newStateRoot) = abi.decode(aggchainData, (bytes4, bytes32));
 
         // Emit event
         emit OnVerifyPessimisticECDSA(newStateRoot);

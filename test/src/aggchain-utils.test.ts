@@ -15,7 +15,7 @@ describe("Test vectors aggchain common utils", () => {
         it(`Check test-vectors compute aggchain hash ID=${i}`, async () => {
             const testVector = aggchainHashTestVectors[i].input;
             const aggchainHash = utilsCommon.computeAggchainHash(
-                testVector.aggchainType,
+                testVector.consensusType,
                 testVector.aggchainVKey,
                 testVector.hashAggchainParams
             );

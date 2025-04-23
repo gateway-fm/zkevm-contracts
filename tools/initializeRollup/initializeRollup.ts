@@ -161,7 +161,7 @@ async function main() {
         initializeBytesAggchain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
             aggchainParams.useDefaultGateway,
             aggchainParams.initOwnedAggchainVKey,
-            aggchainParams.initAggchainVKeyVersion,
+            aggchainParams.initAggchainVKeySelector,
             aggchainParams.vKeyManager,
             rollupAdminAddress,
             trustedSequencer,
@@ -174,7 +174,7 @@ async function main() {
             aggchainParams.initParams,
             aggchainParams.useDefaultGateway,
             aggchainParams.initOwnedAggchainVKey,
-            aggchainParams.initAggchainVKeyVersion,
+            aggchainParams.initAggchainVKeySelector,
             aggchainParams.vKeyManager,
             initializeRollupParameters.rollupAdminAddress,
             trustedSequencer,

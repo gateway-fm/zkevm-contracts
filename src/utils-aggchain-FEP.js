@@ -18,7 +18,7 @@ const AGGCHAIN_TYPE_FEP = '0x0001';
  * @param {Object} initParams initialization parameters
  * @param {Boolean} useDefaultGateway use owned gateway
  * @param {String} initOwnedAggchainVKey initial owned aggchain Vkey
- * @param {String} initAggchainVKeyVersion initial aggchain Vkey selector
+ * @param {String} initAggchainVKeySelector initial aggchain Vkey selector
  * @param {String} vKeyManager vkey manager address
  * @param {String} admin admin address
  * @param {String} trustedSequencer trusted sequencer address
@@ -31,7 +31,7 @@ function encodeInitializeBytesAggchainFEPv0(
     initParams,
     useDefaultGateway,
     initOwnedAggchainVKey,
-    initAggchainVKeyVersion,
+    initAggchainVKeySelector,
     vKeyManager,
     admin,
     trustedSequencer,
@@ -44,7 +44,7 @@ function encodeInitializeBytesAggchainFEPv0(
             'tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, bytes32, bytes32)',
             'bool',
             'bytes32',
-            'bytes2',
+            'bytes4',
             'address',
             'address',
             'address',
@@ -56,7 +56,7 @@ function encodeInitializeBytesAggchainFEPv0(
             Object.values(initParams),
             useDefaultGateway,
             initOwnedAggchainVKey,
-            initAggchainVKeyVersion,
+            initAggchainVKeySelector,
             vKeyManager,
             admin,
             trustedSequencer,
@@ -72,14 +72,14 @@ function encodeInitializeBytesAggchainFEPv0(
  * @param {Object} initParams initialization parameters
  * @param {Boolean} useDefaultGateway use owned gateway
  * @param {String} initOwnedAggchainVKey initial owned aggchain Vkey
- * @param {String} initAggchainVKeyVersion initial aggchain Vkey version
+ * @param {String} initAggchainVKeySelector initial aggchain Vkey version
  * @param {String} vKeyManager vkey manager address
  */
 function encodeInitializeBytesAggchainFEPv1(
     initParams,
     useDefaultGateway,
     initOwnedAggchainVKey,
-    initAggchainVKeyVersion,
+    initAggchainVKeySelector,
     vKeyManager,
 ) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
@@ -87,14 +87,14 @@ function encodeInitializeBytesAggchainFEPv1(
             'tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, bytes32, bytes32)',
             'bool',
             'bytes32',
-            'bytes2',
+            'bytes4',
             'address',
         ],
         [
             Object.values(initParams),
             useDefaultGateway,
             initOwnedAggchainVKey,
-            initAggchainVKeyVersion,
+            initAggchainVKeySelector,
             vKeyManager,
         ],
     );
@@ -102,15 +102,15 @@ function encodeInitializeBytesAggchainFEPv1(
 
 /**
  * Function to encode the custom chain data for the `getAggchainHash` & `onVerifyPessimistic` functions
- * @param {String} aggchainVKeyVersion aggchain vkey version
+ * @param {String} aggchainVKeySelector aggchain vkey version
  * @param {String} outputRoot output root
  * @param {Number} l2BlockNumber L2 block number
  * @returns {String} encoded value in hexadecimal string
  */
-function encodeAggchainDataFEP(aggchainVKeyVersion, outputRoot, l2BlockNumber) {
+function encodeAggchainDataFEP(aggchainVKeySelector, outputRoot, l2BlockNumber) {
     return ethers.AbiCoder.defaultAbiCoder().encode(
-        ['bytes2', 'bytes32', 'uint256'],
-        [aggchainVKeyVersion, outputRoot, l2BlockNumber],
+        ['bytes4', 'bytes32', 'uint256'],
+        [aggchainVKeySelector, outputRoot, l2BlockNumber],
     );
 }
 
@@ -122,6 +122,8 @@ function encodeAggchainDataFEP(aggchainVKeyVersion, outputRoot, l2BlockNumber) {
  * @param {BigInt} rollupConfigHash rollup config hash
  * @param {Bool} optimisticMode flag to optimistic mode
  * @param {String} trustedSequencer trusted sequencer address
+ * @param {String} rangeVkeyCommitment rangeVkeyCommitment
+ * @param {String} aggregationVkey aggregationVkey
  * @returns aggchain param hash
  */
 function computeHashAggchainParamsFEP(
@@ -131,11 +133,29 @@ function computeHashAggchainParamsFEP(
     rollupConfigHash,
     optimisticMode,
     trustedSequencer,
+    rangeVkeyCommitment,
+    aggregationVkey,
 ) {
     // solidity lkeccak
     return ethers.solidityPackedKeccak256(
-        ['bytes32', 'bytes32', 'uint256', 'uint256', 'bool', 'address'],
-        [oldOutputRoot, newOutputRoot, l2BlockNumber, rollupConfigHash, optimisticMode, trustedSequencer],
+        ['bytes32',
+            'bytes32',
+            'uint256',
+            'uint256',
+            'bool',
+            'address',
+            'bytes32',
+            'bytes32',
+        ],
+        [oldOutputRoot,
+            newOutputRoot,
+            l2BlockNumber,
+            rollupConfigHash,
+            optimisticMode,
+            trustedSequencer,
+            rangeVkeyCommitment,
+            aggregationVkey,
+        ],
     );
 }
 

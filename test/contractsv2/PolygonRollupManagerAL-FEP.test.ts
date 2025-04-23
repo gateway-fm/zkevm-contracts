@@ -13,16 +13,23 @@ import {
     PolygonPessimisticConsensus,
 } from "../../typechain-types";
 const { VerifierType, computeRandomBytes } = require("../../src/pessimistic-utils");
-const { CONSENSUS_TYPE, encodeInitAggchainManager } = require("../../src/utils-common-aggchain");
+
 const {
+    CONSENSUS_TYPE,
+    encodeInitAggchainManager,
+    getAggchainVKeySelector,
+    encodeInitializeBytesLegacy,
+    computeAggchainHash,
+ } = require("../../src/utils-common-aggchain");
+
+ const {
     AGGCHAIN_TYPE_FEP,
     encodeAggchainDataFEP,
     encodeInitializeBytesAggchainFEPv1,
     encodeInitializeBytesAggchainFEPv0,
+    computeHashAggchainParamsFEP,
 } = require("../../src/utils-aggchain-FEP");
 
-const {getAggchainVKeySelector} = require("../../src/utils-common-aggchain");
-const {encodeInitializeBytesLegacy} = require("../../src/utils-common-aggchain");
 const {NO_ADDRESS} = require("../../src/constants");
 
 describe("Polygon rollup manager aggregation layer v3: FEP", () => {
@@ -64,8 +71,8 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
     // calculate aggchainHash
     let newStateRoot = ethers.id("newStateRoot");
     let newl2BlockNumber = 1200;
-    const aggchainVKeyVersion = "0x1234";
-    const CUSTOM_DATA_FEP = encodeAggchainDataFEP(aggchainVKeyVersion, newStateRoot, newl2BlockNumber);
+    const aggchainVKeySelector = "0x12340001";
+    const CUSTOM_DATA_FEP = encodeAggchainDataFEP(aggchainVKeySelector, newStateRoot, newl2BlockNumber);
     const randomPessimisticVKey = computeRandomBytes(32);
     let initParams;
 
@@ -99,7 +106,7 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
             startingTimestamp: 0,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
@@ -371,54 +378,57 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
             .to.emit(aggchainFEPContract, "AcceptVKeyManagerRole")
             .withArgs(vKeyManager.address, admin.address);
     });
+
     it("should getAggchainHash using default gateway", async () => {
         // Add default aggchain verification key
         // Generate random aggchain verification key
         const aggchainVKey = computeRandomBytes(32);
 
         // Compose selector for generated aggchain verification key
-        const defaultAggchainSelector = getAggchainVKeySelector(
-            aggchainVKeyVersion,
-            AGGCHAIN_TYPE_FEP
-        );
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(aggchainVKeySelector, aggchainVKey)
         )
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
-            .withArgs(defaultAggchainSelector, aggchainVKey);
+            .withArgs(aggchainVKeySelector, aggchainVKey);
 
         // Try to add same key with same selector for reverting
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(aggchainVKeySelector, aggchainVKey)
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyAlreadyExists");
 
         // Try to add same key with wrong role
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(aggchainVKeySelector, aggchainVKey)
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyAlreadyExists");
 
         // Check added vkey
-        expect(await aggLayerGatewayContract.getDefaultAggchainVKey(defaultAggchainSelector)).to.be.equal(aggchainVKey);
+        expect(await aggLayerGatewayContract.getDefaultAggchainVKey(aggchainVKeySelector)).to.be.equal(aggchainVKey);
 
         // Create FEP aggchain
         const rollupTypeIdFEP = await createFEPRollupType();
         const [, aggchainFEPAddress] = await createFEPRollup(rollupTypeIdFEP);
 
         // Get aggchain hash
-        const precomputedAggchainHash = ethers.solidityPackedKeccak256(
-            ["uint32", "bytes32", "bytes32"],
-            [
-                CONSENSUS_TYPE.GENERIC,
-                aggchainVKey,
-                ethers.solidityPackedKeccak256(
-                    ['bytes32', 'bytes32', 'uint256', 'uint256', 'bool', 'address'],
-                    [initParams.startingOutputRoot, newStateRoot, newl2BlockNumber, initParams.rollupConfigHash, false, trustedSequencer.address],
-                )
-            ]
+        const aggchainParamsBytes= computeHashAggchainParamsFEP(
+            initParams.startingOutputRoot,
+            newStateRoot,
+            newl2BlockNumber,
+            initParams.rollupConfigHash,
+            false,
+            trustedSequencer.address,
+            initParams.rangeVkeyCommitment,
+            initParams.aggregationVkey
         );
+
+        const aggchainHashJS = computeAggchainHash(
+            CONSENSUS_TYPE.GENERIC,
+            aggchainVKey,
+            aggchainParamsBytes
+        );
+
         const aggchainFEPFactory = await ethers.getContractFactory("AggchainFEP");
         const aggchainFEPContract = aggchainFEPFactory.attach(aggchainFEPAddress as string);
-        expect(await aggchainFEPContract.getAggchainHash(CUSTOM_DATA_FEP)).to.be.equal(precomputedAggchainHash);
+        expect(await aggchainFEPContract.getAggchainHash(CUSTOM_DATA_FEP)).to.be.equal(aggchainHashJS);
     });
 
     it("should verify a pessimistic proof for a FEP aggchain", async () => {
@@ -456,15 +466,11 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getAggchainVKeySelector(
-            aggchainVKeyVersion,
-            AGGCHAIN_TYPE_FEP
-        );
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(aggchainVKeySelector, aggchainVKey)
         )
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
-            .withArgs(defaultAggchainSelector, aggchainVKey);
+            .withArgs(aggchainVKeySelector, aggchainVKey);
 
         // verify pessimist proof with the new FEP rollup
         const onVerifyPessimisticTx = await rollupManagerContract.connect(trustedAggregator).verifyPessimisticTrustedAggregator(
@@ -587,15 +593,23 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
             startingTimestamp: 0,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
+
+        const initializeBytesAggchainWronAggchainType = encodeInitializeBytesAggchainFEPv1(
+            initParams, // init params
+            true, //useDefaultGateway
+            ethers.ZeroHash, //ownedAggchainVKey
+            "0x00000000", // aggchainVkeySelector
+            vKeyManager.address
+        );
 
         const initializeBytesAggchain = encodeInitializeBytesAggchainFEPv1(
             initParams, // init params
             true, //useDefaultGateway
             ethers.ZeroHash, //ownedAggchainVKey
-            "0x0000", // aggchainVkeySelector
+            "0x00000001", // aggchainVkeySelector
             vKeyManager.address
         );
 
@@ -616,6 +630,11 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
         expect(aggchainManagerSC).to.be.equal(aggchainManager.address);
 
         // initialize the ECDSA aggchain
+        await expect(FEPRollupContract.connect(aggchainManager).initialize(initializeBytesAggchainWronAggchainType)).to.be.revertedWithCustomError(
+            FEPRollupContract,
+            "InvalidAggchainType"
+        );
+
         await FEPRollupContract.connect(aggchainManager).initialize(initializeBytesAggchain);
 
         // Try update rollup by rollupAdmin but trigger UpdateToOldRollupTypeID
@@ -679,15 +698,11 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
         ).to.be.revertedWithCustomError(aggLayerGatewayContract, "AggchainVKeyNotFound");
         // Add default AggchainVKey
         const aggchainVKey = computeRandomBytes(32);
-        const defaultAggchainSelector = getAggchainVKeySelector(
-            aggchainVKeyVersion,
-            AGGCHAIN_TYPE_FEP
-        );
         await expect(
-            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(defaultAggchainSelector, aggchainVKey)
+            aggLayerGatewayContract.connect(aggLayerAdmin).addDefaultAggchainVKey(aggchainVKeySelector, aggchainVKey)
         )
             .to.emit(aggLayerGatewayContract, "AddDefaultAggchainVKey")
-            .withArgs(defaultAggchainSelector, aggchainVKey);
+            .withArgs(aggchainVKeySelector, aggchainVKey);
         // verify pessimist proof with the new FEP rollup
         const onVerifyPessimisticTx = await rollupManagerContract.connect(trustedAggregator).verifyPessimisticTrustedAggregator(
             pessimisticRollupID, // rollupID
@@ -912,7 +927,7 @@ describe("Polygon rollup manager aggregation layer v3: FEP", () => {
             initParams, // init params
             true, // useDefaultGateway
             ethers.ZeroHash, // ownedAggchainVKeys
-            "0x0000", //aggchainVKeysSelectors
+            "0x00000001", //aggchainVKeysSelectors
             vKeyManager.address,
             admin.address,
             trustedSequencer.address,

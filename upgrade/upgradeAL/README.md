@@ -27,12 +27,16 @@ cp ./upgrade/upgradeAL/upgrade_parameters.json.example ./upgrade/upgradeAL/upgra
 - Fill configuration file
 
     - "network": "sepolia", -> Optional: hardhat network used if wants to verify the deployed implementation
-    - "timelockDelay": 3600, -> the timelock delay between schedule and execution transaction
-    - "timelockAdminAddress": "0x..", -> Optional: The address of the timelock admin, only used at the shallow fork tests
-    - "deployerPvtKey": "0x...", -> Optional: The private key of the wallet used to deploy the new implementation
-    - "rpc": "rpc url" -> Optional: only used for shallow fork testing, is the rpc of the node to fork
     - "rollupManagerAddress": "0x.." -> Address of the rollup manager proxy to upgrade
     - "aggLayerGatewayAddress": "0x.." -> Address of the aggLayerGateway proxy contract used to initialize the new version of the rollup Manager
+    - "timelockDelay": 3600, -> the timelock delay between schedule and execution transaction
+    - "timelockSalt": "" -> A unique salt used to identify and secure the operation
+    - "deployerPvtKey": "0x...", -> Optional: The private key of the wallet used to deploy the new implementation
+    - "maxFeePerGas": "", -> Optional: Set `maxFeePerGas`, must define as well `maxPriorityFeePerGas` to use it
+    - "maxPriorityFeePerGas": "", -> Optional: Set `maxPriorityFeePerGas`, must define as well `maxFeePerGas` to use it
+    - "multiplierGas": "", -> Optional: Gas multiplier with 3 decimals. If `maxFeePerGas` and `maxPriorityFeePerGas` are set, this will not take effect
+    - "timelockAdminAddress": "0x..", -> Optional: The address of the timelock admin, only used at the shallow fork tests
+    - "rpc": "rpc url" -> Optional: only used for shallow fork testing, is the rpc of the node to fork
 
 - Run tool:
 
