@@ -565,7 +565,7 @@ async function main() {
             outputJson.WETHProxyAddress = wethObject.address;
 
             const wethImpObject = genesis.genesis.find(function (obj) {
-                return obj.contractName == "WETH implementation";
+                return obj.contractName == "TokenWrapped implementation";
             });
             outputJson.WETHImplementationAddress = wethImpObject.address;
         }

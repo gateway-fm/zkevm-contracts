@@ -201,7 +201,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
         const destinationNetwork = networkIDRollup2;
         const destinationAddress = deployer.address;
         const metadata = metadataToken;
-        const as = await sovereignChainBridgeContract.bridgeManager();
+
         await claimBeforeBridge(
             LEAF_TYPE_ASSET,
             originNetwork, // originNetwork

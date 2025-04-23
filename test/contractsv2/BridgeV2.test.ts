@@ -51,8 +51,6 @@ describe("PolygonZkEVMBridge Contract", () => {
     const LEAF_TYPE_ASSET = 0;
     const LEAF_TYPE_MESSAGE = 1;
 
-    const polygonZkEVMAddress = ethers.ZeroAddress;
-
     beforeEach("Deploy contracts", async () => {
         // load signers
         [deployer, rollupManager, acc1] = await ethers.getSigners();

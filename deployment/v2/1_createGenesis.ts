@@ -192,6 +192,17 @@ async function main() {
     if (isMainnet === false) {
         finalBridgeImplAddress = bridgeImplementationAddress;
     }
+    // Retrieve TokenWrappedImplementation contract to add it to the genesis, necessary for token wrapped deployments from the bridge
+    const wrappedTokenImplementationAddress = await bridgeContract.wrappedTokenBridgeImplementation();
+
+    const wrappedTokenImplementationInfo = await getAddressInfo(wrappedTokenImplementationAddress as string);
+    genesis.push({
+        contractName: `TokenWrapped Implementation`,
+        balance: "0",
+        nonce: wrappedTokenImplementationInfo.nonce.toString(),
+        address: wrappedTokenImplementationAddress,
+        bytecode: wrappedTokenImplementationInfo.bytecode,
+    });
     // Do not initialize the bridge!
 
     /*

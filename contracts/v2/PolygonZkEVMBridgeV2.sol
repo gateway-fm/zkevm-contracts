@@ -11,8 +11,8 @@ import "../interfaces/IBridgeMessageReceiver.sol";
 import "./interfaces/IPolygonZkEVMBridgeV2.sol";
 import "../lib/EmergencyManager.sol";
 import "../lib/GlobalExitRootLib.sol";
-import "./interfaces/ITokenWrappedBridgeUpgradeable.sol";
 import "./lib/TokenWrappedBridgeInitCode.sol";
+import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable} from "./lib/TokenWrappedBridgeUpgradeable.sol";
 
 /**
  * PolygonZkEVMBridge that will be deployed on Ethereum and all Polygon rollups
@@ -35,6 +35,10 @@ contract PolygonZkEVMBridgeV2 is
     /// @dev the constant has been exported to a separate contract to improve this bytecode length.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     ITokenWrappedBridgeInitCode public immutable wrappedTokenBytecodeStorer;
+
+    /// Address of the wrappedToken implementation, it is set at constructor and all proxied wrapped tokens will point to this implementation
+    /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
+    address public immutable wrappedTokenBridgeImplementation;
 
     // bytes4(keccak256(bytes("permit(address,address,uint256,uint256,uint8,bytes32,bytes32)")));
     bytes4 internal constant _PERMIT_SIGNATURE = 0xd505accf;
@@ -62,6 +66,9 @@ contract PolygonZkEVMBridgeV2 is
 
     // Current bridge version
     string public constant BRIDGE_VERSION = "al-v0.3.0";
+
+    // address 1 is set as proxy admin to not allow the proxy to be upgraded on mainnet
+    address public constant wrappedTokenProxyAdmin = address(1);
 
     // Network identifier
     uint32 public networkID;
@@ -144,6 +151,11 @@ contract PolygonZkEVMBridgeV2 is
         // Deploy the wrapped token contract
         /// @dev this contract is used to store the bytecode of the wrapped token contract, previously stored in the bridge contract but moved to a separate contract to reduce the bytecode size.
         wrappedTokenBytecodeStorer = new TokenWrappedBridgeInitCode();
+
+        // Deploy the implementation of the wrapped token contract
+        wrappedTokenBridgeImplementation = address(
+            new TokenWrappedBridgeUpgradeable()
+        );
         // Disable initializers on the implementation following the best practices
         _disableInitializers();
     }
@@ -742,46 +754,6 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice Returns the precalculated address of a wrapper using the token information
-     * Note Updating the metadata of a token is not supported.
-     * Since the metadata has relevance in the address deployed, this function will not return a valid
-     * wrapped address if the metadata provided is not the original one.
-     * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
-     * @param name Name of the token
-     * @param symbol Symbol of the token
-     * @param decimals Decimals of the token
-     */
-    function precalculatedWrapperAddress(
-        uint32 originNetwork,
-        address originTokenAddress,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
-    ) public view returns (address) {
-        bytes32 salt = keccak256(
-            abi.encodePacked(originNetwork, originTokenAddress)
-        );
-
-        bytes32 hashCreate2 = keccak256(
-            abi.encodePacked(
-                bytes1(0xff),
-                address(this),
-                salt,
-                keccak256(
-                    abi.encodePacked(
-                        BASE_INIT_BYTECODE_WRAPPED_TOKEN(),
-                        abi.encode(name, symbol, decimals)
-                    )
-                )
-            )
-        );
-
-        // Last 20 bytes of hash to address
-        return address(uint160(uint256(hashCreate2)));
-    }
-
-    /**
      * @notice Returns the address of a wrapper using the token information if already exist
      * @param originNetwork Origin network
      * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
@@ -1168,30 +1140,9 @@ contract PolygonZkEVMBridgeV2 is
         bytes32 salt,
         bytes memory constructorArgs
     ) internal returns (TokenWrapped newWrappedTokenProxy) {
-        bytes memory implementationInitBytecode = abi.encodePacked(
-            BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE()
-        );
-
-        // Deploy erc20 wrapped token implementation
-        /// @dev the create2 is being used to keep the same implementation address at all chain although it's not necessary
-        /// the implementation could be deployed with a create
-        address newWrappedTokenImplementation;
-        /// @solidity memory-safe-assembly
-        assembly {
-            newWrappedTokenImplementation := create2(
-                0,
-                add(implementationInitBytecode, 0x20),
-                mload(implementationInitBytecode),
-                salt
-            )
-        }
-
-        if (address(newWrappedTokenImplementation) == address(0))
-            revert FailedTokenWrappedDeployment();
-
         // Deploy wrapped token proxy
         bytes memory proxyConstructorArgs = _encodeProxyConstructorArgs(
-            newWrappedTokenImplementation
+            wrappedTokenBridgeImplementation
         );
         /// @dev A bytecode stored on chain us used to dep`loy the proxy in a way that ALWAYS it's used the same
         /// bytecode, therefore the same proxy addresses are the same in all chains
@@ -1224,12 +1175,19 @@ contract PolygonZkEVMBridgeV2 is
      * @notice Function to encode the constructor args of the proxy
      * @param wrappedTokenImplementation Address of the implementation
      * @dev this function has been extracted to be override by sovereign bridge setting the proxy admin as the bridge manager
-     * @dev address 1 is set as proxy admin to not allow the proxy to be upgraded on mainnet
+     * @dev address 1 is set as proxy admin to not allow the proxy to be upgraded on mainnet, address zero is not allowed by proxy contract
+     * @dev https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/proxy/ERC1967/ERC1967Upgrade.sol#L124
      */
+
     function _encodeProxyConstructorArgs(
         address wrappedTokenImplementation
     ) internal view virtual returns (bytes memory) {
-        return abi.encode(wrappedTokenImplementation, address(1), new bytes(0));
+        return
+            abi.encode(
+                wrappedTokenImplementation,
+                wrappedTokenProxyAdmin,
+                new bytes(0)
+            );
     }
 
     // Helpers to safely get the metadata from a token, inspired by https://github.com/traderjoe-xyz/joe-core/blob/main/contracts/MasterChefJoeV3.sol#L55-L95
@@ -1321,58 +1279,6 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice Returns the precalculated address of a wrapper using the token address
-     * Note Updating the metadata of a token is not supported.
-     * Since the metadata has relevance in the address deployed, this function will not return a valid
-     * wrapped address if the metadata provided is not the original one.
-     * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
-     * @param token Address of the token to calculate the wrapper address
-     */
-    function calculateTokenWrapperAddress(
-        uint32 originNetwork,
-        address originTokenAddress,
-        address token
-    ) external view returns (address) {
-        return
-            precalculatedWrapperAddress(
-                originNetwork,
-                originTokenAddress,
-                _safeName(token),
-                _safeSymbol(token),
-                _safeDecimals(token)
-            );
-    }
-
-    /**
-     * @notice Returns the BASE_INIT_BYTECODE_WRAPPED_TOKEN from the TokenWrappedBridgeInitCode
-     * @dev TokenWrappedBridgeInitCode is a contract that contains BASE_INIT_BYTECODE_WRAPPED_TOKEN as constant, it has done this way to have more bytecode available
-     */
-    function BASE_INIT_BYTECODE_WRAPPED_TOKEN()
-        public
-        view
-        returns (bytes memory)
-    {
-        return
-            ITokenWrappedBridgeInitCode(wrappedTokenBytecodeStorer)
-                .BASE_INIT_BYTECODE_WRAPPED_TOKEN();
-    }
-
-    /**
-     * @notice Returns the BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE from the TokenWrappedBridgeInitCode
-     * @dev TokenWrappedBridgeInitCode is a contract that contains BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE as constant, it has done this way to have more bytecode available
-     */
-    function BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE()
-        public
-        view
-        returns (bytes memory)
-    {
-        return
-            ITokenWrappedBridgeInitCode(wrappedTokenBytecodeStorer)
-                .BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE();
-    }
-
-    /**
      * @notice Returns the TOKEN_WRAPPED_PROXY_INIT from the TokenWrappedBridgeInitCode
      * @dev TokenWrappedBridgeInitCode is a contract that contains PolygonTransparentProxy as constant, it has done this way to have more bytecode available.
      *  Using the on chain bytecode, we assure that transparent proxy is always deployed with the exact same bytecode, necessary to have all deployed wrapped token
@@ -1397,25 +1303,8 @@ contract PolygonZkEVMBridgeV2 is
             abi.encodePacked(originNetwork, originTokenAddress)
         );
 
-        bytes32 hashCreate2Implementation = keccak256(
-            abi.encodePacked(
-                bytes1(0xff),
-                address(this),
-                salt,
-                keccak256(
-                    abi.encodePacked(
-                        BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE()
-                    )
-                )
-            )
-        );
-
-        address newWrappedTokenImplementation = address(
-            uint160(uint256(hashCreate2Implementation))
-        );
-
         bytes memory proxyConstructorArgs = _encodeProxyConstructorArgs(
-            newWrappedTokenImplementation
+            wrappedTokenBridgeImplementation
         );
 
         bytes32 hashCreate2 = keccak256(

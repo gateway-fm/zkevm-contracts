@@ -18,6 +18,7 @@ const supportedGERManagers = ["PolygonZkEVMGlobalExitRootL2 implementation"];
 const supportedBridgeContracts = ['PolygonZkEVMBridge implementation', 'PolygonZkEVMBridgeV2 implementation'];
 const supportedBridgeContractsProxy = ['PolygonZkEVMBridgeV2 proxy', 'PolygonZkEVMBridge proxy'];
 const TokenWrappedBridgeInitCodeContractName = "TokenWrappedBridgeInitCode";
+const TokenWrappedImplementationContractName = "TokenWrapped implementation";
 
 async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Load genesis on a zkEVMDB
@@ -145,6 +146,37 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
             `0x${await zkEVMDB.getBytecode(precalculatedAddressDeployedSovereignBridge)}`)
     }
 
+    // Compute the address of the wrappedTokenImplementation contract deployed by the deployed sovereign bridge with nonce 2
+    const precalculatedAddressTokenWrappedImplementation = ethers.getCreateAddress(
+        {
+            from: sovereignBridgeAddress,
+            nonce: 2
+        }
+    );
+
+    // Check if the genesis contains TokenWrappedImplementation contract
+    const tokenWrappedImplementationObject = genesis.genesis.find(function (obj) {
+        return obj.contractName == TokenWrappedImplementationContractName;
+    });
+
+    // If its not contained add it to the genesis
+    if (typeof tokenWrappedImplementationObject === "undefined") {
+        const tokenWrappedImplementationDeployedBytecode = `0x${await zkEVMDB.getBytecode(precalculatedAddressTokenWrappedImplementation)}`;
+        const tokenWrappedImplementationCodeGenesis = {
+            contractName: TokenWrappedImplementationContractName,
+            balance: "0",
+            nonce: "1",
+            address: precalculatedAddressTokenWrappedImplementation,
+            bytecode: tokenWrappedImplementationDeployedBytecode,
+        };
+        genesis.genesis.push(tokenWrappedImplementationCodeGenesis);
+    } else {
+        tokenWrappedImplementationObject.address = precalculatedAddressTokenWrappedImplementation;
+        // Check address and bytecode of the TokenWrappedBridgeInitCode contract
+        expect(tokenWrappedImplementationObject.bytecode).to.equal(
+            `0x${await zkEVMDB.getBytecode(precalculatedAddressTokenWrappedImplementation)}`)
+    }
+
     const oldGer = genesis.genesis.find(function (obj) {
         return supportedGERManagers.includes(obj.contractName);
     });
@@ -268,22 +300,10 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         }, {});
         genesis.genesis.push(wethGenesisProxy);
 
-        // Add implementation
+        // Check implementation
         const _IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
         const wethGenesisImplementationAddress = wethStorage[_IMPLEMENTATION_SLOT];
-        const wethGenesisImplementation = {
-            contractName: "WETH implementation",
-            balance: "0",
-            nonce: "1",
-            address: wethGenesisImplementationAddress,
-            bytecode: `0x${await zkEVMDB2.getBytecode(wethGenesisImplementationAddress)}`,
-        };
-        const wethStorageImplementation = await zkEVMDB2.dumpStorage(wethGenesisImplementationAddress);
-        wethGenesisImplementation.storage = Object.entries(wethStorageImplementation).reduce((acc, [key, value]) => {
-            acc[key] = padTo32Bytes(value);
-            return acc;
-        }, {});
-        genesis.genesis.push(wethGenesisImplementation);
+        expect(wethGenesisImplementationAddress).to.equal(precalculatedAddressTokenWrappedImplementation.toLocaleLowerCase());
     }
 
     // Pad storage values with zeros
@@ -326,6 +346,12 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     expect(bridgeProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000068"]).to.include(
         gerProxy.address.toLowerCase().slice(2)
     );
+
+    // Check bridge implementation bytecode contains tokenWrappedBridgeInitCode contract address
+    expect(oldBridge.bytecode).to.include(precalculatedAddressDeployedSovereignBridge.toLowerCase().slice(2));
+
+    // Check bridge implementation bytecode contains tokenWrappedImplementation contract address
+    expect(oldBridge.bytecode).to.include(precalculatedAddressTokenWrappedImplementation.toLowerCase().slice(2));
 
     // Storage value for rollup/network id
     // RollupID value is stored at position 68 with globalExitRootManager address. Slice from byte 2 to 2-8 to get the rollupID

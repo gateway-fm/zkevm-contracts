@@ -1065,9 +1065,10 @@ contract BridgeL2SovereignChain is
         address wrappedTokenImplementation
     ) internal view override returns (bytes memory) {
         /// @dev in case a chain has set bridge manager as zero address (for more decentralization) we set the proxy admin as address(1) because proxy contract doesn't support zero address as admin
+        /// @dev https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/proxy/ERC1967/ERC1967Upgrade.sol#L124
         address proxyAdmin = bridgeManager;
         if (bridgeManager == address(0)) {
-            proxyAdmin = address(1);
+            proxyAdmin = wrappedTokenProxyAdmin;
         }
         return abi.encode(wrappedTokenImplementation, proxyAdmin, new bytes(0));
     }

@@ -190,13 +190,7 @@ function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
 async function computeWrappedTokenProxyAddress(networkId: any, tokenAddress: string, bridgeContract: any, bridgeManager: string, isWETH: boolean) {
     const salt = isWETH ? ethers.ZeroHash : ethers.solidityPackedKeccak256(["uint32", "address"], [networkId, tokenAddress]);
 
-    const bytecodeWrappedImplementation = await bridgeContract.BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE();
-    const hashInitCodeImplementation = ethers.solidityPackedKeccak256(["bytes"], [bytecodeWrappedImplementation]);
-    const precalculateWrappedErc20Implementation = await ethers.getCreate2Address(
-        bridgeContract.target as string,
-        salt,
-        hashInitCodeImplementation
-    );
+    const precalculateWrappedErc20Implementation = await bridgeContract.wrappedTokenBridgeImplementation();
 
     const minimalBytecodeProxy = await bridgeContract.TOKEN_WRAPPED_PROXY_INIT();
     const proxyConstructorArgs = ethers.AbiCoder.defaultAbiCoder().encode(
