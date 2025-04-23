@@ -6,7 +6,7 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable5/token
 
 // Other functionality.
 import {Initializable} from "@openzeppelin/contracts-upgradeable5/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable5/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable5/access/AccessControlUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable5/utils/PausableUpgradeable.sol";
 
 // Interfaces
@@ -17,7 +17,7 @@ import {ITokenWrappedBridgeUpgradeable} from "../interfaces/ITokenWrappedBridgeU
 // and check the implementation.
 contract TokenWrappedBridgeUpgradeable is
     Initializable,
-    OwnableUpgradeable,
+    AccessControlUpgradeable,
     PausableUpgradeable,
     ERC20PermitUpgradeable,
     ITokenWrappedBridgeUpgradeable
@@ -78,9 +78,6 @@ contract TokenWrappedBridgeUpgradeable is
         __ERC20_init(name, symbol);
         // Initialize the ERC20Permit with the name
         __ERC20Permit_init(name);
-        // Owner is the bridge (msg.sender)
-        __Ownable_init(msg.sender);
-        __Pausable_init();
 
         // Initialize storage
         TokenWrappedBridgeUpgradeableStorage
