@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 pragma solidity ^0.8.20;
-import "../../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
+import "../../../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
 
-interface IPolygonZkEVMBridgeV2 {
+interface IPolygonZkEVMBridgeV2Pessimistic {
     /**
      * @dev Thrown when the destination network is invalid
      */
@@ -93,16 +93,6 @@ interface IPolygonZkEVMBridgeV2 {
      * @dev Thrown when the wrapped token proxy deployment fails
      */
     error FailedTokenWrappedProxyDeployment();
-
-    /**
-     * @dev Thrown when try to set a zero address to a non valid zero address field
-     */
-    error InvalidZeroAddress();
-
-    /**
-     * @dev Thrown when sender is not the proxied tokens manager
-     */
-    error OnlyProxiedTokensManager();
 
     function wrappedTokenToTokenInfo(
         address destinationAddress

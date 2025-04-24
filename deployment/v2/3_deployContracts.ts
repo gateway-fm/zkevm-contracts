@@ -301,7 +301,7 @@ async function main() {
         )
     ).data;
 
-    const dataCallProxy = polygonZkEVMBridgeFactory.interface.encodeFunctionData("initialize", [
+    const dataCallProxy = polygonZkEVMBridgeFactory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
         networkIDMainnet,
         gasTokenAddressMainnet,
         gasTokenNetworkMainnet,

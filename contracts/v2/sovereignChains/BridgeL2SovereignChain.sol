@@ -18,7 +18,7 @@ contract BridgeL2SovereignChain is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // Current bridge version
-    string public constant BRIDGE_SOVEREIGN_VERSION = "al-v0.3.0";
+    string public constant BRIDGE_SOVEREIGN_VERSION = "al-v0.3.1";
 
     // Map to store wrappedAddresses that are not mintable
     mapping(address wrappedAddress => bool isNotMintable)
@@ -53,7 +53,7 @@ contract BridgeL2SovereignChain is
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      */
-    uint256[50] private _gap;
+    uint256[50] private __gap;
 
     /**
      * @dev Emitted when a bridge manager is updated
@@ -1083,7 +1083,7 @@ contract BridgeL2SovereignChain is
         /// @dev https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/proxy/ERC1967/ERC1967Upgrade.sol#L124
         proxyAdmin = bridgeManager;
         if (bridgeManager == address(0)) {
-            proxyAdmin = wrappedTokenProxyAdmin;
+            proxyAdmin = invalidWrappedTokenProxyAdmin;
         }
     }
 }

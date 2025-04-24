@@ -69,7 +69,7 @@ contract PolygonZkEVMBridgeV2 is
     string public constant BRIDGE_VERSION = "al-v0.3.0";
 
     // address 1 is set as proxy admin to not allow the proxy to be upgraded on mainnet
-    address public constant wrappedTokenProxyAdmin = address(1);
+    address public constant invalidWrappedTokenProxyAdmin = address(1);
 
     // Network identifier
     uint32 public networkID;
@@ -107,11 +107,13 @@ contract PolygonZkEVMBridgeV2 is
     // This variable is set at the initialization of the contract in case there's a gas token different than ether, (gasTokenAddress != address(0) ) so a new wrapped Token will be deployed to handle ether that came from other networks
     TokenWrapped public WETHToken;
 
+    address proxiedTokensManager;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      */
-    uint256[50] private _gap;
+    uint256[49] private __gap;
 
     /**
      * @dev Emitted when bridge assets or messages to another network
@@ -146,6 +148,14 @@ contract PolygonZkEVMBridgeV2 is
         address originTokenAddress,
         address wrappedTokenAddress,
         bytes metadata
+    );
+
+    /**
+     * @dev Emitted when a proxied tokens manager is updated
+     */
+    event UpdateProxiedTokensManager(
+        address oldProxiedTokensManager,
+        address proxiedTokensManager
     );
 
     constructor() {
@@ -208,9 +218,27 @@ contract PolygonZkEVMBridgeV2 is
         __ReentrancyGuard_init();
     }
 
+    function initialize(
+        address _proxiedTokensManager
+    ) external virtual reinitializer(2) {
+        if (_proxiedTokensManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+        proxiedTokensManager = _proxiedTokensManager;
+
+        emit UpdateProxiedTokensManager(address(0), _proxiedTokensManager);
+    }
+
     modifier onlyRollupManager() {
         if (polygonRollupManager != msg.sender) {
             revert OnlyRollupManager();
+        }
+        _;
+    }
+
+    modifier onlyProxiedTokensManager() {
+        if (proxiedTokensManager != msg.sender) {
+            revert OnlyProxiedTokensManager();
         }
         _;
     }
@@ -954,6 +982,26 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
+     * @notice Updated proxied tokens manager address, recommended to set a timelock at this address after bootstrapping phase
+     * @param _proxiedTokensManager Proxied manager address
+     */
+    function updateProxiedTokensManager(
+        address _proxiedTokensManager
+    ) external onlyProxiedTokensManager {
+        if (_proxiedTokensManager == address(0)) {
+            revert InvalidZeroAddress();
+        }
+
+        address oldProxiedTokensManager = proxiedTokensManager;
+        proxiedTokensManager = _proxiedTokensManager;
+
+        emit UpdateProxiedTokensManager(
+            oldProxiedTokensManager,
+            proxiedTokensManager
+        );
+    }
+
+    /**
      * @notice Function to update the globalExitRoot if the last deposit is not submitted
      */
     function updateGlobalExitRoot() external {
@@ -1193,18 +1241,18 @@ contract PolygonZkEVMBridgeV2 is
     /**
      * @notice Function to get the upgradeable wrapped token proxy admin address
      * sovereign chains.
-     * @return proxyAdmin Address of the proxy admin
+     * @return wrappedTokenProxyAdmin Address of the proxy admin
      */
     function _getWrappedTokenProxyAdmin()
         internal
         view
         virtual
-        returns (address)
+        returns (address wrappedTokenProxyAdmin)
     {
-        /// @dev in case of mainnet, the proxy admin is set as wrappedTokenProxyAdmin which is address(1) because proxy contract doesn't support zero address as admin and upgrade tokens is disabled in mainnet
-        /// @dev https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/proxy/ERC1967/ERC1967Upgrade.sol#L124
-
-        return wrappedTokenProxyAdmin;
+        wrappedTokenProxyAdmin = proxiedTokensManager;
+        if (wrappedTokenProxyAdmin == address(0)) {
+            wrappedTokenProxyAdmin = invalidWrappedTokenProxyAdmin;
+        }
     }
 
     // Helpers to safely get the metadata from a token, inspired by https://github.com/traderjoe-xyz/joe-core/blob/main/contracts/MasterChefJoeV3.sol#L55-L95

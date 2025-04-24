@@ -156,7 +156,7 @@ describe("Polygon Rollup manager upgraded", () => {
         const polygonZkEVMBridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
         polygonZkEVMBridgeContract = (await upgrades.deployProxy(polygonZkEVMBridgeFactory, [], {
             initializer: false,
-            unsafeAllow: ["constructor", "missing-initializer"],
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
         })) as any;
 
         // deploy PolygonZkEVM
@@ -560,7 +560,7 @@ describe("Polygon Rollup manager upgraded", () => {
 
         // Check transaction
         const bridgeL2Factory = await ethers.getContractFactory("PolygonZkEVMBridgeV2");
-        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize", [
+        const encodedData = bridgeL2Factory.interface.encodeFunctionData("initialize(uint32,address,uint32,address,address,bytes)", [
             newCreatedRollupID,
             gasTokenAddress,
             gasTokenNetwork,
