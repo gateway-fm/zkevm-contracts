@@ -130,7 +130,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         // calculate the weth address:
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
-        const precalculatedWeth = await computeWrappedTokenProxyAddress(networkIDRollup, ethers.ZeroAddress, sovereignChainBridgeContract, bridgeManager.address, true);
+        const precalculatedWeth = await computeWrappedTokenProxyAddress(networkIDRollup, ethers.ZeroAddress, sovereignChainBridgeContract, true);
         WETHToken = tokenWrappedFactory.attach(precalculatedWeth) as TokenWrapped;
 
         expect(await sovereignChainBridgeContract.WETHToken()).to.be.equal(WETHToken.target);
@@ -936,7 +936,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
         // Compute wrapped token proxy address
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract);
 
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 

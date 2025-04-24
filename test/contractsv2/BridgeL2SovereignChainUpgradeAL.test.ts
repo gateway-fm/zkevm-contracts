@@ -1582,7 +1582,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
         // Compute wrapped token proxy address
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract);
 
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
@@ -1912,7 +1912,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
         expect(false).to.be.equal(await sovereignChainBridgeContract.isClaimed(indexLocal, indexRollup + 1));
 
         // create2 parameters
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract);
 
         // Use precalculatedWrapperAddress and check if matches
         expect(

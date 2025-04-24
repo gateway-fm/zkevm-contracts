@@ -932,7 +932,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
         // Compute wrapped token proxy address
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract, bridgeManager.address);
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, sovereignChainBridgeContract);
 
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 

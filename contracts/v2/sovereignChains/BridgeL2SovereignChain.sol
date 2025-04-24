@@ -574,6 +574,18 @@ contract BridgeL2SovereignChain is
     }
 
     /**
+     * @notice Function to deploy an upgradeable wrapped token without having to claim asset. It is used to upgrade legacy tokens to the new upgradeable token.
+     * @param salt The salt for the upgradeable wrapped token deployment, it's keccak256(abi.encodePacked(originNetwork, originTokenAddress)). Both zero in case of weth
+     * @param constructorArgs encoded metadata of the token, normally abi.encode("Token name", "Token symbol", decimals)
+     */
+    function deployWrappedToken(
+        bytes32 salt,
+        bytes memory constructorArgs
+    ) external onlyBridgeManager returns (address wrappedTokenProxy) {
+        wrappedTokenProxy = address(_deployWrappedToken(salt, constructorArgs));
+    }
+
+    /**
      * @notice Updated bridge manager address, recommended to set a timelock at this address after bootstrapping phase
      * @param _bridgeManager Bridge manager address
      */
@@ -1057,19 +1069,21 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @notice Function to encode the constructor args of the proxy
-     * @param wrappedTokenImplementation Address of the implementation
-     * @dev override from bridgeV2 contract to set bridge manager as proxy admin
+     * @notice Function to get the upgradeable wrapped token proxy admin address, it overrides because it behaves different in case of
+     * sovereign chains.
+     * @return proxyAdmin Address of the proxy admin
      */
-    function _encodeProxyConstructorArgs(
-        address wrappedTokenImplementation
-    ) internal view override returns (bytes memory) {
-        /// @dev in case a chain has set bridge manager as zero address (for more decentralization) we set the proxy admin as address(1) because proxy contract doesn't support zero address as admin
+    function _getWrappedTokenProxyAdmin()
+        internal
+        view
+        override
+        returns (address proxyAdmin)
+    {
+        /// @dev in case a chain has set bridge manager as zero address (for more decentralization) we set the proxy admin as wrappedTokenProxyAdmin which is address(1) because proxy contract doesn't support zero address as admin
         /// @dev https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/proxy/ERC1967/ERC1967Upgrade.sol#L124
-        address proxyAdmin = bridgeManager;
+        proxyAdmin = bridgeManager;
         if (bridgeManager == address(0)) {
             proxyAdmin = wrappedTokenProxyAdmin;
         }
-        return abi.encode(wrappedTokenImplementation, proxyAdmin, new bytes(0));
     }
 }

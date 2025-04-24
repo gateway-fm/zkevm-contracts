@@ -5,6 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts4/proxy/ERC1967/ERC1967Proxy.sol";
+import "../interfaces/ITransparentUpgradeableProxy.sol";
 
 /// @dev TransparentProxy contract used as proxy for upgradeable tokens. This version of OZ has been chosen because is not storing
 /// the admin as immutable so the init code is not altered and it can be deployed with a deterministic address agnostic to the admin address value.
@@ -30,7 +31,10 @@ import "@openzeppelin/contracts4/proxy/ERC1967/ERC1967Proxy.sol";
  * Our recommendation is for the dedicated account to be an instance of the {ProxyAdmin} contract. If set up this way,
  * you should think of the `ProxyAdmin` instance as the real administrative interface of your proxy.
  */
-contract TokenWrappedTransparentProxy is ERC1967Proxy {
+contract TokenWrappedTransparentProxy is
+    ERC1967Proxy,
+    ITransparentUpgradeableProxy
+{
     /**
      * @dev Initializes an upgradeable proxy managed by `_admin`, backed by the implementation at `_logic`, and
      * optionally initialized with `_data` as explained in {ERC1967Proxy-constructor}.

@@ -989,7 +989,7 @@ describe("PolygonValidiumEtrog", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
         // Compute wrapped token proxy address
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract, "0x0000000000000000000000000000000000000001");
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract);
 
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 

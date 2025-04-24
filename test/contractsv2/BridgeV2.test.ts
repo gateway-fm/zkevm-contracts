@@ -780,7 +780,7 @@ describe("PolygonZkEVMBridge Contract", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
         // Compute wrapped token proxy address
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract, "0x0000000000000000000000000000000000000001");
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract);
 
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 
@@ -1056,7 +1056,7 @@ describe("PolygonZkEVMBridge Contract", () => {
         expect(false).to.be.equal(await polygonZkEVMBridgeContract.isClaimed(indexLocal, indexRollup + 1));
 
         // Compute wrapped token proxy address
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract, "0x0000000000000000000000000000000000000001");
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract);
 
         // Use precalculatedWrapperAddress and check if matches
         expect(

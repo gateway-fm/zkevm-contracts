@@ -100,7 +100,7 @@ describe("PolygonZkEVMBridge Gas tokens tests", () => {
         // calculate the weth address:
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
-        const precalculatedWeth = await computeWrappedTokenProxyAddress(networkIDRollup, ethers.ZeroHash, polygonZkEVMBridgeContract, "0x0000000000000000000000000000000000000001", true);
+        const precalculatedWeth = await computeWrappedTokenProxyAddress(networkIDRollup, ethers.ZeroHash, polygonZkEVMBridgeContract, true);
         WETHToken = tokenWrappedFactory.attach(precalculatedWeth) as TokenWrapped;
 
         expect(await polygonZkEVMBridgeContract.WETHToken()).to.be.equal(WETHToken.target);
@@ -873,7 +873,7 @@ describe("PolygonZkEVMBridge Gas tokens tests", () => {
         const tokenWrappedFactory = await ethers.getContractFactory("TokenWrapped");
 
         // Compute wrapped token proxy address
-        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract, "0x0000000000000000000000000000000000000001");
+        const precalculateWrappedErc20 = await computeWrappedTokenProxyAddress(networkIDRollup, tokenAddress, polygonZkEVMBridgeContract);
 
         const newWrappedToken = tokenWrappedFactory.attach(precalculateWrappedErc20) as TokenWrapped;
 

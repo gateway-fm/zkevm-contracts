@@ -13,6 +13,7 @@ import "../lib/EmergencyManager.sol";
 import "../lib/GlobalExitRootLib.sol";
 import "./lib/TokenWrappedBridgeInitCode.sol";
 import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable} from "./lib/TokenWrappedBridgeUpgradeable.sol";
+import {ITransparentUpgradeableProxy} from "./interfaces/ITransparentUpgradeableProxy.sol";
 
 /**
  * PolygonZkEVMBridge that will be deployed on Ethereum and all Polygon rollups
@@ -1133,24 +1134,31 @@ contract PolygonZkEVMBridgeV2 is
     /**
      * @notice Internal function that uses create2 to deploy the upgradable wrapped tokens
      * @param salt Salt used in create2 params,
-     * tokenInfoHash will be used as salt for all wrappeds except for bridge native WETH, that will be bytes32(0)
+     * tokenInfoHash will be used as salt for all wrapped except for bridge native WETH, that will be bytes32(0)
      * @param constructorArgs Encoded constructor args for the wrapped token
      */
     function _deployWrappedToken(
         bytes32 salt,
         bytes memory constructorArgs
     ) internal returns (TokenWrapped newWrappedTokenProxy) {
-        // Deploy wrapped token proxy
-        bytes memory proxyConstructorArgs = _encodeProxyConstructorArgs(
-            wrappedTokenBridgeImplementation
+        /// @dev Its a must to have always the same address for the upgradeable wrapped token proxy in all the chains. To achieve this, the
+        /// @dev deployment with create2 has to be deterministic, always the same initBytecode, always same constructor args.
+        /// @dev Implementation and the proxy admin address are set as the current bridge address and later on, it is upgraded to the
+        /// @dev wrappedTokenBridgeImplementation and the proxy owner is transferred to the bridge manager accordingly
+        bytes memory proxyConstructorArgs = abi.encode(
+            address(this), // implementation
+            address(this), // proxy admin
+            new bytes(0)
         );
-        /// @dev A bytecode stored on chain us used to dep`loy the proxy in a way that ALWAYS it's used the same
+
+        /// @dev A bytecode stored on chain used to deploy the proxy in a way that ALWAYS it's used the same
         /// bytecode, therefore the same proxy addresses are the same in all chains
         bytes memory proxyInitBytecode = abi.encodePacked(
             TOKEN_WRAPPED_PROXY_INIT(),
             proxyConstructorArgs
         );
 
+        // Deploy wrapped token proxy
         /// @solidity memory-safe-assembly
         assembly {
             newWrappedTokenProxy := create2(
@@ -1162,6 +1170,17 @@ contract PolygonZkEVMBridgeV2 is
         }
         if (address(newWrappedTokenProxy) == address(0))
             revert FailedTokenWrappedProxyDeployment();
+
+        ITransparentUpgradeableProxy wrappedTokenProxy = ITransparentUpgradeableProxy(
+                address(newWrappedTokenProxy)
+            );
+
+        // Upgrade proxy to wrappedTokenImplementation
+        wrappedTokenProxy.upgradeTo(wrappedTokenBridgeImplementation);
+
+        // Transfer proxy admin ownership to bridge manager
+        wrappedTokenProxy.changeAdmin(_getWrappedTokenProxyAdmin());
+
         // Initialize the wrapped token
         (string memory name, string memory symbol, uint8 decimals) = abi.decode(
             constructorArgs,
@@ -1172,22 +1191,20 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice Function to encode the constructor args of the proxy
-     * @param wrappedTokenImplementation Address of the implementation
-     * @dev this function has been extracted to be override by sovereign bridge setting the proxy admin as the bridge manager
-     * @dev address 1 is set as proxy admin to not allow the proxy to be upgraded on mainnet, address zero is not allowed by proxy contract
-     * @dev https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/proxy/ERC1967/ERC1967Upgrade.sol#L124
+     * @notice Function to get the upgradeable wrapped token proxy admin address
+     * sovereign chains.
+     * @return proxyAdmin Address of the proxy admin
      */
+    function _getWrappedTokenProxyAdmin()
+        internal
+        view
+        virtual
+        returns (address)
+    {
+        /// @dev in case of mainnet, the proxy admin is set as wrappedTokenProxyAdmin which is address(1) because proxy contract doesn't support zero address as admin and upgrade tokens is disabled in mainnet
+        /// @dev https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/proxy/ERC1967/ERC1967Upgrade.sol#L124
 
-    function _encodeProxyConstructorArgs(
-        address wrappedTokenImplementation
-    ) internal view virtual returns (bytes memory) {
-        return
-            abi.encode(
-                wrappedTokenImplementation,
-                wrappedTokenProxyAdmin,
-                new bytes(0)
-            );
+        return wrappedTokenProxyAdmin;
     }
 
     // Helpers to safely get the metadata from a token, inspired by https://github.com/traderjoe-xyz/joe-core/blob/main/contracts/MasterChefJoeV3.sol#L55-L95
@@ -1303,10 +1320,11 @@ contract PolygonZkEVMBridgeV2 is
             abi.encodePacked(originNetwork, originTokenAddress)
         );
 
-        bytes memory proxyConstructorArgs = _encodeProxyConstructorArgs(
-            wrappedTokenBridgeImplementation
+        bytes memory proxyConstructorArgs = abi.encode(
+            address(this),
+            address(this),
+            new bytes(0)
         );
-
         bytes32 hashCreate2 = keccak256(
             abi.encodePacked(
                 bytes1(0xff),
