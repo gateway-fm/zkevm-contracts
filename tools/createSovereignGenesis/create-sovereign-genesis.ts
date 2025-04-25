@@ -187,6 +187,7 @@ async function main() {
         sovereignWETHAddressIsNotMintable: createGenesisSovereignParams.sovereignWETHAddressIsNotMintable,
         globalExitRootUpdater: createGenesisSovereignParams.globalExitRootUpdater,
         globalExitRootRemover: createGenesisSovereignParams.globalExitRootRemover,
+        emergencyBridgePauser: createGenesisSovereignParams.emergencyBridgePauser,
     };
 
     logger.info('Update genesis-base to the SovereignContracts');
@@ -318,6 +319,7 @@ async function main() {
     outputJson.sovereignWETHAddressIsNotMintable = createGenesisSovereignParams.sovereignWETHAddressIsNotMintable;
     outputJson.globalExitRootUpdater = createGenesisSovereignParams.globalExitRootUpdater;
     outputJson.globalExitRootRemover = createGenesisSovereignParams.globalExitRootRemover;
+    outputJson.emergencyBridgePauser = createGenesisSovereignParams.emergencyBridgePauser;
     outputJson.genesisSCNames = genesisSCNames;
 
     if (createGenesisSovereignParams.setPreMintAccounts === true) {
@@ -353,8 +355,8 @@ async function main() {
     : path.join(__dirname, `./output-rollupID-${createGenesisSovereignParams.rollupID}__${dateStr}.json`);
 
     // write files
-    fs.writeFileSync(pathOutputGenesisJson, JSON.stringify(finalGenesis, null, 1));
-    fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 1));
+    fs.writeFileSync(pathOutputGenesisJson, JSON.stringify(finalGenesis, null, 2));
+    fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 2));
 
     logger.info("Output saved at:");
     logger.info(`   output genesis: ${pathOutputGenesisJson}`);
