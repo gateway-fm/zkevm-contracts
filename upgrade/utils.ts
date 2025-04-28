@@ -89,7 +89,7 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
             const payloads = timelockTx?.args[i];
             for (let j = 0; j < payloads.length; j++) {
                 const data = payloads[j];
-                const decodedProxyAdmin = proxyAdmin.interface.parseTransaction({
+                const decodedProxyAdmin = contractFactory.interface.parseTransaction({
                     data,
                 });
 
