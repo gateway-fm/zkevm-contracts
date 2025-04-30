@@ -35,7 +35,7 @@ describe("Docker verifyProof test", () => {
         expect(trustedAggregator.address).to.equal(trustedAggregatorDeploy);
 
         const rollupID = dockerCreateRollupOutput.rollupID;
-        
+
         // Load contracts
         const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager");
         const rollupManagerContract = PolygonRollupManagerFactory.attach(
@@ -58,7 +58,7 @@ describe("Docker verifyProof test", () => {
         ) as AggchainFEP;
 
         expect(aggchainFEP.target).to.equal(dockerCreateRollupOutput.rollupAddress);
-        
+
         // get last L1InfoTreeLeafCount
         const lastL1InfoTreeLeafCount = await polygonZkEVMGlobalExitRoot.depositCount();
 
@@ -72,7 +72,7 @@ describe("Docker verifyProof test", () => {
         const proofWithSelector = `${dockerDeploymentOutput.pessimisticVKeyRouteALGateway.pessimisticVKeySelector}${randomProof.slice(2)}`;
 
         const CUSTOM_DATA_FEP = encodeAggchainDataFEP(
-            dockerCreateRollup.aggchainParams.initAggchainVKeyVersion,
+            dockerCreateRollup.aggchainParams.initAggchainVKeySelector,
             newStateRoot,
             newl2BlockNumber,
         );
@@ -115,6 +115,6 @@ describe("Docker verifyProof test", () => {
         );
 
         console.log("Transaction verifyPessimisticTrustedAggregator completed");
-        
+
     });
 });

@@ -317,7 +317,7 @@ async function main() {
             initializeBytesAggchain = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
                 createRollupParameters.aggchainParams.useDefaultGateway,
                 createRollupParameters.aggchainParams.initOwnedAggchainVKey,
-                createRollupParameters.aggchainParams.initAggchainVKeyVersion,
+                createRollupParameters.aggchainParams.initAggchainVKeySelector,
                 createRollupParameters.aggchainParams.vKeyManager,
                 adminZkEVM,
                 trustedSequencer,
@@ -330,7 +330,7 @@ async function main() {
                 createRollupParameters.aggchainParams.initParams,
                 createRollupParameters.aggchainParams.useDefaultGateway,
                 createRollupParameters.aggchainParams.initOwnedAggchainVKey,
-                createRollupParameters.aggchainParams.initAggchainVKeyVersion,
+                createRollupParameters.aggchainParams.initAggchainVKeySelector,
                 createRollupParameters.aggchainParams.vKeyManager,
                 adminZkEVM,
                 trustedSequencer,
@@ -441,31 +441,34 @@ async function main() {
         if (consensusContract == utilsAggchain.AGGCHAIN_CONTRACT_NAMES.ECDSA) {
             aggchainType = utilsECDSA.AGGCHAIN_TYPE_ECDSA;
         }
+
         // Load aggLayerGateway
         const aggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
         const aggLayerGateway = (await aggLayerGatewayFactory.attach(
             deployOutput.aggLayerGatewayAddress
         )) as AggLayerGateway;
 
-        const defaultAggchainSelector = utilsAggchain.getAggchainVKeySelector(
-            createRollupParameters.aggchainParams.initAggchainVKeyVersion,
-            aggchainType
-        );
+        // sanity check on the aggchainType
+        const aggchainTypeParam = utilsAggchain.getAggchainTypeFromSelector(createRollupParameters.aggchainParams.initAggchainVKeySelector);
+
+        if (aggchainType !== aggchainTypeParam) {
+            throw new Error(`Aggchain type ${aggchainType} does not match the selector ${createRollupParameters.aggchainParams.initAggchainVKeySelector}`);
+        }
 
         await aggLayerGateway.addDefaultAggchainVKey(
-            defaultAggchainSelector,
+            createRollupParameters.aggchainParams.initAggchainVKeySelector,
             createRollupParameters.aggchainParams.initOwnedAggchainVKey
         );
 
         console.log("#######################\n");
         console.log(`New Default Aggchain VKey AggLayerGateway: ${deployOutput.aggLayerGatewayAddress}`);
         console.log(`consensusContract: ${consensusContract}`);
-        console.log(`defaultAggchainSelector: ${defaultAggchainSelector}`);
+        console.log(`defaultAggchainVKeySelector: ${createRollupParameters.aggchainParams.initAggchainVKeySelector}`);
         console.log(`newAggchainVKey: ${createRollupParameters.aggchainParams.initOwnedAggchainVKey}`);
         console.log("#######################\n");
 
         const defaultAggchainVKeyALGateway = {
-            defaultAggchainSelector: defaultAggchainSelector,
+            defaultAggchainSelector: createRollupParameters.aggchainParams.initAggchainVKeySelector,
             newAggchainVKey: createRollupParameters.aggchainParams.initOwnedAggchainVKey,
         } as never;
 

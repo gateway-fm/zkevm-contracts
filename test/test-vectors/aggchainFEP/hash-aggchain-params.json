@@ -6,10 +6,12 @@
       "l2BlockNumber": 0,
       "rollupConfigHash": "0x3344556677889900112233445566778899001122334455667788990011223344",
       "optimisticMode": false,
-      "trustedSequencer": "0x2222222222222222222222222222222222222222"
+      "trustedSequencer": "0x2222222222222222222222222222222222222222",
+      "rangeVkeyCommitment": "0x1122334455667788990011223344556677889900112233445566778899001122",
+      "aggregationVkey": "0x2233445566778899001122334455667788990011223344556677889900112233"
     },
     "output": {
-      "hashAggchainParams": "0xe98dff561195aeb0612b3485efa3b0f87bf47ca8a18c1f6dfef5f84766128626"
+      "hashAggchainParams": "0xbaf7fdf545ae4b08c2e95d0827287a97b71f0c5787ae864c4d4aa004ba0dd5f0"
     }
   },
   {
@@ -19,10 +21,12 @@
       "l2BlockNumber": 0,
       "rollupConfigHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "optimisticMode": false,
-      "trustedSequencer": "0x0000000000000000000000000000000000000000"
+      "trustedSequencer": "0x0000000000000000000000000000000000000000",
+      "rangeVkeyCommitment": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "aggregationVkey": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     "output": {
-      "hashAggchainParams": "0x6e2e44f5607c8cf87b79133b6283c416e5cae148cdaeb7c70d1e64647aae194a"
+      "hashAggchainParams": "0xeea1b2d664c19b902ea74b63cc5166346e9ce4de1de41dd5b72dbc75709871a1"
     }
   },
   {
@@ -32,10 +36,12 @@
       "l2BlockNumber": 0,
       "rollupConfigHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "optimisticMode": true,
-      "trustedSequencer": "0x0000000000000000000000000000000000000000"
+      "trustedSequencer": "0x0000000000000000000000000000000000000000",
+      "rangeVkeyCommitment": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "aggregationVkey": "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     "output": {
-      "hashAggchainParams": "0x8ce94ab51194aab071f9712dba30c2a2dd62460859c3156c1c87e305af8b6614"
+      "hashAggchainParams": "0x50e0b2f65a7f1c3c8ed4f5ef19876a16c43fab4fc4d261736e7f5943f30124eb"
     }
   },
   {
@@ -45,10 +51,12 @@
       "l2BlockNumber": 0,
       "rollupConfigHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       "optimisticMode": false,
-      "trustedSequencer": "0xffffffffffffffffffffffffffffffffffffffff"
+      "trustedSequencer": "0xffffffffffffffffffffffffffffffffffffffff",
+      "rangeVkeyCommitment": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "aggregationVkey": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     },
     "output": {
-      "hashAggchainParams": "0x8a23c594526a508518647e4f0897b86bb549afe91e6ad75a967ea69e1395fe73"
+      "hashAggchainParams": "0x8a119703d9e221b72e7a7783005cdcfa68f92e17c77850ae20fd35ef18d74202"
     }
   },
   {
@@ -58,10 +66,12 @@
       "l2BlockNumber": 0,
       "rollupConfigHash": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       "optimisticMode": true,
-      "trustedSequencer": "0xffffffffffffffffffffffffffffffffffffffff"
+      "trustedSequencer": "0xffffffffffffffffffffffffffffffffffffffff",
+      "rangeVkeyCommitment": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "aggregationVkey": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
     },
     "output": {
-      "hashAggchainParams": "0x76adbaa83c4828e48bf5b5cd37e7cd85bc0f2fb96f2c302bb8e59d0112dc30f3"
+      "hashAggchainParams": "0x3d04cd5be0e81c2393e53a7c72d072ceac65895fd765fbcb1793eb8a958930ed"
     }
   }
 ]

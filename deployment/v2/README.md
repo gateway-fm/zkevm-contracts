@@ -104,7 +104,7 @@ A new folder will be created with the following name `deployments/${network}_$(d
         - `optimisticModeManager`: Address that can trigger the optimistic mode
     - `useDefaultGateway`: bool, flag to setup initial values for the owned gateway
     - `ownedAggchainVKey`: bytes32, Initial owned aggchain verification key
-    - `aggchainVKeySelector`: bytes2, Initial aggchain selector
+    - `initAggchainVKeySelector`: bytes4, Initial aggchain verification key selector
     - `vKeyManager`: address, Initial vKeyManager
 
 

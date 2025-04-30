@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { ethers, upgrades } from "hardhat";
 import { Address, AggchainECDSA, AggLayerGateway } from "../../typechain-types";
 import utilsECDSA from "../../src/utils-aggchain-ECDSA";
+import utilsAggchain from "../../src/utils-common-aggchain";
 
 describe("AggchainECDSA", () => {
     let deployer: any;
@@ -37,7 +38,6 @@ describe("AggchainECDSA", () => {
 
     // aggchain variables
     let initializeBytesAggchain: string;
-    let initializeBytesAggchainError: string;
     const AGGCHAIN_TYPE = "0x0000";
     const CONSENSUS_TYPE = 1;
     const aggchainSelector = "0x22222222";
@@ -48,7 +48,7 @@ describe("AggchainECDSA", () => {
     const newStateRoot = "0x1122334455667788990011223344556677889900112233445566778899001122";
 
     const useDefaultGateway = true;
-    const aggchainSelector3 = "0x1234";
+    const aggchainSelector3 =  utilsAggchain.getAggchainVKeySelector("0x1234", AGGCHAIN_TYPE);
     const ownedAggchainVKey = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
 
     beforeEach("Deploy contract", async () => {
@@ -163,6 +163,24 @@ describe("AggchainECDSA", () => {
             "OnlyAggchainManager"
         );
 
+        // initialize zkEVM using an invalid aggchain selector
+        const initializeBytesAggchainFail = utilsECDSA.encodeInitializeBytesAggchainECDSAv0(
+            useDefaultGateway,
+            ownedAggchainVKey,
+            utilsAggchain.getAggchainVKeySelector("0x1234", "0x0001"),
+            vKeyManager.address,
+            admin.address,
+            trustedSequencer.address,
+            gasTokenAddress,
+            urlSequencer,
+            networkName
+        );
+
+        await expect(aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchainFail)).to.be.revertedWithCustomError(
+            aggchainECDSAcontract,
+            "InvalidAggchainType"
+        );
+
         // initialize using rollup manager
         await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
@@ -173,7 +191,7 @@ describe("AggchainECDSA", () => {
         expect(await aggchainECDSAcontract.networkName()).to.be.equal(networkName);
         expect(await aggchainECDSAcontract.gasTokenAddress()).to.be.equal(gasTokenAddress);
         expect(
-            await aggchainECDSAcontract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE.slice(2)}`)
+            await aggchainECDSAcontract.ownedAggchainVKeys(aggchainSelector3)
         ).to.be.equal(ownedAggchainVKey);
 
         // initialize again
@@ -340,11 +358,9 @@ describe("AggchainECDSA", () => {
         await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
         // calculate aggchainHash
-        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeyVersion, newStateRoot);
-        const aggchainVKeySelector = ethers.concat([
-            aggchainVkeyVersion,
-            ethers.zeroPadBytes(AGGCHAIN_TYPE, 2),
-        ]);
+        const aggchainVKeySelector = utilsAggchain.getAggchainVKeySelector(aggchainVkeyVersion, AGGCHAIN_TYPE);
+        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVKeySelector, newStateRoot);
+
         const aggchainParams = ethers.solidityPackedKeccak256(["address"], [trustedSequencer.address]);
         const aggchainHash = ethers.solidityPackedKeccak256(
             ["uint32", "bytes32", "bytes32"],
@@ -372,14 +388,15 @@ describe("AggchainECDSA", () => {
         expect(await aggchainECDSAcontract.getAggchainHash(aggchainData)).to.be.equal(aggchainHash);
     });
 
-    it("should check getAggchainHash", async () => {
+    it("should check onVerifyPessimistic", async () => {
         // initialize using rollup manager
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
         const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
         await aggchainECDSAcontract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
         await aggchainECDSAcontract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
-        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVkeyVersion, newStateRoot);
+        const aggchainVKeySelector = utilsAggchain.getAggchainVKeySelector(aggchainVkeyVersion, AGGCHAIN_TYPE);
+        const aggchainData = utilsECDSA.encodeAggchainDataECDSA(aggchainVKeySelector, newStateRoot);
 
         // check onlyRollupManager
         await expect(aggchainECDSAcontract.onVerifyPessimistic(aggchainData)).to.be.revertedWithCustomError(
@@ -446,13 +463,6 @@ describe("AggchainECDSA", () => {
             vKeyManager.address
         );
 
-        initializeBytesAggchainError = utilsECDSA.encodeInitializeBytesAggchainECDSAv1(
-            useDefaultGateway,
-            ownedAggchainVKey,
-            "0x0000",
-            vKeyManager.address
-        );
-
         await ppConsensusContract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
         await ppConsensusContract.connect(aggchainManager).initialize(initializeBytesAggchain, {gasPrice: 0});
 
@@ -464,7 +474,7 @@ describe("AggchainECDSA", () => {
         expect(await ppConsensusContract.networkName()).to.be.equal(networkName);
         expect(await ppConsensusContract.gasTokenAddress()).to.be.equal(gasTokenAddress);
         expect(
-            await ppConsensusContract.ownedAggchainVKeys(`${aggchainSelector3}${AGGCHAIN_TYPE.slice(2)}`)
+            await ppConsensusContract.ownedAggchainVKeys(aggchainSelector3)
         ).to.be.equal(ownedAggchainVKey);
     });
 });
