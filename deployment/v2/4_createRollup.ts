@@ -452,8 +452,7 @@ async function main() {
         const aggchainTypeParam = utilsAggchain.getAggchainTypeFromSelector(createRollupParameters.aggchainParams.initAggchainVKeySelector);
 
         if (aggchainType !== aggchainTypeParam) {
-            console.error(`Aggchain type ${aggchainType} does not match the selector ${createRollupParameters.aggchainParams.initAggchainVKeySelector}`);
-            process.exit(0);
+            throw new Error(`Aggchain type ${aggchainType} does not match the selector ${createRollupParameters.aggchainParams.initAggchainVKeySelector}`);
         }
 
         await aggLayerGateway.addDefaultAggchainVKey(
