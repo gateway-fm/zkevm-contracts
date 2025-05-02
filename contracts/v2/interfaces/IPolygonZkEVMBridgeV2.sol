@@ -104,6 +104,11 @@ interface IPolygonZkEVMBridgeV2 {
      */
     error OnlyPendingProxiedTokensManager();
 
+    /**
+     * @dev Thrown when trying to set bridgeAddress to as proxied tokens manager role.
+     */
+    error BridgeAddressNotAllowed();
+
     function wrappedTokenToTokenInfo(
         address destinationAddress
     ) external view returns (uint32, address);

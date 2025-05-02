@@ -66,7 +66,7 @@ contract PolygonZkEVMBridgeV2 is
     // Current bridge version
     string public constant BRIDGE_VERSION = "al-v0.3.0";
 
-    // address 1 is set as proxy admin to not allow the proxy to be upgraded on mainnet
+    // Invalid address is set as proxy admin to not allow the proxy to be upgraded on mainnet
     address public constant INVALID_WTOKEN_PROXY_ADMIN =
         0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
@@ -1013,8 +1013,10 @@ contract PolygonZkEVMBridgeV2 is
     ) external {
         require(
             msg.sender == proxiedTokensManager,
-            OnlyPendingProxiedTokensManager()
+            OnlyProxiedTokensManager()
         );
+        // Check that the proposed newProxiedTokensManager is not the bridge address
+        require(newProxiedTokensManager != address(this), BridgeAddressNotAllowed());
 
         pendingProxiedTokensManager = newProxiedTokensManager;
 
@@ -1387,7 +1389,7 @@ contract PolygonZkEVMBridgeV2 is
      * @param originNetwork Origin network
      * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
      */
-    function precalculatedWrapperProxyAddress(
+    function computeTokenProxyAddress(
         uint32 originNetwork,
         address originTokenAddress
     ) public view returns (address) {

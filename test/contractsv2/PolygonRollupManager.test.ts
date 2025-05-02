@@ -913,7 +913,7 @@ describe("Polygon Rollup Manager", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
+            await polygonZkEVMBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )
@@ -1768,7 +1768,7 @@ describe("Polygon Rollup Manager", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
+            await polygonZkEVMBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )
@@ -2350,7 +2350,7 @@ describe("Polygon Rollup Manager", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
+            await polygonZkEVMBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )
@@ -3427,7 +3427,7 @@ describe("Polygon Rollup Manager", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
+            await polygonZkEVMBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )

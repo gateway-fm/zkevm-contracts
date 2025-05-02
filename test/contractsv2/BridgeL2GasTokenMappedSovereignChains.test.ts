@@ -940,7 +940,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
+            await sovereignChainBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )
