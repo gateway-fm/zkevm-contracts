@@ -34,10 +34,10 @@
         "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
         "@nomiclabs/hardhat-solhint": "^4.0.1",
-        "@openzeppelin/contracts4": "npm:@openzeppelin/contracts@4.8.2",
         "@openzeppelin/contracts-upgradeable4": "npm:@openzeppelin/contracts-upgradeable@4.8.2",
-        "@openzeppelin/contracts5": "npm:@openzeppelin/contracts@5.0.0",
         "@openzeppelin/contracts-upgradeable5": "npm:@openzeppelin/contracts-upgradeable@5.0.0",
+        "@openzeppelin/contracts4": "npm:@openzeppelin/contracts@4.8.2",
+        "@openzeppelin/contracts5": "npm:@openzeppelin/contracts@5.0.0",
         "@openzeppelin/contracts52": "npm:@openzeppelin/contracts@5.2.0",
         "@openzeppelin/hardhat-upgrades": "^2.5.1",
         "@types/yargs": "^17.0.28",
@@ -119,5 +119,8 @@
         "upgradev2:timelock:mainnet": "npx hardhat run upgrade/upgradeToV2/upgradeToV2.ts --network mainnet && npm run saveUpgradeV2:mainnet",
         "verify:upgradeV2:mainnet": "npx hardhat run upgrade/upgradeToV2/verifyContracts.ts --network mainnet",
         "saveUpgradeV2:mainnet": "mkdir -p upgrade/upgradeToV2/mainnet_$(date +%s) && cp -r upgrade/upgradeToV2/upgrade_*.json upgrade/upgradeToV2/mainnet_$(date +%s) && cp -r upgrade/upgradeToV2/deploy_*.json upgrade/upgradeToV2/mainnet_$(date +%s) && cp .openzeppelin/mainnet.json upgrade/upgradeToV2/mainnet_$(date +%s)"
+    },
+    "dependencies": {
+        "hardhat-storage-layout": "^0.1.7"
     }
 }

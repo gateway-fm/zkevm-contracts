@@ -10,7 +10,7 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { ethers, upgrades, run } from "hardhat";
 import { GlobalExitRootManagerL2SovereignChainPessimistic } from "../../typechain-types";
-import { genTimelockOperation } from "../utils";
+import { genTimelockOperation, decodeScheduleData } from "../utils";
 import { checkParams, getDeployerFromParameters } from "../../src/utils";
 
 const pathOutputJson = path.join(__dirname, "./upgrade_output.json");
@@ -109,8 +109,18 @@ async function main() {
 
     // Upgrade BridgeL2SovereignChain
     const bridgeFactory = await ethers.getContractFactory("BridgeL2SovereignChain", deployer);
+    await upgrades.forceImport(
+        bridgeAddress,
+        bridgeFactory,
+        {
+            constructorArgs: [],
+            kind: "transparent",
+        }
+    );
+
     const impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
         unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
+        redeployImplementation: "always",
     });
     logger.info("#######################\n");
     logger.info(`Polygon sovereign bridge implementation deployed at: ${impBridge}`);
@@ -121,7 +131,7 @@ async function main() {
         proxyAdmin.interface.encodeFunctionData("upgradeAndCall", [
             bridgeAddress,
             impBridge,
-            bridgeFactory.interface.encodeFunctionData("initialize(address)", [[],[],emergencyBridgePauserAddress, proxiedTokensManagerAddress])
+            bridgeFactory.interface.encodeFunctionData("initialize(bytes32[],uint256[],address,address)", [[],[],emergencyBridgePauserAddress, proxiedTokensManagerAddress])
         ]), // data
         ethers.ZeroHash, // predecessor
         salt // salt
@@ -156,35 +166,11 @@ async function main() {
         executeData,
         timelockContractAddress: timelockAddress,
         implementationDeployBlockNumber: blockNumber,
+        bridgeImplementationAddress: impBridge,
     };
 
     // Decode the scheduleData for better readability
-    const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
-    const paramsArray = timelockTx?.fragment.inputs as any;
-    const objectDecoded = {} as any;
-
-    for (let i = 0; i < paramsArray?.length; i++) {
-        const currentParam = paramsArray[i];
-        objectDecoded[currentParam.name] = timelockTx?.args[i];
-
-        if (currentParam.name == "data") {
-            const decodedProxyAdmin = proxyAdmin.interface.parseTransaction({
-                data: timelockTx?.args[i],
-            });
-            const objectDecodedData = {} as any;
-            const paramsArrayData = decodedProxyAdmin?.fragment.inputs as any;
-
-            objectDecodedData.signature = decodedProxyAdmin?.signature;
-            objectDecodedData.selector = decodedProxyAdmin?.selector;
-
-            for (let j = 0; j < paramsArrayData?.length; j++) {
-                const currentParam = paramsArrayData[j];
-                objectDecodedData[currentParam.name] = decodedProxyAdmin?.args[j];
-            }
-            objectDecoded["decodedData"] = objectDecodedData;
-        }
-    }
-
+    const objectDecoded = await decodeScheduleData(scheduleData, proxyAdmin);
     outputJson.decodedScheduleData = objectDecoded;
 
     fs.writeFileSync(pathOutputJson, JSON.stringify(utils.stringifyBigInts(outputJson), null, 1));

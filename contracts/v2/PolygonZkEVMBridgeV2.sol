@@ -108,7 +108,7 @@ contract PolygonZkEVMBridgeV2 is
     TokenWrapped public WETHToken;
 
     // Address of the proxied tokens manager, is the admin of proxied wrapped tokens
-    address proxiedTokensManager;
+    address public proxiedTokensManager;
 
     //  This account will be able to accept the proxiedTokensManager role
     address pendingProxiedTokensManager;
@@ -255,13 +255,6 @@ contract PolygonZkEVMBridgeV2 is
     modifier onlyRollupManager() {
         if (polygonRollupManager != msg.sender) {
             revert OnlyRollupManager();
-        }
-        _;
-    }
-
-    modifier onlyProxiedTokensManager() {
-        if (proxiedTokensManager != msg.sender) {
-            revert OnlyProxiedTokensManager();
         }
         _;
     }
@@ -1015,7 +1008,12 @@ contract PolygonZkEVMBridgeV2 is
      */
     function transferProxiedTokensManagerRole(
         address newProxiedTokensManager
-    ) external onlyProxiedTokensManager {
+    ) external {
+        require(
+            msg.sender == proxiedTokensManager,
+            OnlyPendingProxiedTokensManager()
+        );
+
         pendingProxiedTokensManager = newProxiedTokensManager;
 
         emit TransferProxiedTokensManagerRole(
@@ -1028,9 +1026,10 @@ contract PolygonZkEVMBridgeV2 is
      * @notice Allow the current pending ProxiedTokensManagerR to accept the emergencyBridgeProxiedTokensManagerRePauser role
      */
     function acceptProxiedTokensManagerRole() external {
-        if (pendingProxiedTokensManager != msg.sender) {
-            revert OnlyPendingProxiedTokensManager();
-        }
+        require(
+            msg.sender == pendingProxiedTokensManager,
+            OnlyPendingProxiedTokensManager()
+        );
 
         address oldProxiedTokensManager = proxiedTokensManager;
         proxiedTokensManager = pendingProxiedTokensManager;
@@ -1230,8 +1229,8 @@ contract PolygonZkEVMBridgeV2 is
         bytes32 salt,
         bytes memory constructorArgs
     ) internal returns (TokenWrapped newWrappedTokenProxy) {
-        /// @dev A bytecode stored on chain used to deploy the proxy in a way that ALWAYS it's used the same
-        /// bytecode, therefore the proxy addresses are the same in all chains
+        /// @dev A bytecode stored on chain is used to deploy the proxy in a way that ALWAYS it's used the same
+        /// bytecode, therefore the proxy addresses are the same in all chains as they are deployed deterministically with same init bytecode
         /// @dev there is no constructor args as the implementation address + owner of the proxied are set at constructor level and taken from the bridge itself
         bytes memory proxyInitBytecode = abi.encodePacked(
             INIT_BYTECODE_TRANSPARENT_PROXY()
