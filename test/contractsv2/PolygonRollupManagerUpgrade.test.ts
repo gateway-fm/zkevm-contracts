@@ -835,7 +835,7 @@ describe("Polygon Rollup manager upgraded", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await polygonZkEVMBridgeContract.precalculatedWrapperProxyAddress(
+            await polygonZkEVMBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )

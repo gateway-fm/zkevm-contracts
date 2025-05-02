@@ -187,7 +187,7 @@ describe("Upgradeable Tokens", () => {
             polTokenContract,
             indexLET
         );
-        const wrappedTokenProxyAddress1 = await sovereignBridgeContract.precalculatedWrapperProxyAddress(originNetwork, tokenAddress);
+        const wrappedTokenProxyAddress1 = await sovereignBridgeContract.computeTokenProxyAddress(originNetwork, tokenAddress);
         // Check correct balance after claim
         const wrappedAddressContract = maticTokenFactory.attach(wrappedTokenProxyAddress1) as ERC20PermitMock;
         expect(await wrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount);
@@ -223,7 +223,7 @@ describe("Upgradeable Tokens", () => {
             polTokenContract,
             indexLET
         );
-        const wrappedTokenProxyAddress2 = await sovereignBridgeContract.precalculatedWrapperProxyAddress(originNetwork, tokenAddress);
+        const wrappedTokenProxyAddress2 = await sovereignBridgeContract.computeTokenProxyAddress(originNetwork, tokenAddress);
 
         // Check correct balance after claim
         const wrappedAddressContract2 = maticTokenFactory.attach(wrappedTokenProxyAddress2) as ERC20PermitMock;
@@ -273,7 +273,7 @@ describe("Upgradeable Tokens", () => {
             polTokenContract,
             indexLET
         );
-        const wrappedTokenProxyAddress3 = await sovereignBridgeContract.precalculatedWrapperProxyAddress(originNetwork, tokenAddress);
+        const wrappedTokenProxyAddress3 = await sovereignBridgeContract.computeTokenProxyAddress(originNetwork, tokenAddress);
         // Check correct balance after claim
         const wrappedAddressContract3 = maticTokenFactory.attach(wrappedTokenProxyAddress3) as ERC20PermitMock;
         expect(await wrappedAddressContract3.balanceOf(receiver.address)).to.be.equal(amount);
@@ -354,7 +354,7 @@ describe("Upgradeable Tokens", () => {
             polTokenContract,
             indexLET++
         );
-        const precalculatedWrappedAddress = await sovereignBridgeContract.precalculatedWrapperProxyAddress(originNetwork, tokenAddress);
+        const precalculatedWrappedAddress = await sovereignBridgeContract.computeTokenProxyAddress(originNetwork, tokenAddress);
 
         // Check correct balance after claim
         const wrappedAddressContract = maticTokenFactory.attach(precalculatedWrappedAddress) as ERC20PermitMock;
@@ -388,7 +388,7 @@ describe("Upgradeable Tokens", () => {
         );
 
         // Check balance
-        const precalculatedWrappedAddress = await sovereignBridgeContract.precalculatedWrapperProxyAddress(originNetwork, tokenAddress);
+        const precalculatedWrappedAddress = await sovereignBridgeContract.computeTokenProxyAddress(originNetwork, tokenAddress);
 
         let wrappedAddressContract = maticTokenFactory.attach(precalculatedWrappedAddress) as TokenWrappedBridgeUpgradeable;
         expect(await wrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount);

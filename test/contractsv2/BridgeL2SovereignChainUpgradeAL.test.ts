@@ -1600,7 +1600,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
+            await sovereignChainBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )
@@ -1632,7 +1632,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
+            await sovereignChainBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )
@@ -1928,7 +1928,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
         // Use precalculatedWrapperAddress and check if matches
         expect(
-            await sovereignChainBridgeContract.precalculatedWrapperProxyAddress(
+            await sovereignChainBridgeContract.computeTokenProxyAddress(
                 networkIDRollup,
                 tokenAddress,
             )
