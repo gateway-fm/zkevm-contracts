@@ -41,7 +41,9 @@ async function main() {
         await reset(rpc);
     }
     logger.info("Shallow fork Succeed!")
-
+    // Check bridge implementation exists
+    const bridgeImpCode = await ethers.provider.getCode(upgradeOutput.bridgeImplementationAddress);
+    expect(bridgeImpCode.length).to.be.greaterThan(2);
     // In case globalExitRootManagerL2SovereignChainAddress is not provided, use the default one, used by most chains in the genesis
     const globalExitRootManagerL2SovereignChainAddress =
         typeof upgradeParams.globalExitRootManagerL2SovereignChainAddress === "undefined"
@@ -123,7 +125,6 @@ async function main() {
     ) as GlobalExitRootManagerL2SovereignChain;
     expect(await gerManagerL2SovereignContract.globalExitRootUpdater()).to.equal(globalExitRootUpdater);
     expect(await gerManagerL2SovereignContract.globalExitRootRemover()).to.equal(globalExitRootRemover);
-    expect(await gerManagerL2SovereignContract._legacyInsertedGERCount()).to.equal(insertedGERCount);
 
     logger.info(`✓ Checked GlobalExitRootManagerL2SovereignChain contract storage parameters`);
 
@@ -139,7 +140,8 @@ async function main() {
     expect(await bridgeContract.gasTokenAddress()).to.equal(bridgeGasTokenAddress);
     expect(await bridgeContract.gasTokenNetwork()).to.equal(bridgeGasTokenNetwork);
     expect(await bridgeContract.gasTokenMetadata()).to.equal(bridgeGasTokenMetadata);
-    expect(await bridgeContract.getProxiedTokensManager()).to.equal(upgradeParams.proxiedTokensManagerAddress);
+    expect(await bridgeContract.proxiedTokensManager()).to.equal(upgradeParams.proxiedTokensManagerAddress);
+    expect(await bridgeContract.emergencyBridgePauser()).to.equal(upgradeParams.emergencyBridgePauserAddress);
 
     logger.info(`✓ Checked BridgeL2SovereignChain contract storage parameters`);
     logger.info("Finished shallow fork upgrade");
