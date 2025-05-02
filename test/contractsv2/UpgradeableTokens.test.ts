@@ -408,6 +408,7 @@ describe("Upgradeable Tokens", () => {
         expect(await wrappedAddressContract.name()).to.be.equal(tokenName);
         expect(await wrappedAddressContract.symbol()).to.be.equal(tokenSymbol);
         expect(await wrappedAddressContract.decimals()).to.be.equal(decimals);
+        //expect(await wrappedAddressContract.bridgeAddress()).to.be.equal(sovereignBridgeContract.target);
 
         // Check balance again
         expect(await wrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount);

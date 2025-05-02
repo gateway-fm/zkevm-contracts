@@ -1011,12 +1011,12 @@ contract PolygonZkEVMBridgeV2 is
     function transferProxiedTokensManagerRole(
         address newProxiedTokensManager
     ) external {
-        require(
-            msg.sender == proxiedTokensManager,
-            OnlyProxiedTokensManager()
-        );
+        require(msg.sender == proxiedTokensManager, OnlyProxiedTokensManager());
         // Check that the proposed newProxiedTokensManager is not the bridge address
-        require(newProxiedTokensManager != address(this), BridgeAddressNotAllowed());
+        require(
+            newProxiedTokensManager != address(this),
+            BridgeAddressNotAllowed()
+        );
 
         pendingProxiedTokensManager = newProxiedTokensManager;
 
