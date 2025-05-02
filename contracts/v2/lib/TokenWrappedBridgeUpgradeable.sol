@@ -6,8 +6,6 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable5/token
 
 // Other functionality.
 import {Initializable} from "@openzeppelin/contracts-upgradeable5/proxy/utils/Initializable.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable5/access/AccessControlUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable5/utils/PausableUpgradeable.sol";
 
 // Interfaces
 import {ITokenWrappedBridgeUpgradeable} from "../interfaces/ITokenWrappedBridgeUpgradeable.sol";
@@ -17,8 +15,6 @@ import {ITokenWrappedBridgeUpgradeable} from "../interfaces/ITokenWrappedBridgeU
 // and check the implementation.
 contract TokenWrappedBridgeUpgradeable is
     Initializable,
-    AccessControlUpgradeable,
-    PausableUpgradeable,
     ERC20PermitUpgradeable,
     ITokenWrappedBridgeUpgradeable
 {
