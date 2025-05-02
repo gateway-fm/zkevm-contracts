@@ -229,7 +229,9 @@ contract BridgeL2SovereignChain is
                     abi.encode("Wrapped Ether", "WETH", 18)
                 );
             } else {
-                WETHToken = TokenWrapped(_sovereignWETHAddress);
+                WETHToken = ITokenWrappedBridgeUpgradeable(
+                    _sovereignWETHAddress
+                );
                 wrappedAddressIsNotMintable[
                     _sovereignWETHAddress
                 ] = _sovereignWETHAddressIsNotMintable;
@@ -483,7 +485,7 @@ contract BridgeL2SovereignChain is
         if (gasTokenAddress == address(0)) {
             revert WETHRemappingNotSupportedOnGasTokenNetworks();
         }
-        WETHToken = TokenWrapped(sovereignWETHTokenAddress);
+        WETHToken = ITokenWrappedBridgeUpgradeable(sovereignWETHTokenAddress);
         wrappedAddressIsNotMintable[sovereignWETHTokenAddress] = isNotMintable;
         emit SetSovereignWETHAddress(sovereignWETHTokenAddress, isNotMintable);
     }
@@ -527,11 +529,11 @@ contract BridgeL2SovereignChain is
 
         // Proceed to migrate the token
         uint256 amountToClaim = _bridgeWrappedAsset(
-            TokenWrapped(legacyTokenAddress),
+            ITokenWrappedBridgeUpgradeable(legacyTokenAddress),
             amount
         );
         _claimWrappedAsset(
-            TokenWrapped(currentTokenAddress),
+            ITokenWrappedBridgeUpgradeable(currentTokenAddress),
             msg.sender,
             amountToClaim
         );
@@ -654,7 +656,7 @@ contract BridgeL2SovereignChain is
     /**
      * @notice Burn tokens from wrapped token to execute the bridge, if the token is not mintable it will be transferred
      * note This function has been extracted to be able to override it by other contracts like Bridge2SovereignChain
-     * @param tokenWrapped Wrapped token to burnt
+     * @param tokenWrapped Proxied Wrapped token to burnt
      * @param amount Amount of tokens
      * @return Amount of tokens that must be added to the leaf after the bridge operation
      * @dev in case of tokens with non-standard transfers behavior like fee-on-transfer tokens or Max-value amount transfers user balance tokens,
@@ -662,20 +664,24 @@ contract BridgeL2SovereignChain is
      * added to the leaf has to be the amount received by the bridge
      */
     function _bridgeWrappedAsset(
-        TokenWrapped tokenWrapped,
+        ITokenWrappedBridgeUpgradeable tokenWrapped,
         uint256 amount
     ) internal override returns (uint256) {
         // The token is either (1) a correctly wrapped token from another network
         // or (2) wrapped with custom contract from origin network
         if (wrappedAddressIsNotMintable[address(tokenWrapped)]) {
-            uint256 balanceBefore = tokenWrapped.balanceOf(address(this));
+            // Swap interface from ITokenWrappedBridgeUpgradeable to IERC20Upgradeable for ERC20 functions access.
+            IERC20Upgradeable tokenWrappedERC20 = IERC20Upgradeable(
+                address(tokenWrapped)
+            );
+            uint256 balanceBefore = tokenWrappedERC20.balanceOf(address(this));
             // Don't use burn but transfer to bridge
-            IERC20Upgradeable(address(tokenWrapped)).safeTransferFrom(
+            tokenWrappedERC20.safeTransferFrom(
                 msg.sender,
                 address(this),
                 amount
             );
-            uint256 balanceAfter = tokenWrapped.balanceOf(address(this));
+            uint256 balanceAfter = tokenWrappedERC20.balanceOf(address(this));
 
             return balanceAfter - balanceBefore;
         } else {
@@ -688,12 +694,12 @@ contract BridgeL2SovereignChain is
     /**
      * @notice Mints tokens from wrapped token to proceed with the claim, if the token is not mintable it will be transferred
      * note This function has been extracted to be able to override it by other contracts like BridgeL2SovereignChain
-     * @param tokenWrapped Wrapped token to mint
+     * @param tokenWrapped Proxied wrapped token to mint
      * @param destinationAddress Minted token receiver
      * @param amount Amount of tokens
      */
     function _claimWrappedAsset(
-        TokenWrapped tokenWrapped,
+        ITokenWrappedBridgeUpgradeable tokenWrapped,
         address destinationAddress,
         uint256 amount
     ) internal override {

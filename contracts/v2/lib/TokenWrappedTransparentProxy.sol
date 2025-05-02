@@ -39,7 +39,7 @@ contract TokenWrappedTransparentProxy is ERC1967Proxy {
      * @dev Initializes an upgradeable proxy managed by `_admin`, backed by the implementation at `_logic`, and
      * optionally initialized with `_data` as explained in {ERC1967Proxy-constructor}.
      */
-    /// @dev Constructor inputs have been removed and taken from msg.sender (bridge) params, making the cerate2 address of this contract not dependent on the constructor args
+    /// @dev Constructor inputs have been removed and taken from msg.sender (bridge) params, making the create2 address of this contract not dependent on the constructor args
     // Get bridge interface to retrieve bridge wToken implementation
     constructor()
         payable

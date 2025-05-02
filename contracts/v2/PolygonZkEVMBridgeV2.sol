@@ -5,7 +5,6 @@ pragma solidity 0.8.28;
 import "./lib/DepositContractV2.sol";
 import "@openzeppelin/contracts-upgradeable4/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable4/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
-import "../lib/TokenWrapped.sol";
 import "../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
 import "../interfaces/IBridgeMessageReceiver.sol";
 import "./interfaces/IPolygonZkEVMBridgeV2.sol";
@@ -105,7 +104,7 @@ contract PolygonZkEVMBridgeV2 is
     // WETH address
     // @note WETH address will only be present  when the native token is not ether, but another gasToken.
     // This variable is set at the initialization of the contract in case there's a gas token different than ether, (gasTokenAddress != address(0) ) so a new wrapped Token will be deployed to handle ether that came from other networks
-    TokenWrapped public WETHToken;
+    ITokenWrappedBridgeUpgradeable public WETHToken;
 
     // Address of the proxied tokens manager, is the admin of proxied wrapped tokens
     address public proxiedTokensManager;
@@ -315,7 +314,10 @@ contract PolygonZkEVMBridgeV2 is
                 // Burn tokens
                 /// @dev in case this function is called from a sovereign bridge that has remapped wethToken with a non-standard token,
                 /// we have to add to the leaf the amount received to the bridge, not the amount sent
-                leafAmount = _bridgeWrappedAsset(TokenWrapped(token), amount);
+                leafAmount = _bridgeWrappedAsset(
+                    ITokenWrappedBridgeUpgradeable(token),
+                    amount
+                );
 
                 // Both origin network and originTokenAddress will be 0
                 // Metadata will be empty
@@ -332,7 +334,7 @@ contract PolygonZkEVMBridgeV2 is
                     /// @dev in case this function is called from a sovereign bridge that has remapped the token with a non-standard token,
                     /// we have to add to the leaf the amount received to the bridge, not the amount sent
                     leafAmount = _bridgeWrappedAsset(
-                        TokenWrapped(token),
+                        ITokenWrappedBridgeUpgradeable(token),
                         amount
                     );
 
@@ -607,10 +609,10 @@ contract PolygonZkEVMBridgeV2 is
                         // Get ERC20 metadata
 
                         // Create a new wrapped erc20 using create2
-                        TokenWrapped newWrappedToken = _deployWrappedToken(
-                            tokenInfoHash,
-                            metadata
-                        );
+                        ITokenWrappedBridgeUpgradeable newWrappedToken = _deployWrappedToken(
+                                tokenInfoHash,
+                                metadata
+                            );
 
                         // Mint tokens for the destination address
                         _claimWrappedAsset(
@@ -637,7 +639,7 @@ contract PolygonZkEVMBridgeV2 is
                     } else {
                         // Use the existing wrapped erc20
                         _claimWrappedAsset(
-                            TokenWrapped(wrappedToken),
+                            ITokenWrappedBridgeUpgradeable(wrappedToken),
                             destinationAddress,
                             amount
                         );
@@ -1066,7 +1068,7 @@ contract PolygonZkEVMBridgeV2 is
      * @return Amount of tokens that must be added to the leaf after the bridge operation
      */
     function _bridgeWrappedAsset(
-        TokenWrapped tokenWrapped,
+        ITokenWrappedBridgeUpgradeable tokenWrapped,
         uint256 amount
     ) internal virtual returns (uint256) {
         // Burn tokens
@@ -1077,12 +1079,12 @@ contract PolygonZkEVMBridgeV2 is
     /**
      * @notice Mints tokens from wrapped token to proceed with the claim
      * note This  function has been extracted to be able to override it by other contracts like Bridge2SovereignChain
-     * @param tokenWrapped Wrapped token to mint
+     * @param tokenWrapped Proxied Wrapped token to mint
      * @param destinationAddress Minted token receiver
      * @param amount Amount of tokens
      */
     function _claimWrappedAsset(
-        TokenWrapped tokenWrapped,
+        ITokenWrappedBridgeUpgradeable tokenWrapped,
         address destinationAddress,
         uint256 amount
     ) internal virtual {
@@ -1228,7 +1230,7 @@ contract PolygonZkEVMBridgeV2 is
     function _deployWrappedToken(
         bytes32 salt,
         bytes memory constructorArgs
-    ) internal returns (TokenWrapped newWrappedTokenProxy) {
+    ) internal returns (ITokenWrappedBridgeUpgradeable newWrappedTokenProxy) {
         /// @dev A bytecode stored on chain is used to deploy the proxy in a way that ALWAYS it's used the same
         /// bytecode, therefore the proxy addresses are the same in all chains as they are deployed deterministically with same init bytecode
         /// @dev there is no constructor args as the implementation address + owner of the proxied are set at constructor level and taken from the bridge itself
