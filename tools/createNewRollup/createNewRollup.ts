@@ -10,10 +10,7 @@ import {processorUtils, Constants} from "@0xpolygonhermez/zkevm-commonjs";
 import {VerifierType, ConsensusContracts} from "../../src/pessimistic-utils";
 const createRollupParameters = require("./create_new_rollup.json");
 import {genOperation, transactionTypes, convertBigIntsToNumbers} from "../utils";
-import updateVanillaGenesis from "../../deployment/v2/utils/updateVanillaGenesis";
 import {AGGCHAIN_CONTRACT_NAMES, encodeInitializeBytesLegacy} from "../../src/utils-common-aggchain";
-import utilsECDSA from "../../src/utils-aggchain-ECDSA";
-import utilsFEP from "../../src/utils-aggchain-FEP";
 import utilsAggchain from "../../src/utils-common-aggchain";
 
 import {
@@ -94,40 +91,6 @@ async function main() {
             !supportedAggchainsArray.includes(consensusContractName)
         ) {
             throw new Error(`Vanilla client only supports PolygonPessimisticConsensus and Aggchain contracts`);
-        }
-        // Check sovereign params
-        const mandatorySovereignParams = [
-            "bridgeManager",
-            "sovereignWETHAddress",
-            "sovereignWETHAddressIsNotMintable",
-            "globalExitRootUpdater",
-            "globalExitRootRemover",
-        ];
-        for (const parameterName of mandatorySovereignParams) {
-            if (typeof sovereignParams[parameterName] === undefined || sovereignParams[parameterName] === "") {
-                throw new Error(`Missing sovereign parameter: ${parameterName}`);
-            }
-        }
-        // Vanilla checks like in bridge contract
-        if (
-            ethers.isAddress(createRollupParameters.gasTokenAddress) &&
-            createRollupParameters.gasTokenAddress !== ethers.ZeroAddress &&
-            sovereignParams.sovereignWETHAddress === ethers.ZeroAddress &&
-            sovereignParams.sovereignWETHAddressIsNotMintable === true
-        ) {
-            throw new Error(
-                "InvalidSovereignWETHAddressParams: if gasTokenAddress is not 0x0, and sovereignWETHAddress is 0x0, sovereignWETHAddressIsNotMintable must be false"
-            );
-        }
-
-        if (
-            createRollupParameters.gasTokenAddress === ethers.ZeroAddress &&
-            (sovereignParams.sovereignWETHAddress !== ethers.ZeroAddress ||
-                sovereignParams.sovereignWETHAddressIsNotMintable === true)
-        ) {
-            throw new Error(
-                "InvalidSovereignWETHAddressParams: If gasTokenAddress is 0x0, sovereignWETHAddress must be 0x0 and sovereignWETHAddressIsNotMintable must be false"
-            );
         }
     }
 
@@ -485,42 +448,7 @@ async function main() {
     If the system is running a "vanilla client" (i.e., a basic, unmodified Ethereum client or rollup setup), the genesis block should include the deployment of the sovereign contracts, and these contracts should already be initialized with their required initial state and configurations. This means that the genesis block will contain the initial state for these contracts, allowing the system to start running without needing any additional initialization steps. However, for other rollups, additional configuration is needed. In this case, instead of having everything pre-initialized in the genesis block, we must inject an "initialization batch" into the genesis file. This batch will contain specific instructions for initializing the contracts at the time of rollup deployment. The injected initialization batch allows the system to be configured dynamically during deployment.
     */
 
-    if (isVanillaClient) {
-        console.log("Vanilla client detected, updating genesis...");
-        const pathGenesis = path.join(__dirname, "./genesis.json");
-        let genesis = JSON.parse(fs.readFileSync(pathGenesis, "utf8"));
-        const initializeParams = {
-            rollupID: rollupID,
-            gasTokenAddress,
-            gasTokenNetwork,
-            polygonRollupManager: ethers.ZeroAddress,
-            gasTokenMetadata,
-            bridgeManager: sovereignParams.bridgeManager,
-            sovereignWETHAddress: sovereignParams.sovereignWETHAddress,
-            sovereignWETHAddressIsNotMintable: sovereignParams.sovereignWETHAddressIsNotMintable,
-            globalExitRootUpdater: sovereignParams.globalExitRootUpdater,
-            globalExitRootRemover: sovereignParams.globalExitRootRemover,
-        };
-        try {
-            genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);
-            // Add weth address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
-            if (
-                gasTokenAddress !== ethers.ZeroAddress &&
-                ethers.isAddress(gasTokenAddress) &&
-                (sovereignParams.sovereignWETHAddress === ethers.ZeroAddress ||
-                    !ethers.isAddress(sovereignParams.sovereignWETHAddress))
-            ) {
-                console.log("Rollup with custom gas token, adding WETH address to deployment output...");
-                const wethObject = genesis.genesis.find(function (obj: {contractName: string}) {
-                    return obj.contractName == "WETH";
-                });
-                outputJson.WETHAddress = wethObject.address;
-            }
-            outputJson.genesis_sovereign = genesis;
-        } catch (e) {
-            console.log("ERROR UPDATING GENESIS: ", e);
-        }
-    } else {
+    if (!isVanillaClient) {
         if (consensusContractName === "PolygonPessimisticConsensus") {
             console.log("Pessimistic rollup detected, injecting initialization batch...");
             // Add the first batch of the created rollup
