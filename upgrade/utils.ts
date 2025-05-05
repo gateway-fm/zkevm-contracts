@@ -1,4 +1,5 @@
 import { ethers, run } from "hardhat";
+import { convertBigIntsToNumbers } from "../tools/utils"
 
 /**
  * Generates a timelock operation with the given input valies
@@ -107,7 +108,7 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
             }
         }
     }
-    return objectDecoded;
+    return convertBigIntsToNumbers(objectDecoded);
 }
 
 export { genTimelockOperation, verifyContractEtherscan, decodeScheduleData };

@@ -157,7 +157,7 @@ async function main() {
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
-        outputJson.decodedScheduleData = decodeScheduleData(scheduleData, AggLayerGatewayFactory);
+        outputJson.decodedScheduleData = await decodeScheduleData(scheduleData, AggLayerGatewayFactory);
     } else if(type === transactionTypes.MULTISIG){
         logger.info("Creating calldata to freeze pessimistic vkey route from multisig...");
         const txAddDefaultAggchainVKey = AggLayerGatewayFactory.interface.encodeFunctionData("freezePessimisticVKeyRoute", [

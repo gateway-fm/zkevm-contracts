@@ -3,15 +3,15 @@ import fs = require("fs");
 
 import params from "./parameters.json";
 import {
-  AggLayerGateway,
+    AggchainFEP,
 } from "../../../typechain-types";
-import {transactionTypes, genOperation} from "../../utils";
-import {decodeScheduleData} from "../../../upgrade/utils";
+import { transactionTypes, genOperation, convertBigIntsToNumbers}  from "../../utils";
+import { decodeScheduleData } from "../../../upgrade/utils";
 import { logger } from "../../../src/logger";
 import { checkParams } from "../../../src/utils";
 
 async function main() {
-    logger.info("Starting tool to add pessimistic vkey route to AggLayerGateway contract");
+    logger.info("Starting tool enable/disable optimistic mode");
 
     /////////////////////////////
     ///        CONSTANTS      ///
@@ -20,10 +20,7 @@ async function main() {
     const dateStr = new Date().toISOString();
     const destPath = params.outputPath
         ? path.join(__dirname, params.outputPath)
-        : path.join(__dirname, `add_pp_route_output_${params.type}_${dateStr}.json`);
-
-    const AL_ADD_PP_ROUTE_ROLE = ethers.id("AL_ADD_PP_ROUTE_ROLE");
-    const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
+        : path.join(__dirname, `optimistic_mode_output_${params.type}_${dateStr}.json`);
 
     /////////////////////////////
     ///   CHECK TOOL PARAMS   ///
@@ -32,10 +29,8 @@ async function main() {
 
     const mandatoryParameters = [
         "type",
-        "aggLayerGatewayAddress",
-        "pessimisticVKeySelector",
-        "verifier",
-        "pessimisticVKey"
+        "rollupAddress",
+        "optimisticMode"
     ];
 
     switch (params.type) {
@@ -56,13 +51,12 @@ async function main() {
         logger.error(`Error checking parameters. ${e.message}`);
         process.exit(1);
     }
+    
 
     const {
         type,
-        aggLayerGatewayAddress,
-        pessimisticVKeySelector,
-        verifier,
-        pessimisticVKey
+        rollupAddress,
+        optimisticMode
     } = params;
     
     // Load provider
@@ -100,44 +94,46 @@ async function main() {
         }
     }
 
-    logger.info('Load deployer');
-    // Load deployer
-    let deployer;
-    if (params.deployerPvtKey) {
-        deployer = new ethers.Wallet(params.deployerPvtKey, currentProvider);
+    logger.info('Load optimisticManager');
+    // Load optimisticManager
+    let optimisticManager;
+    if (params.optimisticModeManagerPvk) {
+        optimisticManager = new ethers.Wallet(params.optimisticModeManagerPvk, currentProvider);
     } else if (process.env.MNEMONIC) {
-        deployer = ethers.HDNodeWallet.fromMnemonic(
+        optimisticManager = ethers.HDNodeWallet.fromMnemonic(
             ethers.Mnemonic.fromPhrase(process.env.MNEMONIC),
             "m/44'/60'/0'/0/0"
         ).connect(currentProvider);
     } else {
-        [deployer] = await ethers.getSigners();
+        [optimisticManager] = await ethers.getSigners();
     }
 
-    logger.info(`Using with: ${deployer.address}`);
+    logger.info(`Using with: ${optimisticManager.address}`);
 
     // --network <input>
-    logger.info("Load AggLayerGateway contract");
-    const AggLayerGatewayFactory = await ethers.getContractFactory("AggLayerGateway", deployer);
-    const aggLayerGateway = (await AggLayerGatewayFactory.attach(
-        aggLayerGatewayAddress
-    )) as AggLayerGateway;
+    logger.info("Load AggchainFEP contract");
+    const AggchainFEPFactory = await ethers.getContractFactory("AggchainFEP", optimisticManager);
+    const aggchainFEP = (await AggchainFEPFactory.attach(
+        rollupAddress
+    )) as AggchainFEP;
 
-    logger.info(`AggLayerGateway address: ${aggLayerGateway.target}`);
+    logger.info(`AggchainFEP address: ${aggchainFEP.target}`);
+    let func = "";
+    if(optimisticMode){
+        func = "enableOptimisticMode";
+    } else {
+        func = "disableOptimisticMode";
+    }
 
     if(type === transactionTypes.TIMELOCK){
-        logger.info("Creating timelock tx to add pessimistic vkey route...");
+        logger.info("Creating timelock tx to change optimistic mode....");
         const salt = params.timelockSalt || ethers.ZeroHash;
         const predecessor = params.predecessor || ethers.ZeroHash;
-        const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
+        const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", optimisticManager);
         const operation = genOperation(
-            aggLayerGatewayAddress,
+            rollupAddress,
             0, // value
-            AggLayerGatewayFactory.interface.encodeFunctionData("addPessimisticVKeyRoute", [
-                pessimisticVKeySelector,
-                verifier,
-                pessimisticVKey
-            ]),
+            AggchainFEPFactory.interface.encodeFunctionData(func, []),
             predecessor, // predecessor
             salt // salt
         );
@@ -163,42 +159,31 @@ async function main() {
         outputJson.scheduleData = scheduleData;
         outputJson.executeData = executeData;
         // Decode the scheduleData for better readability
-        outputJson.decodedScheduleData = await decodeScheduleData(scheduleData, AggLayerGatewayFactory);
+        outputJson.decodedScheduleData = await decodeScheduleData(scheduleData, AggchainFEPFactory);
     } else if(type === transactionTypes.MULTISIG){
-        logger.info("Creating calldata to add pessimistic vkey route from multisig...");
-        const txAddPPVKeyRoute = AggLayerGatewayFactory.interface.encodeFunctionData("addPessimisticVKeyRoute", [
-            pessimisticVKeySelector,
-            verifier,
-            pessimisticVKey
-        ]);
-        outputJson.aggLayerGatewayAddress = aggLayerGatewayAddress;
-        outputJson.pessimisticVKeySelector = pessimisticVKeySelector;
-        outputJson.verifier = verifier;
-        outputJson.pessimisticVKey = pessimisticVKey;
-        outputJson.txAddPPVKeyRoute = txAddPPVKeyRoute;
+        logger.info("Creating calldata to add default vkey from multisig...");
+        const txUpdateOptimisticMode = AggchainFEPFactory.interface.encodeFunctionData(func, []);
+        outputJson.rollupAddress = rollupAddress;
+        outputJson.optimisticMode = optimisticMode;
+        outputJson.txUpdateOptimisticMode = txUpdateOptimisticMode;
     } else {
-        logger.info("Send tx to add pessimistic vkey route...");
-        logger.info("Check deployer role");
-        if ((await aggLayerGateway.hasRole(AL_ADD_PP_ROUTE_ROLE, deployer.address)) == false) {
-            if ((await aggLayerGateway.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)) == false) {
-                logger.error("Deployer does not have admin role. Use the test flag on deploy_parameters if this is a test deployment");
+        logger.info("Send tx to change optimistic mode...");
+        logger.info("Check optimisticModeManager");
+        if ((await aggchainFEP.optimisticModeManager()) != optimisticManager.address) {
+                logger.error("Invalid optimisticModeManager");
                 process.exit(1);
-            }
-            // Grant role AL_ADD_PP_ROUTE_ROLE to deployer
-            await aggLayerGateway.grantRole(AL_ADD_PP_ROUTE_ROLE, deployer.address);
         }
-        logger.info("Sending transaction to add pessimistic vkey route...");
+        logger.info(`Sending ${func} transaction to AggchainFEP ${rollupAddress}...`);
         try {
-            const tx = await aggLayerGateway.addPessimisticVKeyRoute(
-                pessimisticVKeySelector,
-            verifier,
-            pessimisticVKey
-            );
+            let tx;
+            if(optimisticMode) {
+                tx = await aggchainFEP.enableOptimisticMode();
+            } else {
+                tx = await aggchainFEP.disableOptimisticMode();
+            }
             await tx.wait();
-            outputJson.aggLayerGatewayAddress = aggLayerGatewayAddress;
-            outputJson.pessimisticVKeySelector = pessimisticVKeySelector;
-            outputJson.verifier = verifier;
-            outputJson.pessimisticVKey = pessimisticVKey;
+            outputJson.rollupAddress = rollupAddress;
+            outputJson.optimisticMode = optimisticMode;
             outputJson.txHash = tx.hash;
         } catch(e){
             logger.error(`Error sending tx: ${e.message}`);
@@ -213,7 +198,7 @@ async function main() {
 main().then(() => {
     process.exit(0);
 }, (err) => {
-    console.log(err.message);
-    console.log(err.stack);
+    logger.info(err.message);
+    logger.info(err.stack);
     process.exit(1);
 });
