@@ -36,6 +36,16 @@
     },
     {
       "inputs": [],
+      "name": "NotEnoughGlobalExitRootsInserted",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotLastInsertedGlobalExitRoot",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "OnlyAllowedContracts",
       "type": "error"
     },
