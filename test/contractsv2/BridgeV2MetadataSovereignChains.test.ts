@@ -478,25 +478,6 @@ describe("SovereignBridge Contract", () => {
                 amount,
                 tokenAddress,
                 true,
-                ifacePermit.encodeFunctionData("permit", [
-                    deployer.address,
-                    sovereignChainBridgeContract.target,
-                    amount + 1n,
-                    deadline,
-                    v,
-                    r,
-                    s,
-                ])
-            )
-        ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "NotValidAmount");
-
-        await expect(
-            sovereignChainBridgeContract.bridgeAsset(
-                destinationNetwork,
-                destinationAddress,
-                amount,
-                tokenAddress,
-                true,
                 ethers.ZeroHash
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "NotValidSignature");

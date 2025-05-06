@@ -306,7 +306,7 @@ contract PolygonZkEVMBridgeV2 is
             }
             // Use permit if any
             if (permitData.length != 0) {
-                _permit(token, amount, permitData);
+                _permit(token, permitData);
             }
             // Check if it's WETH, this only applies on L2 networks with gasTokens
             // In case ether is the native token, WETHToken will be 0, and the address 0 is already checked
@@ -1108,14 +1108,9 @@ contract PolygonZkEVMBridgeV2 is
     /**
      * @notice Function to call token permit method of extended ERC20
      + @param token ERC20 token address
-     * @param amount Quantity that is expected to be allowed
      * @param permitData Raw data of the call `permit` of the token
      */
-    function _permit(
-        address token,
-        uint256 amount,
-        bytes calldata permitData
-    ) internal virtual {
+    function _permit(address token, bytes calldata permitData) internal {
         bytes4 sig = bytes4(permitData[:4]);
         if (sig == _PERMIT_SIGNATURE) {
             (
@@ -1227,11 +1222,11 @@ contract PolygonZkEVMBridgeV2 is
      * @notice Internal function that uses create2 to deploy the upgradable wrapped tokens
      * @param salt Salt used in create2 params,
      * tokenInfoHash will be used as salt for all wrapped except for bridge native WETH, that will be bytes32(0)
-     * @param constructorArgs Encoded constructor args for the wrapped token
+     * @param initializationArgs Encoded constructor args for the wrapped token
      */
     function _deployWrappedToken(
         bytes32 salt,
-        bytes memory constructorArgs
+        bytes memory initializationArgs
     ) internal returns (ITokenWrappedBridgeUpgradeable newWrappedTokenProxy) {
         /// @dev A bytecode stored on chain is used to deploy the proxy in a way that ALWAYS it's used the same
         /// bytecode, therefore the proxy addresses are the same in all chains as they are deployed deterministically with same init bytecode
@@ -1255,7 +1250,7 @@ contract PolygonZkEVMBridgeV2 is
 
         // Initialize the wrapped token
         (string memory name, string memory symbol, uint8 decimals) = abi.decode(
-            constructorArgs,
+            initializationArgs,
             (string, string, uint8)
         );
         ITokenWrappedBridgeUpgradeable(address(newWrappedTokenProxy))

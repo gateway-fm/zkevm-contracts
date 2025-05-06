@@ -502,7 +502,7 @@ contract BridgeL2SovereignChain is
     ) external {
         // Use permit if any
         if (permitData.length != 0) {
-            _permit(legacyTokenAddress, amount, permitData);
+            _permit(legacyTokenAddress, permitData);
         }
 
         // Get current wrapped token address
@@ -777,109 +777,6 @@ contract BridgeL2SovereignChain is
         uint256 flipped = claimedBitMap[wordPos] ^= mask;
         if (flipped & mask == 0) {
             revert AlreadyClaimed();
-        }
-    }
-
-    /**
-     * @notice Function to call token permit method of extended ERC20
-     * @dev function overridden from PolygonZkEVMBridgeV2 to improve a bit the performance and bytecode not checking unnecessary conditions for sovereign chains context
-     + @param token ERC20 token address
-     * @param amount Quantity that is expected to be allowed
-     * @param permitData Raw data of the call `permit` of the token
-     */
-    function _permit(
-        address token,
-        uint256 amount,
-        bytes calldata permitData
-    ) internal override {
-        bytes4 sig = bytes4(permitData[:4]);
-        if (sig == _PERMIT_SIGNATURE) {
-            (
-                address owner,
-                address spender,
-                uint256 value,
-                uint256 deadline,
-                uint8 v,
-                bytes32 r,
-                bytes32 s
-            ) = abi.decode(
-                    permitData[4:],
-                    (
-                        address,
-                        address,
-                        uint256,
-                        uint256,
-                        uint8,
-                        bytes32,
-                        bytes32
-                    )
-                );
-
-            if (value != amount) {
-                revert NotValidAmount();
-            }
-
-            // we call without checking the result, in case it fails and he doesn't have enough balance
-            // the following transferFrom should be fail. This prevents DoS attacks from using a signature
-            // before the smartcontract call
-            /* solhint-disable avoid-low-level-calls */
-            address(token).call(
-                abi.encodeWithSelector(
-                    _PERMIT_SIGNATURE,
-                    owner,
-                    spender,
-                    value,
-                    deadline,
-                    v,
-                    r,
-                    s
-                )
-            );
-        } else {
-            if (sig != _PERMIT_SIGNATURE_DAI) {
-                revert NotValidSignature();
-            }
-
-            (
-                address holder,
-                address spender,
-                uint256 nonce,
-                uint256 expiry,
-                bool allowed,
-                uint8 v,
-                bytes32 r,
-                bytes32 s
-            ) = abi.decode(
-                    permitData[4:],
-                    (
-                        address,
-                        address,
-                        uint256,
-                        uint256,
-                        bool,
-                        uint8,
-                        bytes32,
-                        bytes32
-                    )
-                );
-
-            // we call without checking the result, in case it fails and he doesn't have enough balance
-            // the following transferFrom should be fail. This prevents DoS attacks from using a signature
-            // before the smartcontract call
-            /* solhint-disable avoid-low-level-calls */
-            address(token).call(
-                abi.encodeWithSelector(
-                    _PERMIT_SIGNATURE_DAI,
-                    holder,
-                    spender,
-                    nonce,
-                    expiry,
-                    allowed,
-                    v,
-                    r,
-                    s
-                )
-            );
         }
     }
 
