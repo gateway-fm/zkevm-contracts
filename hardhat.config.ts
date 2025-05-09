@@ -6,6 +6,7 @@ import "@nomiclabs/hardhat-solhint";
 import "@nomicfoundation/hardhat-chai-matchers";
 import {HardhatUserConfig} from "hardhat/config";
 import 'solidity-coverage'
+import 'hardhat-storage-layout';
 
 const DEFAULT_MNEMONIC = "test test test test test test test test test test test junk";
 
@@ -241,6 +242,7 @@ const config: HardhatUserConfig = {
                         runs: 999999,
                     },
                     evmVersion: "shanghai",// Same evm version than BridgeL2SovereignChain
+                    metadata: { bytecodeHash: "none" }, // Get always same bytecode
                 }, // try yul optimizer
             }
         },
@@ -341,15 +343,6 @@ const config: HardhatUserConfig = {
         },
         zkevmDevnet: {
             url: "http://123:123:123:123:123",
-            accounts: {
-                mnemonic: process.env.MNEMONIC || DEFAULT_MNEMONIC,
-                path: "m/44'/60'/0'/0",
-                initialIndex: 0,
-                count: 20,
-            },
-        },
-        katanaBali: {
-            url: "https://rpc-katana-apex.t.conduit.xyz/39z55WFDLN4KjxEWmey3sFZ2PoK8gQ99x",
             accounts: {
                 mnemonic: process.env.MNEMONIC || DEFAULT_MNEMONIC,
                 path: "m/44'/60'/0'/0",

@@ -492,6 +492,9 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000034"]).to.include(
         globalExitRootUpdater.toLowerCase().slice(2)
     );
+    // Check ger proxy initialized value
+    expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000034"].slice(-2)).to.equal("01");
+
     if (ethers.isAddress(globalExitRootRemover) && globalExitRootRemover !== ethers.ZeroAddress) {
         // Storage value of global exit root updater
         expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000035"]).to.include(
@@ -499,6 +502,9 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         );
     }
 
+    expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000035"]).to.include(
+      globalExitRootRemover.toLowerCase().slice(2)
+    );
     // Check bridge implementation includes BytecodeStorer contract address
     expect(oldBridge.bytecode).to.include(precalculatedAddressBytecodeStorer.toLowerCase().slice(2));
 
