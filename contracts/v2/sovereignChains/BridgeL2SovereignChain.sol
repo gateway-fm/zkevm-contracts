@@ -171,6 +171,8 @@ contract BridgeL2SovereignChain is
     modifier getInitializedVersion() {
         _initializerVersion = _getInitializedVersion();
         _;
+        /// @dev Is set to zero always after usage for transient storage mimic and better gas optimization
+        _initializerVersion = 0;
     }
 
     /**
