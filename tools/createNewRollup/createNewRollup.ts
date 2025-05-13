@@ -468,7 +468,7 @@ async function main() {
             globalExitRootRemover: sovereignParams.globalExitRootRemover,
             proxiedTokensManager,
             emergencyBridgePauser: sovereignParams.emergencyBridgePauser,
-
+            emergencyBridgeUnpauser: sovereignParams.emergencyBridgeUnpauser,
         };
         try {
             genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);

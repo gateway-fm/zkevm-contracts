@@ -112,6 +112,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
                 ethers.ZeroAddress,
                 true, // Not false, revert
                 emergencyBridgePauser.address,
+                emergencyBridgePauser.address,
                 proxiedTokensManager.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidSovereignWETHAddressParams");
@@ -126,6 +127,7 @@ describe("SovereignChainBridge Gas tokens tests", () => {
             ethers.Typed.address(bridgeManager.address),
             ethers.ZeroAddress,
             false,
+            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address
         );

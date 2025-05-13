@@ -45,6 +45,7 @@ async function main() {
         "globalExitRootUpdater",
         "globalExitRootRemover",
         "emergencyBridgePauser",
+        "emergencyBridgeUnpauser",
         "setPreMintAccounts",
         "setTimelockParameters",
     ];
@@ -188,6 +189,7 @@ async function main() {
         globalExitRootUpdater: createGenesisSovereignParams.globalExitRootUpdater,
         globalExitRootRemover: createGenesisSovereignParams.globalExitRootRemover,
         emergencyBridgePauser: createGenesisSovereignParams.emergencyBridgePauser,
+        emergencyBridgeUnpauser: createGenesisSovereignParams.emergencyBridgeUnpauser,
     };
 
     logger.info('Update genesis-base to the SovereignContracts');
@@ -320,6 +322,7 @@ async function main() {
     outputJson.globalExitRootUpdater = createGenesisSovereignParams.globalExitRootUpdater;
     outputJson.globalExitRootRemover = createGenesisSovereignParams.globalExitRootRemover;
     outputJson.emergencyBridgePauser = createGenesisSovereignParams.emergencyBridgePauser;
+    outputJson.emergencyBridgeUnpauser = createGenesisSovereignParams.emergencyBridgeUnpauser;
     outputJson.genesisSCNames = genesisSCNames;
 
     if (createGenesisSovereignParams.setPreMintAccounts === true) {

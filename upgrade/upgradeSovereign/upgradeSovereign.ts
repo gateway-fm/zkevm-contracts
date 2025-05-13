@@ -22,10 +22,10 @@ async function main() {
      * Check upgrade parameters
      * Check that every necessary parameter is fulfilled
      */
-    const mandatoryUpgradeParameters = ["timelockDelay", "proxiedTokensManagerAddress", "emergencyBridgePauserAddress"];
+    const mandatoryUpgradeParameters = ["timelockDelay", "proxiedTokensManagerAddress", "emergencyBridgePauserAddress", "emergencyBridgeUnpauserAddress"];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
-    const { timelockDelay, emergencyBridgePauserAddress, proxiedTokensManagerAddress } = upgradeParameters;
+    const { timelockDelay, emergencyBridgePauserAddress, emergencyBridgeUnpauserAddress, proxiedTokensManagerAddress } = upgradeParameters;
 
     // In case globalExitRootManagerL2SovereignChainAddress is not provided, use the default one, used by most chains in the genesis
     const globalExitRootManagerL2SovereignChainAddress = typeof upgradeParameters.globalExitRootManagerL2SovereignChainAddress === "undefined" ? "0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa" : upgradeParameters.globalExitRootManagerL2SovereignChainAddress;
@@ -131,7 +131,7 @@ async function main() {
         proxyAdmin.interface.encodeFunctionData("upgradeAndCall", [
             bridgeAddress,
             impBridge,
-            bridgeFactory.interface.encodeFunctionData("initialize(bytes32[],uint256[],address,address)", [[],[],emergencyBridgePauserAddress, proxiedTokensManagerAddress])
+            bridgeFactory.interface.encodeFunctionData("initialize(bytes32[],uint256[],address,address,address)", [[], [], emergencyBridgePauserAddress, emergencyBridgeUnpauserAddress, proxiedTokensManagerAddress])
         ]), // data
         ethers.ZeroHash, // predecessor
         salt // salt

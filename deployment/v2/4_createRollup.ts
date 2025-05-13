@@ -117,7 +117,8 @@ async function main() {
             "sovereignWETHAddressIsNotMintable",
             "globalExitRootUpdater",
             "globalExitRootRemover",
-            "emergencyBridgePauser"
+            "emergencyBridgePauser",
+            "emergencyBridgeUnpauser"
         ];
         for (const parameterName of mandatorySovereignParams) {
             if (typeof sovereignParams[parameterName] === undefined || sovereignParams[parameterName] === "") {
@@ -554,6 +555,7 @@ async function main() {
             globalExitRootUpdater: sovereignParams.globalExitRootUpdater,
             globalExitRootRemover: sovereignParams.globalExitRootRemover,
             emergencyBridgePauser: sovereignParams.emergencyBridgePauser,
+            emergencyBridgeUnpauser: sovereignParams.emergencyBridgeUnpauser,
             proxiedTokensManager: createRollupParameters.proxiedTokensManager,
         };
         genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);

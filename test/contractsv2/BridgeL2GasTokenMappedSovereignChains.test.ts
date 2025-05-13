@@ -111,6 +111,7 @@ describe("SovereignChainBridge Gas tokens mapped tests", () => {
             WETHToken.target,
             false,
             emergencyBridgePauser.address,
+            emergencyBridgePauser.address,
             proxiedTokensManager.address,
         );
         expect(await sovereignChainBridgeContract.WETHToken()).to.be.equal(WETHToken.target);

@@ -64,7 +64,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
 
         // cannot initialize bridgeV2 initializer from Sovereign bridge
         await expect(
-            sovereignChainBridgeContract.initialize(
+            sovereignChainBridgeContract["initialize(uint32,address,uint32,address,address,bytes)"](
                 networkIDMainnet,
                 ethers.ZeroAddress, // zero for ether
                 ethers.ZeroAddress, // zero for ether
@@ -117,7 +117,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
 
         // call invalid legacy initialize function
         await expect(
-            sovereignChainBridgeContract.initialize(
+            sovereignChainBridgeContract["initialize(uint32,address,uint32,address,address,bytes)"](
                 networkIDMainnet,
                 ethers.ZeroAddress, // zero for ether
                 ethers.ZeroAddress, // zero for ether
@@ -140,6 +140,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
                 ethers.ZeroAddress,
                 false,
                 emergencyBridgePauser.address,
+                emergencyBridgePauser.address,
                 proxiedTokensManager.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");
@@ -152,6 +153,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
                 arrayTokeInfoHash,
                 arrayAmount,
                 emergencyBridgePauser.address,
+                emergencyBridgePauser.address,
                 proxiedTokensManager.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InputArraysLengthMismatch");
@@ -163,6 +165,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
             sovereignChainBridgeContract.initialize(
                 arrayTokeInfoHashOk,
                 arrayAmountOk,
+                emergencyBridgePauser.address,
                 emergencyBridgePauser.address,
                 proxiedTokensManager.address
             )

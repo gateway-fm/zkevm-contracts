@@ -22,6 +22,7 @@
         "sovereignWETHAddressIsNotMintable": false,
         "globalExitRootUpdater": "0xB55B27Cca633A73108893985350bc26B8A00C43a",
         "globalExitRootRemover": "0xB55B27Cca633A73108893985350bc26B8A00C43a",
-        "emergencyBridgePauser": "0xB55B27Cca633A73108893985350bc26B8A00C43a"
+        "emergencyBridgePauser": "0xB55B27Cca633A73108893985350bc26B8A00C43a",
+        "emergencyBridgeUnpauser": "0xB55B27Cca633A73108893985350bc26B8A00C43a"
     }
 }

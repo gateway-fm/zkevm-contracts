@@ -49,6 +49,7 @@ cp ./tools/createNewRollup/create_new_rollup.json.example ./tools/createNewRollu
         -   `globalExitRootUpdater`: Address of globalExitRootUpdater for sovereign chains
         -   `globalExitRootRemover`: Address of globalExitRootRemover for sovereign chains
         -   `emergencyBridgePauser`: Address of emergencyBridgePauser role
+        -   `emergencyBridgeUnpauser`: Address of emergencyBridgeUnpauser role
     - `aggchainParams`:
         -   `aggchainManager`: Address that manages all the functionalities related to the aggchain
 

@@ -99,7 +99,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
         // cannot initialize bridgeV2 initializer from Sovereign bridge
         await expect(
-            sovereignChainBridgeContract.initialize(
+            sovereignChainBridgeContract["initialize(uint32,address,uint32,address,address,bytes)"](
                 networkIDMainnet,
                 ethers.ZeroAddress, // zero for ether
                 ethers.ZeroAddress, // zero for ether
@@ -119,6 +119,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             ethers.Typed.address(bridgeManager),
             ethers.ZeroAddress,
             false,
+            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address,
         );
@@ -291,6 +292,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 ethers.ZeroAddress,
                 false,
                 emergencyBridgePauser.address,
+                emergencyBridgePauser.address,
                 proxiedTokensManager.address,
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "GasTokenNetworkMustBeZeroOnEther");
@@ -308,6 +310,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 bridge.target, // Not zero, revert
                 false,
                 emergencyBridgePauser.address,
+                emergencyBridgePauser.address,
                 proxiedTokensManager.address,
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InvalidSovereignWETHAddressParams");
@@ -323,6 +326,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 ethers.Typed.address(bridgeManager.address),
                 ethers.ZeroAddress,
                 true, // Not false, revert
+                emergencyBridgePauser.address,
                 emergencyBridgePauser.address,
                 proxiedTokensManager.address,
             )
@@ -371,6 +375,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             ethers.ZeroAddress,
             false,
             emergencyBridgePauser.address,
+            emergencyBridgePauser.address,
             proxiedTokensManager.address,
         )).to.be.revertedWithCustomError(sovereignChainBridgeContractFactory, "InvalidInitializeFunction");
 
@@ -379,12 +384,14 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             [ethers.randomBytes(32)],
             [100, 200],
             emergencyBridgePauser.address,
+            emergencyBridgePauser.address,
             proxiedTokensManager.address,
         )).to.revertedWithCustomError(sovereignChainBridgeContractFactory, "InputArraysLengthMismatch");
 
         await expect(bridge.initialize(
             [ethers.randomBytes(32)],
             [100],
+            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address,
         )).to.emit(bridge, "AcceptEmergencyBridgePauserRole").withArgs(ethers.ZeroAddress, emergencyBridgePauser.address)
@@ -400,6 +407,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             [ethers.randomBytes(32)],
             [100],
             emergencyBridgePauser.address,
+            emergencyBridgePauser.address,
             proxiedTokensManager.address,
         )).to.be.revertedWithCustomError(sovereignChainBridgeContractFactory, "InvalidInitializeFunction");
 
@@ -413,6 +421,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             ethers.Typed.address(bridgeManager.address),
             ethers.ZeroAddress,
             false,
+            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address,
         )
@@ -991,6 +1000,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
                 ethers.Typed.address(bridgeManager),
                 ethers.ZeroAddress,
                 false,
+                emergencyBridgePauser.address,
                 emergencyBridgePauser.address,
                 proxiedTokensManager.address
             )
@@ -2629,7 +2639,7 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
 
         await expect(sovereignChainBridgeContract.deactivateEmergencyState()).to.be.revertedWithCustomError(
             sovereignChainBridgeContract,
-            "OnlyEmergencyBridgePauser"
+            "OnlyEmergencyBridgeUnpauser"
         );
 
         // Activate emergency state

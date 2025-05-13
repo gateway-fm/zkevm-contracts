@@ -33,6 +33,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         "globalExitRootUpdater",
         "globalExitRootRemover",
         "emergencyBridgePauser",
+        "emergencyBridgeUnpauser",
         "proxiedTokensManager",
     ];
     checkParams(initializeParams, mandatoryUpgradeParameters);
@@ -243,10 +244,11 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         globalExitRootUpdater,
         globalExitRootRemover,
         emergencyBridgePauser,
+        emergencyBridgeUnpauser,
         proxiedTokensManager,
     } = initializeParams;
     const initializeData = sovereignBridgeFactory.interface.encodeFunctionData(
-        "initialize(uint32,address,uint32,address,address,bytes,address,address,bool, address,address)",
+        "initialize(uint32,address,uint32,address,address,bytes,address,address,bool,address,address,address)",
         [
             rollupID,
             gasTokenAddress,
@@ -258,6 +260,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
             sovereignWETHAddress,
             sovereignWETHAddressIsNotMintable,
             emergencyBridgePauser,
+            emergencyBridgeUnpauser,
             proxiedTokensManager,
         ]
     );

@@ -142,6 +142,7 @@ async function main() {
     expect(await bridgeContract.gasTokenMetadata()).to.equal(bridgeGasTokenMetadata);
     expect(await bridgeContract.proxiedTokensManager()).to.equal(upgradeParams.proxiedTokensManagerAddress);
     expect(await bridgeContract.emergencyBridgePauser()).to.equal(upgradeParams.emergencyBridgePauserAddress);
+    expect(await bridgeContract.emergencyBridgeUnpauser()).to.equal(upgradeParams.emergencyBridgeUnpauserAddress);
 
     logger.info(`✓ Checked BridgeL2SovereignChain contract storage parameters`);
     logger.info("Finished shallow fork upgrade");

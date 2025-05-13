@@ -127,10 +127,11 @@ describe("Upgradeable Tokens", () => {
         sovereignBridgeContract = await upgrades.upgradeProxy(sovereignBridgeContract.target, sovBridgeFactory, {
             unsafeAllow: ["constructor", "missing-initializer-call", "missing-initializer"],
             call: {
-                fn: "initialize(bytes32[],uint256[],address,address)",
+                fn: "initialize(bytes32[],uint256[],address,address,address)",
                 args: [
                     [],
                     [],
+                    emergencyBridgePauser.address,
                     emergencyBridgePauser.address,
                     proxiedTokensManager.address,
                 ],
@@ -160,6 +161,7 @@ describe("Upgradeable Tokens", () => {
             ethers.Typed.address(bridgeManager),
             ethers.ZeroAddress,
             false,
+            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address
         );
@@ -206,6 +208,7 @@ describe("Upgradeable Tokens", () => {
             ethers.ZeroAddress,
             false,
             emergencyBridgePauser.address,
+            emergencyBridgePauser.address,
             proxiedTokensManager.address
         );
 
@@ -243,6 +246,7 @@ describe("Upgradeable Tokens", () => {
             ethers.Typed.address(bridgeManager),
             ethers.ZeroAddress,
             false,
+            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address
         );

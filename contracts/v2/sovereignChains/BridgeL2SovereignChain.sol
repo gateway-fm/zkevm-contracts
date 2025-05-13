@@ -49,11 +49,17 @@ contract BridgeL2SovereignChain is
     //  This account will be able to accept the emergencyBridgePauser role
     address public pendingEmergencyBridgePauser;
 
+    // Emergency bridge unpauser address: can unpause the bridge, both bridges and claims
+    address public emergencyBridgeUnpauser;
+
+    //  This account will be able to accept the emergencyBridgeUnpauser role
+    address public pendingEmergencyBridgeUnpauser;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      */
-    uint256[50] private __gap;
+    uint256[48] private __gap;
 
     /**
      * @dev Emitted when a bridge manager is updated
@@ -78,6 +84,26 @@ contract BridgeL2SovereignChain is
     event AcceptEmergencyBridgePauserRole(
         address oldEmergencyBridgePauser,
         address newEmergencyBridgePauser
+    );
+
+    /**
+     * @notice Emitted when the emergencyBridgeUnpauser starts the two-step transfer role setting a new pending emergencyBridgeUnpauser.
+     * @param currentEmergencyBridgeUnpauser The current emergencyBridgeUnpauser.
+     * @param newEmergencyBridgeUnpauser The new pending emergencyBridgeUnpauser.
+     */
+    event TransferEmergencyBridgeUnpauserRole(
+        address currentEmergencyBridgeUnpauser,
+        address newEmergencyBridgeUnpauser
+    );
+
+    /**
+     * @notice Emitted when the pending emergencyBridgeUnpauser accepts the emergencyBridgeUnpauser role.
+     * @param oldEmergencyBridgeUnpauser The previous emergencyBridgeUnpauser.
+     * @param newEmergencyBridgeUnpauser The new emergencyBridgeUnpauser.
+     */
+    event AcceptEmergencyBridgeUnpauserRole(
+        address oldEmergencyBridgeUnpauser,
+        address newEmergencyBridgeUnpauser
     );
 
     /**
@@ -167,7 +193,8 @@ contract BridgeL2SovereignChain is
      * @param _bridgeManager bridge manager address
      * @param _sovereignWETHAddress sovereign WETH address
      * @param _sovereignWETHAddressIsNotMintable Flag to indicate if the wrapped ETH is not mintable
-     * @param _emergencyBridgePauser emergency bridge pauser address, allowed to be zero if the chain wants to disable the feature to stop de bridge
+     * @param _emergencyBridgePauser emergency bridge pauser address, allowed to be zero if the chain wants to disable the feature to stop the bridge
+     * @param _emergencyBridgeUnpauser emergency bridge unpauser address, allowed to be zero if the chain wants to disable the feature to unpause the bridge
      * @param _proxiedTokensManager address of the proxied tokens manager
      */
     function initialize(
@@ -181,6 +208,7 @@ contract BridgeL2SovereignChain is
         address _sovereignWETHAddress,
         bool _sovereignWETHAddressIsNotMintable,
         address _emergencyBridgePauser,
+        address _emergencyBridgeUnpauser,
         address _proxiedTokensManager
     ) public virtual getInitializedVersion reinitializer(2) {
         if (_initializerVersion != 0) {
@@ -193,6 +221,11 @@ contract BridgeL2SovereignChain is
         bridgeManager = _bridgeManager;
         emergencyBridgePauser = _emergencyBridgePauser;
         emit AcceptEmergencyBridgePauserRole(address(0), emergencyBridgePauser);
+        emergencyBridgeUnpauser = _emergencyBridgeUnpauser;
+        emit AcceptEmergencyBridgeUnpauserRole(
+            address(0),
+            emergencyBridgeUnpauser
+        );
         proxiedTokensManager = _proxiedTokensManager;
         emit AcceptProxiedTokensManagerRole(address(0), proxiedTokensManager);
 
@@ -248,12 +281,14 @@ contract BridgeL2SovereignChain is
      * @param tokenInfoHash Array of tokenInfoHash
      * @param amount Array of amount
      * @param _emergencyBridgePauser Address of the emergencyBridgePauser role
+     * @param _emergencyBridgeUnpauser Address of the emergencyBridgeUnpauser role
      * @param _proxiedTokensManager Address of the proxiedTokensManager role
      */
     function initialize(
         bytes32[] calldata tokenInfoHash,
         uint256[] calldata amount,
         address _emergencyBridgePauser,
+        address _emergencyBridgeUnpauser,
         address _proxiedTokensManager
     ) public getInitializedVersion reinitializer(2) {
         if (_initializerVersion == 0) {
@@ -268,9 +303,14 @@ contract BridgeL2SovereignChain is
             _setInitialLocalBalanceTreeAmount(tokenInfoHash[i], amount[i]);
         }
 
-        // Set emergency bridge pauser
+        // Set emergency bridge pauser and unpauser
         emergencyBridgePauser = _emergencyBridgePauser;
         emit AcceptEmergencyBridgePauserRole(address(0), emergencyBridgePauser);
+        emergencyBridgeUnpauser = _emergencyBridgeUnpauser;
+        emit AcceptEmergencyBridgeUnpauserRole(
+            address(0),
+            emergencyBridgeUnpauser
+        );
 
         // set proxied tokens manager
         proxiedTokensManager = _proxiedTokensManager;
@@ -331,6 +371,13 @@ contract BridgeL2SovereignChain is
     modifier onlyEmergencyBridgePauser() {
         if (emergencyBridgePauser != msg.sender) {
             revert OnlyEmergencyBridgePauser();
+        }
+        _;
+    }
+
+    modifier onlyEmergencyBridgeUnpauser() {
+        if (emergencyBridgeUnpauser != msg.sender) {
+            revert OnlyEmergencyBridgeUnpauser();
         }
         _;
     }
@@ -612,8 +659,8 @@ contract BridgeL2SovereignChain is
     }
 
     /////////////////////////////////////////
-    //   EmergencyBridgePauser functions   //
-    ////////////////////////////////////////
+    //   EmergencyBridge      functions   //
+    ///////////////////////////////////////
 
     /**
      * @notice Starts the emergencyBridgePauser role transfer
@@ -635,9 +682,10 @@ contract BridgeL2SovereignChain is
      * @notice Allow the current pending emergencyBridgePauser to accept the emergencyBridgePauser role
      */
     function acceptEmergencyBridgePauserRole() external {
-        if (pendingEmergencyBridgePauser != msg.sender) {
-            revert OnlyPendingEmergencyBridgePauser();
-        }
+        require(
+            pendingEmergencyBridgePauser == msg.sender,
+            OnlyPendingEmergencyBridgePauser()
+        );
 
         address oldEmergencyBridgePauser = emergencyBridgePauser;
         emergencyBridgePauser = pendingEmergencyBridgePauser;
@@ -646,6 +694,41 @@ contract BridgeL2SovereignChain is
         emit AcceptEmergencyBridgePauserRole(
             oldEmergencyBridgePauser,
             emergencyBridgePauser
+        );
+    }
+
+    /**
+     * @notice Starts the emergencyBridgeUnpauser role transfer
+     * This is a two step process, the pending emergencyBridgeUnpauser must accepted to finalize the process
+     * @param newEmergencyBridgeUnpauser Address of the new pending emergencyBridgeUnpauser
+     */
+    function transferEmergencyBridgeUnpauserRole(
+        address newEmergencyBridgeUnpauser
+    ) external onlyEmergencyBridgeUnpauser {
+        pendingEmergencyBridgeUnpauser = newEmergencyBridgeUnpauser;
+
+        emit TransferEmergencyBridgeUnpauserRole(
+            emergencyBridgeUnpauser,
+            newEmergencyBridgeUnpauser
+        );
+    }
+
+    /**
+     * @notice Allow the current pending emergencyBridgeUnpauser to accept the emergencyBridgeUnpauser role
+     */
+    function acceptEmergencyBridgeUnpauserRole() external {
+        require(
+            pendingEmergencyBridgeUnpauser == msg.sender,
+            OnlyPendingEmergencyBridgeUnpauser()
+        );
+
+        address oldEmergencyBridgeUnpauser = emergencyBridgeUnpauser;
+        emergencyBridgeUnpauser = pendingEmergencyBridgeUnpauser;
+        delete pendingEmergencyBridgeUnpauser;
+
+        emit AcceptEmergencyBridgePauserRole(
+            oldEmergencyBridgeUnpauser,
+            emergencyBridgeUnpauser
         );
     }
 
@@ -792,7 +875,7 @@ contract BridgeL2SovereignChain is
     function deactivateEmergencyState()
         external
         override(IPolygonZkEVMBridgeV2, PolygonZkEVMBridgeV2)
-        onlyEmergencyBridgePauser
+        onlyEmergencyBridgeUnpauser
     {
         _deactivateEmergencyState();
     }

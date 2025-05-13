@@ -6,5 +6,6 @@
     "rpc": "rpc url",
     "globalExitRootManagerL2SovereignChainAddress": "0x..",
     "proxiedTokensManagerAddress": "0x..",
-    "emergencyBridgePauserAddress": "0x.."
+    "emergencyBridgePauserAddress": "0x..",
+    "emergencyBridgeUnpauserAddress": "0x.."
 }

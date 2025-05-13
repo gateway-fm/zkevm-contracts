@@ -75,6 +75,7 @@ describe("SovereignBridge Contract", () => {
             ethers.ZeroAddress,
             false,
             emergencyBridgePauser.address,
+            emergencyBridgePauser.address,
             proxiedTokensManager.address,
         );
 

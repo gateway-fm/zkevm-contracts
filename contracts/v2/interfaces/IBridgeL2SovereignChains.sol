@@ -96,9 +96,19 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
     error OnlyEmergencyBridgePauser();
 
     /**
-     * @dev Thrown when trying to call a function that only the pending VKeyManager can call.
+     * @dev Thrown when trying to call a function that only the pending bridge pauser can call.
      */
     error OnlyPendingEmergencyBridgePauser();
+
+    /**
+     * @dev Thrown when the caller is not the emergencyBridgeUnpauser address
+     */
+    error OnlyEmergencyBridgeUnpauser();
+
+    /**
+     * @dev Thrown when trying to call a function that only pending bridge unpauser can call.
+     */
+    error OnlyPendingEmergencyBridgeUnpauser();
 
     function initialize(
         uint32 _networkID,
@@ -111,6 +121,7 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
         address sovereignWETHAddress,
         bool _sovereignWETHAddressIsNotMintable,
         address _emergencyBridgePauser,
+        address _emergencyBridgeUnpauser,
         address _proxiedTokensManager
     ) external;
 }
