@@ -22,15 +22,25 @@ them will be done in this one. In this way, the proof aggregation of the rollups
 |`_pol` | contract IERC20Upgradeable | POL token address
 |`_bridgeAddress` | contract IPolygonZkEVMBridge | Bridge address
 
+### initialize
+```solidity
+  function initialize(
+  ) external
+```
+Initializer function to set new rollup manager version
+
+
+
 ### addNewRollupType
 ```solidity
   function addNewRollupType(
     address consensusImplementation,
     address verifier,
     uint64 forkID,
-    enum IPolygonRollupManager.VerifierType genesis,
-    bytes32 description,
-    string programVKey
+    enum IPolygonRollupManager.VerifierType rollupVerifierType,
+    bytes32 genesis,
+    string description,
+    bytes32 programVKey
   ) external
 ```
 Add a new rollup type
@@ -42,9 +52,10 @@ Add a new rollup type
 |`consensusImplementation` | address | Consensus implementation
 |`verifier` | address | Verifier address
 |`forkID` | uint64 | ForkID of the verifier
-|`genesis` | enum IPolygonRollupManager.VerifierType | Genesis block of the rollup
-|`description` | bytes32 | Description of the rollup type
-|`programVKey` | string | Hashed program that will be executed in case of using a "general porpuse ZK verifier" e.g SP1
+|`rollupVerifierType` | enum IPolygonRollupManager.VerifierType | rollup verifier type
+|`genesis` | bytes32 | Genesis block of the rollup
+|`description` | string | Description of the rollup type
+|`programVKey` | bytes32 | Hashed program that will be executed in case of using a "general purpose ZK verifier" e.g SP1
 
 ### obsoleteRollupType
 ```solidity
@@ -112,7 +123,7 @@ note that this rollup does not follow any rollupType
 |`chainID` | uint64 | Chain id of the added rollup
 |`initRoot` | bytes32 | Genesis block for StateTransitionChains & localExitRoot for pessimistic chain
 |`rollupVerifierType` | enum IPolygonRollupManager.VerifierType | Compatibility ID for the added rollup
-|`programVKey` | bytes32 | Hashed program that will be executed in case of using a "general porpuse ZK verifier" e.g SP1
+|`programVKey` | bytes32 | Hashed program that will be executed in case of using a "general purpose ZK verifier" e.g SP1
 
 ### updateRollupByRollupAdmin
 ```solidity
@@ -258,7 +269,7 @@ Verify and reward batches internal function
 ```solidity
   function verifyPessimisticTrustedAggregator(
     uint32 rollupID,
-    bytes32 selectedGlobalExitRoot,
+    uint32 l1InfoTreeLeafCount,
     bytes32 newLocalExitRoot,
     bytes32 newPessimisticRoot,
     bytes proof
@@ -271,7 +282,7 @@ Allows a trusted aggregator to verify pessimistic proof
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`rollupID` | uint32 | Rollup identifier
-|`selectedGlobalExitRoot` | bytes32 | Selected global exit root to proof imported bridges
+|`l1InfoTreeLeafCount` | uint32 | Count of the L1InfoTree leaf that will be used to verify imported bridge exits
 |`newLocalExitRoot` | bytes32 | New local exit root
 |`newPessimisticRoot` | bytes32 | New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
 |`proof` | bytes | SP1 proof (Plonk)
@@ -382,10 +393,10 @@ Get forced batch fee
 ```solidity
   function getInputPessimisticBytes(
     uint32 rollupID,
-    bytes32 selectedGlobalExitRoot,
+    bytes32 l1InfoTreeRoot,
     bytes32 newLocalExitRoot,
     bytes32 newPessimisticRoot
-  ) public returns (bytes)
+  ) external returns (bytes)
 ```
 Function to calculate the pessimistic input bytes
 
@@ -394,7 +405,7 @@ Function to calculate the pessimistic input bytes
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`rollupID` | uint32 | Rollup id used to calculate the input snark bytes
-|`selectedGlobalExitRoot` | bytes32 | Selected global exit root to proof imported bridges
+|`l1InfoTreeRoot` | bytes32 | L1 Info tree root to proof imported bridges
 |`newLocalExitRoot` | bytes32 | New local exit root
 |`newPessimisticRoot` | bytes32 | New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
 
@@ -403,7 +414,7 @@ Function to calculate the pessimistic input bytes
   function _getInputPessimisticBytes(
     uint32 rollupID,
     struct PolygonRollupManager.RollupData rollup,
-    bytes32 selectedGlobalExitRoot,
+    bytes32 l1InfoTreeRoot,
     bytes32 newLocalExitRoot,
     bytes32 newPessimisticRoot
   ) internal returns (bytes)
@@ -416,7 +427,7 @@ Function to calculate the input snark bytes
 | :--- | :--- | :------------------------------------------------------------------- |
 |`rollupID` | uint32 | Rollup identifier
 |`rollup` | struct PolygonRollupManager.RollupData | Rollup data storage pointer
-|`selectedGlobalExitRoot` | bytes32 | Selected global exit root to proof imported bridges
+|`l1InfoTreeRoot` | bytes32 | L1 Info tree root to proof imported bridges
 |`newLocalExitRoot` | bytes32 | New local exit root
 |`newPessimisticRoot` | bytes32 | New pessimistic information, Hash(localBalanceTreeRoot, nullifierTreeRoot)
 
@@ -622,4 +633,12 @@ Emitted when is updated the trusted aggregator address
 ```
 
 Emitted when is updated the batch fee
+
+### UpdateRollupManagerVersion
+```solidity
+  event UpdateRollupManagerVersion(
+  )
+```
+
+Emitted when rollup manager is upgraded
 

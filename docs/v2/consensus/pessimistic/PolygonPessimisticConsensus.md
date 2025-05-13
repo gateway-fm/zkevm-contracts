@@ -19,7 +19,7 @@
 |`_globalExitRootManager` | contract IPolygonZkEVMGlobalExitRootV2 | Global exit root manager address
 |`_pol` | contract IERC20Upgradeable | POL token address
 |`_bridgeAddress` | contract IPolygonZkEVMBridgeV2 | Bridge address
-|`_rollupManager` | contract PolygonRollupManager | Global exit root manager address
+|`_rollupManager` | contract PolygonRollupManager | Rollup manager address
 
 ### getConsensusHash
 ```solidity
