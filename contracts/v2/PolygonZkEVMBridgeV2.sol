@@ -37,7 +37,7 @@ contract PolygonZkEVMBridgeV2 is
 
     /// Address of the wrappedToken implementation, it is set at constructor and all proxied wrapped tokens will point to this implementation
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
-    address public immutable wrappedTokenBridgeImplementation;
+    address internal immutable wrappedTokenBridgeImplementation;
 
     // bytes4(keccak256(bytes("permit(address,address,uint256,uint256,uint8,bytes32,bytes32)")));
     bytes4 internal constant _PERMIT_SIGNATURE = 0xd505accf;
@@ -66,7 +66,8 @@ contract PolygonZkEVMBridgeV2 is
     // Current bridge version
     string public constant BRIDGE_VERSION = "al-v0.3.0";
 
-    // Invalid address is set as proxy admin to not allow the proxy to be upgraded on mainnet
+    // This is used to return an uncontrolled default address other than address(0) in the function Otherwise, the constructor of TokenWrappedTransparentProxy
+    // will revert when it calls that function, as it will not change admin to the zero address.
     address public constant INVALID_WTOKEN_PROXY_ADMIN =
         0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
 
@@ -1027,7 +1028,7 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice Allow the current pending ProxiedTokensManagerR to accept the emergencyBridgeProxiedTokensManagerRePauser role
+     * @notice Allow the current pending ProxiedTokensManager to accept the ProxiedTokensManager role
      */
     function acceptProxiedTokensManagerRole() external {
         require(
@@ -1268,6 +1269,7 @@ contract PolygonZkEVMBridgeV2 is
         }
     }
 
+    /// @notice This function is used to get the implementation address of the wrapped token bridge
     function getWrappedTokenBridgeImplementation()
         external
         view

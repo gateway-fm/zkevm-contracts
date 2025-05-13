@@ -70,7 +70,7 @@ describe("BridgeV2 upgrade", () => {
         // Check new params
         expect(await bridgeContract.getProxiedTokensManager()).to.be.equal(proxiedTokensManager.address);
         expect(await bridgeContract.wrappedTokenBytecodeStorer()).to.not.be.equal(ethers.ZeroAddress);
-        expect(await bridgeContract.wrappedTokenBridgeImplementation()).to.not.be.equal(ethers.ZeroAddress);
+        expect(await bridgeContract.getWrappedTokenBridgeImplementation()).to.not.be.equal(ethers.ZeroAddress);
     });
 
     it("Should transfer Proxied tokens manager role correctly", async () => {

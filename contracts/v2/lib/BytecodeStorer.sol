@@ -5,7 +5,7 @@ import "../interfaces/IBytecodeStorer.sol";
 
 /**
  * @title BytecodeStorer
- * @notice Contract to hold the bytecodes necessary to deploy warped and upgradable tokens, it's deployed by the bridge at the constructor and the constant is retrieved by the
+ * @notice Contract to hold the bytecodes necessary to deploy wrapped and upgradable tokens, it's deployed by the bridge at the constructor and the constant is retrieved by the
  * bridge through the IBytecodeStorer interface and an external call, done this way to have more bytecode available for the bridge.
  */
 contract BytecodeStorer is IBytecodeStorer {

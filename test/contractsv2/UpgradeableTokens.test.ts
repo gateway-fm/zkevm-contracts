@@ -250,7 +250,7 @@ describe("Upgradeable Tokens", () => {
             emergencyBridgePauser.address,
             proxiedTokensManager.address
         );
-        const wrappedTokenImplementationAddress = await sovereignBridgeContract.wrappedTokenBridgeImplementation();
+        const wrappedTokenImplementationAddress = await sovereignBridgeContract.getWrappedTokenBridgeImplementation();
         // Upgrade proxy
         sovereignBridgeContract = await upgrades.upgradeProxy(sovereignBridgeContract.target, sovBridgeFactory, {
             unsafeAllow: ["constructor", "missing-initializer-call", "missing-initializer"],
@@ -261,7 +261,7 @@ describe("Upgradeable Tokens", () => {
 
         expect(bridgeImplementationAddress).to.be.not.equal(bridgeImplementationAddress2);
 
-        const wrappedTokenImplementationAddress2 = await sovereignBridgeContract.wrappedTokenBridgeImplementation();
+        const wrappedTokenImplementationAddress2 = await sovereignBridgeContract.getWrappedTokenBridgeImplementation();
         expect(wrappedTokenImplementationAddress).to.be.not.equal(wrappedTokenImplementationAddress2);
 
         await claimBeforeBridge(

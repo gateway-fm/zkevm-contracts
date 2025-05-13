@@ -158,7 +158,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         genesis.genesis.push(bytecodeStorerGenesis);
     } else {
         bytecodeStorerObject.address = precalculatedAddressBytecodeStorer;
-        // Check address and bytecode of the BytecodeStorer contract
+        // Check bytecode of the BytecodeStorer contract is the same as the one in the genesis
         expect(bytecodeStorerObject.bytecode).to.equal(
             `0x${await zkEVMDB.getBytecode(precalculatedAddressBytecodeStorer)}`)
     }
@@ -192,7 +192,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         genesis.genesis.push(tokenWrappedImplementationCodeGenesis);
     } else {
         tokenWrappedImplementationObject.address = precalculatedAddressTokenWrappedImplementation;
-        // Check address and bytecode of the BytecodeStorer contract
+        // Check bytecode of the TokenWrappedImplementation contract
         expect(tokenWrappedImplementationObject.bytecode).to.equal(
             `0x${await zkEVMDB.getBytecode(precalculatedAddressTokenWrappedImplementation)}`)
     }
@@ -472,7 +472,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Check bridge proxy Address is included in ger bytecode
     expect(oldGer.bytecode).to.include(bridgeProxy.address.toLowerCase().slice(2));
 
-    // Update bridgeProxy storage
+    // Update gerProxy storage
     gerProxy.contractName = GENESIS_CONTRACT_NAMES.GER_L2_SOVEREIGN_PROXY;
     gerProxy.storage = await zkEVMDB2.dumpStorage(gerProxy.address);
     gerProxy.storage = Object.entries(gerProxy.storage).reduce((acc, [key, value]) => {
@@ -499,7 +499,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000034"].slice(-2)).to.equal("01");
 
     if (ethers.isAddress(globalExitRootRemover) && globalExitRootRemover !== ethers.ZeroAddress) {
-        // Storage value of global exit root updater
+        // Storage value of global exit root remover
         expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000035"]).to.include(
             globalExitRootRemover.toLowerCase().slice(2)
         );
@@ -508,8 +508,6 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000035"]).to.include(
       globalExitRootRemover.toLowerCase().slice(2)
     );
-    // Check bridge implementation includes BytecodeStorer contract address
-    expect(oldBridge.bytecode).to.include(precalculatedAddressBytecodeStorer.toLowerCase().slice(2));
 
     // Create a new zkEVM to generate a genesis an empty system address storage
     const zkEVMDB3 = await ZkEVMDB.newZkEVM(

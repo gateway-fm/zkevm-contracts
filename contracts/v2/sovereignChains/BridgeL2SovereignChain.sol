@@ -217,6 +217,11 @@ contract BridgeL2SovereignChain is
             revert InvalidInitializeFunction();
         }
 
+        require(
+            address(_globalExitRootManager) != address(0),
+            InvalidZeroAddress()
+        );
+
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonRollupManager = _polygonRollupManager;
