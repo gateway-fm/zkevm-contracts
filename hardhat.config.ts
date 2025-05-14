@@ -2,6 +2,7 @@ import "dotenv/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-dependency-compiler";
+import "hardhat-switch-network";
 
 import {HardhatUserConfig} from "hardhat/config";
 
@@ -75,12 +76,22 @@ const config: HardhatUserConfig = {
             },
         ],
         overrides: {
+            "contracts/v2/sovereignChains/BridgeL2SovereignChain.sol": {
+                version: "0.8.20",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 20,
+                    },
+                    evmVersion: "shanghai",
+                }, // try yul optimizer
+            },
             "contracts/v2/PolygonRollupManager.sol": {
                 version: "0.8.20",
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 500,
+                        runs: 500, // Should have the same optimizations as PolygonTransparentProxy
                     },
                     evmVersion: "shanghai",
                 }, // try yul optimizer
@@ -100,7 +111,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 500,
+                        runs: 500, // Should have the same optimizations as PolygonTransparentProxy
                     },
                     evmVersion: "shanghai",
                 }, // try yul optimizer
@@ -110,7 +121,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 10,
+                        runs: 500, // Should have the same optimizations as PolygonTransparentProxy
                     },
                     evmVersion: "shanghai",
                 }, // try yul optimizer
@@ -270,8 +281,8 @@ const config: HardhatUserConfig = {
                 network: "polygonZKEVMTestnet",
                 chainId: 2442,
                 urls: {
-                    apiURL: "https://explorer-ui.cardona.zkevm-rpc.com/api",
-                    browserURL: "https://explorer-ui.cardona.zkevm-rpc.com",
+                    apiURL: "https://api-cardona-zkevm.polygonscan.com/api",
+                    browserURL: "https://cardona-zkevm.polygonscan.com/",
                 },
             },
             {

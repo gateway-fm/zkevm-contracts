@@ -36,7 +36,7 @@ to avoid possible synch attacks
 |`mainnetExitRoot` | bytes32 | Mainnet exit root
 |`rollupExitRoot` | bytes32 | Rollup exit root
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address |  Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address |  Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`destinationNetwork` | uint32 | Network destination
 |`destinationAddress` | address | Address destination
 |`amount` | uint256 | Amount of tokens

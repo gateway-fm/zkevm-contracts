@@ -8,6 +8,7 @@ import * as dotenv from "dotenv";
 dotenv.config({path: path.resolve(__dirname, "../../../.env")});
 import {ethers, upgrades} from "hardhat";
 const deployParameters = require("./deploy_verifier_parameters.json");
+const pathOutput = path.resolve(__dirname, "./deploy_verifier_output.json")
 
 async function main() {
     // Load provider
@@ -74,6 +75,11 @@ async function main() {
         verifierContract = await VerifierRollupHelperFactory.deploy();
         await verifierContract.waitForDeployment();
     }
+    const outputJson = {
+        deployer: deployer.address,
+        verifier: verifierName,
+        verifierContract: verifierContract.target
+    };
     // print contract address deployed
     console.log("\n#######################");
     console.log("Verifier deployed to:", verifierContract.target);
@@ -83,6 +89,8 @@ async function main() {
     console.log("you can verify the new verifierContract address with the following command:");
     console.log(`npx hardhat verify ${verifierContract.target} --network ${process.env.HARDHAT_NETWORK}`);
     console.log("#######################");
+
+    await fs.writeFileSync(pathOutput, JSON.stringify(outputJson, null, 1));
 }
 
 main().catch((e) => {

@@ -46,7 +46,7 @@ do not call any external address in that case
 |`destinationNetwork` | uint32 | Network destination
 |`destinationAddress` | address | Address destination
 |`amount` | uint256 | Amount of tokens
-|`token` | address | Token address, 0 address is reserved for ether
+|`token` | address | Token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`forceUpdateGlobalExitRoot` | bool | Indicates if the new global exit root is updated or not
 |`permitData` | bytes | Raw data of the call `permit` of the token
 
@@ -96,7 +96,7 @@ Verify merkle proof and withdraw tokens/ether
 |`mainnetExitRoot` | bytes32 | Mainnet exit root
 |`rollupExitRoot` | bytes32 | Rollup exit root
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address |  Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address |  Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`destinationNetwork` | uint32 | Network destination
 |`destinationAddress` | address | Address destination
 |`amount` | uint256 | Amount of tokens
@@ -157,7 +157,7 @@ wrapped address if the metadata provided is not the original one.
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address | Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address | Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 |`name` | string | Name of the token
 |`symbol` | string | Symbol of the token
 |`decimals` | uint8 | Decimals of the token
@@ -176,7 +176,7 @@ Returns the address of a wrapper using the token information if already exist
 | Name | Type | Description                                                          |
 | :--- | :--- | :------------------------------------------------------------------- |
 |`originNetwork` | uint32 | Origin network
-|`originTokenAddress` | address | Origin token address, 0 address is reserved for ether
+|`originTokenAddress` | address | Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
 
 ### activateEmergencyState
 ```solidity

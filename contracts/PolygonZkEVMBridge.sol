@@ -139,7 +139,7 @@ contract PolygonZkEVMBridge is
      * @param destinationNetwork Network destination
      * @param destinationAddress Address destination
      * @param amount Amount of tokens
-     * @param token Token address, 0 address is reserved for ether
+     * @param token Token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
      * @param forceUpdateGlobalExitRoot Indicates if the new global exit root is updated or not
      * @param permitData Raw data of the call `permit` of the token
      */
@@ -306,7 +306,7 @@ contract PolygonZkEVMBridge is
      * @param mainnetExitRoot Mainnet exit root
      * @param rollupExitRoot Rollup exit root
      * @param originNetwork Origin network
-     * @param originTokenAddress  Origin token address, 0 address is reserved for ether
+     * @param originTokenAddress  Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
      * @param destinationNetwork Network destination
      * @param destinationAddress Address destination
      * @param amount Amount of tokens
@@ -483,7 +483,7 @@ contract PolygonZkEVMBridge is
      * Since the metadata has relevance in the address deployed, this function will not return a valid
      * wrapped address if the metadata provided is not the original one.
      * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for ether
+     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
      * @param name Name of the token
      * @param symbol Symbol of the token
      * @param decimals Decimals of the token
@@ -520,7 +520,7 @@ contract PolygonZkEVMBridge is
     /**
      * @notice Returns the address of a wrapper using the token information if already exist
      * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for ether
+     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
      */
     function getTokenWrappedAddress(
         uint32 originNetwork,

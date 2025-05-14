@@ -7,24 +7,25 @@ import fs = require("fs");
 import * as dotenv from "dotenv";
 dotenv.config({path: path.resolve(__dirname, "../../.env")});
 import {ethers, upgrades} from "hardhat";
-import {HardhatEthersSigner} from "@nomicfoundation/hardhat-ethers/signers";
-const {create2Deployment} = require("../helpers/deployment-helpers");
 
 const pathGenesis = path.join(__dirname, "./genesis.json");
+const pathGenesisSovereign = path.join(__dirname, "./genesis_sovereign.json");
+import {processorUtils, Constants} from "@0xpolygonhermez/zkevm-commonjs";
 
 const createRollupParameters = require("./create_rollup_parameters.json");
-const genesis = require("./genesis.json");
+let genesis = require(pathGenesis);
 const deployOutput = require("./deploy_output.json");
 import "../helpers/utils";
+import updateVanillaGenesis from "./utils/updateVanillaGenesis";
 
 const pathOutputJson = path.join(__dirname, "./create_rollup_output.json");
 
 import {
     PolygonRollupManager,
-    PolygonZkEVMV2,
+    PolygonZkEVMEtrog,
     PolygonZkEVMBridgeV2,
-    PolygonValidium,
     PolygonValidiumEtrog,
+    PolygonPessimisticConsensus,
 } from "../../typechain-types";
 
 async function main() {
@@ -64,24 +65,47 @@ async function main() {
         adminZkEVM,
         forkID,
         consensusContract,
+        isVanillaClient,
+        sovereignParams,
     } = createRollupParameters;
 
-    const supportedConensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog"];
+    const supportedConsensus = ["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"];
 
-    if (!supportedConensus.includes(consensusContract)) {
-        throw new Error(`Consensus contract not supported, supported contracts are: ${supportedConensus}`);
+    if (!supportedConsensus.includes(consensusContract)) {
+        throw new Error(`Consensus contract not supported, supported contracts are: ${supportedConsensus}`);
+    }
+
+    // Check consensus compatibility
+    if (isVanillaClient) {
+        if (consensusContract !== "PolygonPessimisticConsensus") {
+            throw new Error(`Vanilla client only supports PolygonPessimisticConsensus`);
+        }
+
+        // Check sovereign params
+        const mandatorySovereignParams = [
+            "bridgeManager",
+            "sovereignWETHAddress",
+            "sovereignWETHAddressIsNotMintable",
+            "globalExitRootUpdater",
+            "globalExitRootRemover",
+        ];
+        for (const parameterName of mandatorySovereignParams) {
+            if (typeof sovereignParams[parameterName] === undefined || sovereignParams[parameterName] === "") {
+                throw new Error(`Missing sovereign parameter: ${parameterName}`);
+            }
+        }
     }
 
     const dataAvailabilityProtocol = createRollupParameters.dataAvailabilityProtocol || "PolygonDataCommittee";
 
-    const supporteDataAvailabilityProtocols = ["PolygonDataCommittee"];
+    const supportedDataAvailabilityProtocols = ["PolygonDataCommittee"];
 
     if (
-        consensusContract.includes("PolygonValidium") &&
-        !supporteDataAvailabilityProtocols.includes(dataAvailabilityProtocol)
+        consensusContract.includes("PolygonValidiumEtrog") &&
+        !supportedDataAvailabilityProtocols.includes(dataAvailabilityProtocol)
     ) {
         throw new Error(
-            `Data availability protocol not supported, supported data availability protocols are: ${supporteDataAvailabilityProtocols}`
+            `Data availability protocol not supported, supported data availability protocols are: ${supportedDataAvailabilityProtocols}`
         );
     }
 
@@ -133,9 +157,15 @@ async function main() {
     }
 
     // Load Rollup manager
-    const PolgonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager", deployer);
-    const rollupManagerContract = PolgonRollupManagerFactory.attach(
+    const PolygonRollupManagerFactory = await ethers.getContractFactory("PolygonRollupManager", deployer);
+    const rollupManagerContract = PolygonRollupManagerFactory.attach(
         deployOutput.polygonRollupManagerAddress
+    ) as PolygonRollupManager;
+
+    // Load global exit root manager
+    const globalExitRootManagerFactory = await ethers.getContractFactory("PolygonZkEVMGlobalExitRootV2", deployer);
+    const globalExitRootManagerContract = globalExitRootManagerFactory.attach(
+        deployOutput.polygonZkEVMGlobalExitRootAddress
     ) as PolygonRollupManager;
 
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
@@ -146,23 +176,28 @@ async function main() {
     }
 
     let verifierContract;
+    let verifierName;
     if (realVerifier === true) {
-        let verifierName;
-        if (forkID > 9) {
+        if (consensusContract != "PolygonPessimisticConsensus") {
             verifierName = `FflonkVerifier_${forkID}`;
-        } else {
-            verifierName = "FflonkVerifier";
-        }
 
-        const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
-        verifierContract = await VerifierRollup.deploy();
-        await verifierContract.waitForDeployment();
+            const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
+            verifierContract = await VerifierRollup.deploy();
+            await verifierContract.waitForDeployment();
+        } else {
+            verifierName = "SP1VerifierPlonk";
+            const VerifierRollup = await ethers.getContractFactory(verifierName, deployer);
+            verifierContract = await VerifierRollup.deploy();
+            await verifierContract.waitForDeployment();
+        }
     } else {
-        const VerifierRollupHelperFactory = await ethers.getContractFactory("VerifierRollupHelperMock", deployer);
+        verifierName = "VerifierRollupHelperMock";
+        const VerifierRollupHelperFactory = await ethers.getContractFactory(verifierName, deployer);
         verifierContract = await VerifierRollupHelperFactory.deploy();
         await verifierContract.waitForDeployment();
     }
     console.log("#######################\n");
+    console.log("Verifier name:", verifierName);
     console.log("Verifier deployed to:", verifierContract.target);
 
     // Since it's a mock deployment deployer has all the rights
@@ -190,15 +225,29 @@ async function main() {
     await PolygonconsensusContract.waitForDeployment();
 
     // Add a new rollup type with timelock
-    const rollupCompatibilityID = 0;
+    let rollupVerifierType;
+    let genesisFinal;
+    let programVKey;
+
+    if (consensusContract == "PolygonPessimisticConsensus") {
+        rollupVerifierType = 1;
+        genesisFinal = ethers.ZeroHash;
+        programVKey = createRollupParameters.programVKey || ethers.ZeroHash;
+    } else {
+        rollupVerifierType = 0;
+        genesisFinal = genesis.root;
+        programVKey = ethers.ZeroHash;
+    }
+
     await (
         await rollupManagerContract.addNewRollupType(
             PolygonconsensusContract.target,
             verifierContract.target,
             forkID,
-            rollupCompatibilityID,
-            genesis.root,
-            description
+            rollupVerifierType,
+            genesisFinal,
+            description,
+            programVKey
         )
     ).wait();
 
@@ -208,20 +257,25 @@ async function main() {
 
     let gasTokenAddress, gasTokenNetwork, gasTokenMetadata;
 
+    // Get bridge instance
+    const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2", deployer);
+    const polygonZkEVMBridgeContract = bridgeFactory.attach(
+        deployOutput.polygonZkEVMBridgeAddress
+    ) as PolygonZkEVMBridgeV2;
     if (
         createRollupParameters.gasTokenAddress &&
-        createRollupParameters.gasTokenAddress != "" &&
-        createRollupParameters.gasTokenAddress != ethers.ZeroAddress
+        createRollupParameters.gasTokenAddress !== "" &&
+        createRollupParameters.gasTokenAddress !== ethers.ZeroAddress
     ) {
-        // Get bridge instance
-        const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2", deployer);
-        const polygonZkEVMBridgeContract = bridgeFactory.attach(
-            deployOutput.polygonZkEVMBridgeAddress
-        ) as PolygonZkEVMBridgeV2;
-
         // Get token metadata
         gasTokenMetadata = await polygonZkEVMBridgeContract.getTokenMetadata(createRollupParameters.gasTokenAddress);
-
+        outputJson.gasTokenMetadata = gasTokenMetadata;
+        // If gas token metadata includes `0x124e4f545f56414c49445f454e434f44494e47 (NOT_VALID_ENCODING)` means there is no erc20 token deployed at the selected gas token network
+        if (gasTokenMetadata.includes("124e4f545f56414c49445f454e434f44494e47")) {
+            throw new Error(
+                `Invalid gas token address, no ERC20 token deployed at the selected gas token network ${createRollupParameters.gasTokenAddress}`
+            );
+        }
         const wrappedData = await polygonZkEVMBridgeContract.wrappedTokenToTokenInfo(
             createRollupParameters.gasTokenAddress
         );
@@ -239,10 +293,11 @@ async function main() {
         gasTokenNetwork = 0;
         gasTokenMetadata = "0x";
     }
-
+    outputJson.gasTokenAddress = gasTokenAddress;
+    const nonce = await currentProvider.getTransactionCount(rollupManagerContract.target);
     const newZKEVMAddress = ethers.getCreateAddress({
         from: rollupManagerContract.target as string,
-        nonce: await currentProvider.getTransactionCount(rollupManagerContract.target),
+        nonce: nonce,
     });
 
     // Create new rollup
@@ -262,10 +317,10 @@ async function main() {
     const rollupID = await rollupManagerContract.chainIDToRollupID(chainID);
 
     console.log("#######################\n");
-    console.log("Created new Rollup:", newZKEVMAddress);
+    console.log(`Created new ${consensusContract} Rollup:`, newZKEVMAddress);
 
-    if (consensusContract.includes("PolygonValidium") && dataAvailabilityProtocol === "PolygonDataCommittee") {
-        // deploy data commitee
+    if (consensusContract.includes("PolygonValidiumEtrog") && dataAvailabilityProtocol === "PolygonDataCommittee") {
+        // deploy data committee
         const PolygonDataCommitteeContract = (await ethers.getContractFactory("PolygonDataCommittee", deployer)) as any;
         let polygonDataCommittee;
 
@@ -287,7 +342,7 @@ async function main() {
         await polygonDataCommittee?.waitForDeployment();
 
         // Load data commitee
-        const PolygonValidiumContract = (await PolygonconsensusFactory.attach(newZKEVMAddress)) as PolygonValidium;
+        const PolygonValidiumContract = (await PolygonconsensusFactory.attach(newZKEVMAddress)) as PolygonValidiumEtrog;
         // add data commitee to the consensus contract
         if ((await PolygonValidiumContract.admin()) == deployer.address) {
             await (
@@ -320,27 +375,120 @@ async function main() {
         }
     }
 
-    // Add the first batch of the created rollup
-    const newZKEVMContract = (await PolygonconsensusFactory.attach(newZKEVMAddress)) as PolygonZkEVMV2;
-    const batchData = {
-        transactions: await newZKEVMContract.generateInitializeTransaction(
-            rollupID,
+    let batchData = "";
+    /**
+    If the system is running a "vanilla client" (i.e., a basic, unmodified Ethereum client or rollup setup), the genesis block should include the deployment of the sovereign contracts, and these contracts should already be initialized with their required initial state and configurations. This means that the genesis block will contain the initial state for these contracts, allowing the system to start running without needing any additional initialization steps. However, for other rollups, additional configuration is needed. In this case, instead of having everything pre-initialized in the genesis block, we must inject an "initialization batch" into the genesis file. This batch will contain specific instructions for initializing the contracts at the time of rollup deployment. The injected initialization batch allows the system to be configured dynamically during deployment.
+     */
+    if (isVanillaClient) {
+        const initializeParams = {
+            rollupID: rollupID,
             gasTokenAddress,
             gasTokenNetwork,
-            gasTokenMetadata as any
-        ),
-        globalExitRoot: globalExitRoot,
-        timestamp: timestampReceipt,
-        sequencer: trustedSequencer,
-    };
+            polygonRollupManager: ethers.ZeroAddress,
+            gasTokenMetadata,
+            bridgeManager: sovereignParams.bridgeManager,
+            sovereignWETHAddress: sovereignParams.sovereignWETHAddress,
+            sovereignWETHAddressIsNotMintable: sovereignParams.sovereignWETHAddressIsNotMintable,
+            globalExitRootUpdater: sovereignParams.globalExitRootUpdater,
+            globalExitRootRemover: sovereignParams.globalExitRootRemover,
+        };
+        genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);
+        // Add weth address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
+        if (
+            gasTokenAddress !== ethers.ZeroAddress &&
+            ethers.isAddress(gasTokenAddress) &&
+            (sovereignParams.sovereignWETHAddress === ethers.ZeroAddress ||
+                !ethers.isAddress(sovereignParams.sovereignWETHAddress))
+        ) {
+            const wethObject = genesis.genesis.find(function (obj) {
+                return obj.contractName == "WETH";
+            });
+            outputJson.WETHAddress = wethObject.address;
+        }
+    } else {
+        if (consensusContract === "PolygonPessimisticConsensus") {
+            // Add the first batch of the created rollup
+            const newZKEVMContract = (await PolygonconsensusFactory.attach(
+                newZKEVMAddress
+            )) as PolygonPessimisticConsensus;
 
+            // Get last GER
+            const lastGER = await globalExitRootManagerContract.getLastGlobalExitRoot();
+
+            const dataInjectedTx = await polygonZkEVMBridgeContract.interface.encodeFunctionData("initialize", [
+                rollupID,
+                gasTokenAddress,
+                gasTokenNetwork,
+                Constants.ADDRESS_GLOBAL_EXIT_ROOT_MANAGER_L2, // Global exit root address on L2
+                ethers.ZeroAddress, // Rollup manager on L2 does not exist
+                gasTokenMetadata as any,
+            ]);
+
+            // check maximum length is 65535
+            if ((dataInjectedTx.length - 2) / 2 > 0xffff) {
+                // throw error
+                throw new Error(`HugeTokenMetadataNotSupported`);
+            }
+
+            const injectedTx = {
+                type: 0, // force ethers to parse it as a legacy transaction
+                chainId: 0, // force ethers to parse it as a pre-EIP155 transaction
+                to: await newZKEVMContract.bridgeAddress(),
+                value: 0,
+                gasPrice: 0,
+                gasLimit: 30000000,
+                nonce: 0,
+                data: dataInjectedTx,
+                signature: {
+                    v: "0x1b",
+                    r: "0x00000000000000000000000000000000000000000000000000000005ca1ab1e0",
+                    s: "0x000000000000000000000000000000000000000000000000000000005ca1ab1e",
+                },
+            };
+
+            // serialize transactions
+            const txObject = ethers.Transaction.from(injectedTx);
+
+            const customData = processorUtils.rawTxToCustomRawTx(txObject.serialized);
+            batchData = {
+                batchL2Data: customData,
+                globalExitRoot: lastGER,
+                timestamp: blockDeploymentRollup.timestamp,
+                sequencer: trustedSequencer,
+                l1BlockNumber: blockDeploymentRollup.number,
+                l1BlockHash: blockDeploymentRollup.hash,
+                l1ParentHash: blockDeploymentRollup.parentHash,
+            };
+        } else {
+            // Add the first batch of the created rollup
+            const newZKEVMContract = (await PolygonconsensusFactory.attach(newZKEVMAddress)) as PolygonZkEVMEtrog;
+            batchData = {
+                batchL2Data: await newZKEVMContract.generateInitializeTransaction(
+                    rollupID,
+                    gasTokenAddress,
+                    gasTokenNetwork,
+                    gasTokenMetadata as any
+                ),
+                globalExitRoot: globalExitRoot,
+                timestamp: timestampReceipt,
+                sequencer: trustedSequencer,
+            };
+        }
+    }
     outputJson.firstBatchData = batchData;
     outputJson.genesis = genesis.root;
     outputJson.createRollupBlockNumber = blockDeploymentRollup.number;
     outputJson.rollupAddress = newZKEVMAddress;
     outputJson.verifierAddress = verifierContract.target;
     outputJson.consensusContract = consensusContract;
+    outputJson.consensusContractAddress = PolygonconsensusContract.target;
+    outputJson.rollupTypeId = newRollupTypeID;
+    outputJson.programVKey = programVKey;
 
+    // Rewrite updated genesis in case of vanilla client
+    if (isVanillaClient) {
+        fs.writeFileSync(pathGenesisSovereign, JSON.stringify(genesis, null, 1));
+    }
     fs.writeFileSync(pathOutputJson, JSON.stringify(outputJson, null, 1));
 }
 

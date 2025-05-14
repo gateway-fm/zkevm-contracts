@@ -342,7 +342,6 @@ async function main() {
         for (let i = 0; i < attemptsDeployProxy; i++) {
             try {
                 polygonZkEVMGlobalExitRoot = await upgrades.deployProxy(PolygonZkEVMGlobalExitRootFactory, [], {
-                    initializer: false,
                     constructorArgs: [precalculateRollupManager, proxyBridgeAddress],
                     unsafeAllow: ["constructor", "state-variable-immutable"],
                 });
@@ -419,18 +418,12 @@ async function main() {
                     PolygonRollupManagerFactory,
                     [
                         trustedAggregator,
-                        pendingStateTimeout,
-                        trustedAggregatorTimeout,
                         admin,
                         timelockAddressRollupManager,
                         emergencyCouncilAddress,
-                        ethers.ZeroAddress, // unused parameter
-                        ethers.ZeroAddress, // unused parameter
-                        0, // unused parameter
-                        0, // unused parameter
                     ],
                     {
-                        initializer: "initialize",
+                        initializer: "initialize(address,address,address,address)",
                         constructorArgs: [
                             polygonZkEVMGlobalExitRoot?.target,
                             polTokenAddress,
@@ -490,9 +483,6 @@ async function main() {
     console.log("PolygonZkEVMGlobalExitRootAddress:", await polygonRollupManagerContract.globalExitRootManager());
     console.log("polTokenAddress:", await polygonRollupManagerContract.pol());
     console.log("polygonZkEVMBridgeContract:", await polygonRollupManagerContract.bridgeAddress());
-
-    console.log("pendingStateTimeout:", await polygonRollupManagerContract.pendingStateTimeout());
-    console.log("trustedAggregatorTimeout:", await polygonRollupManagerContract.trustedAggregatorTimeout());
 
     // Check roles
     expect(await polygonRollupManagerContract.hasRole(DEFAULT_ADMIN_ROLE, timelockAddressRollupManager)).to.be.equal(

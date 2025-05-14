@@ -42,7 +42,7 @@ contract PolygonZkEVMBridgeMock is PolygonZkEVMBridge, OwnableUpgradeable {
      * @param destinationNetwork Network destination
      * @param destinationAddress Address destination
      * @param amount Amount of tokens
-     * @param token Token address, 0 address is reserved for ether
+     * @param token Token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
      * @param permitData Raw data of the call `permit` of the token
      */
     function bridgeAsset(

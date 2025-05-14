@@ -19,23 +19,13 @@ contract PolygonRollupManagerNotUpgraded is PolygonRollupManager {
 
     function initialize(
         address trustedAggregator,
-        uint64 _pendingStateTimeout,
-        uint64 _trustedAggregatorTimeout,
         address admin,
         address timelock,
-        address emergencyCouncil,
-        PolygonZkEVMExistentEtrog /*polygonZkEVM*/,
-        IVerifierRollup /*zkEVMVerifier*/,
-        uint64 /*zkEVMForkID*/,
-        uint64 /*zkEVMChainID*/
-    ) external override reinitializer(2) {
-        pendingStateTimeout = _pendingStateTimeout;
-        trustedAggregatorTimeout = _trustedAggregatorTimeout;
+        address emergencyCouncil
+    ) external reinitializer(2) {
 
         // Constant deployment variables
         _batchFee = 0.1 ether; // 0.1 Matic
-        verifyBatchTimeTarget = 30 minutes;
-        multiplierBatchFee = 1002;
 
         // Initialize OZ contracts
         __AccessControl_init();
