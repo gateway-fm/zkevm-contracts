@@ -233,7 +233,18 @@ contract BridgeL2SovereignChain is
             address(0),
             emergencyBridgeUnpauser
         );
+
+        // Set proxied tokens manager
+        require(
+            _proxiedTokensManager != address(this),
+            BridgeAddressNotAllowed()
+        );
+
+        // It's not allowed proxiedTokensManager to be zero address. If disabling token upgradability is required, add a not owned account like 0xffff...fffff
+        require(_proxiedTokensManager != address(0), InvalidZeroAddress());
+
         proxiedTokensManager = _proxiedTokensManager;
+
         emit AcceptProxiedTokensManagerRole(address(0), proxiedTokensManager);
 
         // Set gas token
@@ -360,11 +371,11 @@ contract BridgeL2SovereignChain is
     }
 
     /**
-     * @notice Override the function to prevent the contract from being initialized with this initializer
+     * @notice Override the function to prevent the usage, only allowed for L1 bridge, not sovereign chains
      */
-    function initialize(
+    function setProxiedTokensManager(
         address //proxiedTokensManager
-    ) external override(PolygonZkEVMBridgeV2) initializer {
+    ) external pure override(PolygonZkEVMBridgeV2) {
         revert InvalidInitializeFunction();
     }
 

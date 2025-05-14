@@ -8,7 +8,8 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable5/token
 import {Initializable} from "@openzeppelin/contracts-upgradeable5/proxy/utils/Initializable.sol";
 
 // Interfaces
-import {ITokenWrappedBridgeUpgradeable} from "../interfaces/ITokenWrappedBridgeUpgradeable.sol";
+import {ITokenWrappedBridgeUpgradeable, IERC20Metadata, IERC20Permit} from "../interfaces/ITokenWrappedBridgeUpgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable5/token/ERC20/ERC20Upgradeable.sol";
 
 // This contract contains the solidity code that compiles into the BASE_INIT_BYTECODE_WRAPPED_TOKEN_UPGRADEABLE constant on the PolygonZkEVMBridgeV2
 // This contract should remain untouched, even if it's not used directly as dependency. The main use is to verify on block explorers
@@ -32,8 +33,6 @@ contract TokenWrappedBridgeUpgradeable is
         hex"863b064fe9383d75d38f584f64f1aaba4520e9ebc98515fa15bdeae8c4274d00";
 
     // Errors.
-    error InvalidName();
-    error InvalidSymbol();
     error OnlyBridge();
 
     // Checks if the sender is the bridge
@@ -66,10 +65,6 @@ contract TokenWrappedBridgeUpgradeable is
         string memory symbol,
         uint8 __decimals
     ) external initializer {
-        // Check inputs
-        require(bytes(name).length > 0, InvalidName());
-        require(bytes(symbol).length > 0, InvalidSymbol());
-
         // Initialize the ERC20 token with the name and symbol
         __ERC20_init(name, symbol);
         // Initialize the ERC20Permit with the name
@@ -99,8 +94,24 @@ contract TokenWrappedBridgeUpgradeable is
         _burn(account, value);
     }
 
+    function nonces(
+        address owner
+    )
+        public
+        view
+        override(ERC20PermitUpgradeable, IERC20Permit)
+        returns (uint256)
+    {
+        return super.nonces(owner);
+    }
+
     /// @notice The number of decimals of the token.
-    function decimals() public view override returns (uint8) {
+    function decimals()
+        public
+        view
+        override(ERC20Upgradeable, IERC20Metadata)
+        returns (uint8)
+    {
         TokenWrappedBridgeUpgradeableStorage
             storage $ = _getTokenWrappedBridgeUpgradeableStorage();
         return $.decimals;

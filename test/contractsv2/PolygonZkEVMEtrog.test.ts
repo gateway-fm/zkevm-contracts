@@ -27,8 +27,6 @@ function calculateGlobalExitRoot(mainnetExitRoot: any, rollupExitRoot: any) {
 
 describe("PolygonZkEVMEtrog", () => {
     let deployer: any;
-    let timelock: any;
-    let emergencyCouncil: any;
     let trustedAggregator: any;
     let trustedSequencer: any;
     let admin: any;
@@ -45,8 +43,6 @@ describe("PolygonZkEVMEtrog", () => {
     const polTokenSymbol = "POL";
     const polTokenInitialBalance = ethers.parseEther("20000000");
 
-    const pendingStateTimeoutDefault = 100;
-    const trustedAggregatorTimeout = 100;
     const FORCE_BATCH_TIMEOUT = 60 * 60 * 24 * 5; // 5 days
     const _MAX_VERIFY_BATCHES = 1000;
     const _MAX_TRANSACTIONS_BYTE_LENGTH = 120000;
@@ -74,7 +70,7 @@ describe("PolygonZkEVMEtrog", () => {
         upgrades.silenceWarnings();
 
         // load signers
-        [deployer, trustedAggregator, trustedSequencer, admin, timelock, emergencyCouncil, beneficiary] =
+        [deployer, trustedAggregator, trustedSequencer, admin, beneficiary] =
             await ethers.getSigners();
 
         // deploy mock verifier
@@ -127,6 +123,11 @@ describe("PolygonZkEVMEtrog", () => {
             rollupManagerContract.target,
             "0x"
         );
+
+        // Set proxied token manager address
+        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target))
+        .to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
+        .withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
 
         // fund sequencer address with Matic tokens
         await polTokenContract.transfer(trustedSequencer.address, ethers.parseEther("1000"));

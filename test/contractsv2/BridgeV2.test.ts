@@ -78,6 +78,11 @@ describe("PolygonZkEVMBridge Contract", () => {
             "0x"
         );
 
+        // Set proxied token manager address
+        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target))
+            .to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
+            .withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
+
         // deploy token
         const maticTokenFactory = await ethers.getContractFactory("ERC20PermitMock");
         polTokenContract = await maticTokenFactory.deploy(

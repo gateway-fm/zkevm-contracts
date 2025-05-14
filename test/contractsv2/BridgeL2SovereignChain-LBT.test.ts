@@ -194,6 +194,14 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
             }
         );
 
+        // Initialize bridge
+        await sovereignChainBridgeContract.initialize(
+            [],
+            [],
+            emergencyBridgePauser.address,
+            emergencyBridgePauser.address,
+            proxiedTokensManager.address
+        )
         // claim before bridge
         const originNetwork = 0; // mainnet
         const tokenAddress = polTokenContract.target;
@@ -216,7 +224,7 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
             0
         );
 
-        // checl LBT balance
+        // check LBT balance
         const tokenInfoHash = await ethers.solidityPackedKeccak256(["uint32", "address"], [originNetwork, tokenAddress]);
         const balance = await sovereignChainBridgeContract.localBalanceTree(tokenInfoHash);
         expect(balance).to.be.equal(amount);

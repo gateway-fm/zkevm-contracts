@@ -55,7 +55,7 @@ describe("BridgeV2 upgrade", () => {
         bridgeContract = await upgrades.upgradeProxy(bridgeContract.target, bridgeV2Factory, {
             unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
             call: {
-                fn: "initialize(address)",
+                fn: "setProxiedTokensManager(address)",
                 args: [
                     proxiedTokensManager.address
                 ]
@@ -78,9 +78,6 @@ describe("BridgeV2 upgrade", () => {
         // Check OnlyProxiedTokensManager
         await expect(bridgeContract.transferProxiedTokensManagerRole(rollupManager.address))
             .to.revertedWithCustomError(bridgeContract, "OnlyProxiedTokensManager")
-        // Check BridgeAddressNotAllowed
-        await expect(bridgeContract.connect(proxiedTokensManager).transferProxiedTokensManagerRole(bridgeContract.target))
-            .to.revertedWithCustomError(bridgeContract, "BridgeAddressNotAllowed")
 
         // Make first role transfer step
         await expect(bridgeContract.connect(proxiedTokensManager).transferProxiedTokensManagerRole(rollupManager.address))

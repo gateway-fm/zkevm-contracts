@@ -88,6 +88,11 @@ describe("PolygonZkEVMBridge Gas tokens tests", () => {
         gasTokenNetwork = 0;
         gasTokenMetadata = metadataToken;
 
+        // Set proxied token manager address
+        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target))
+            .to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
+            .withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
+
         await polygonZkEVMBridgeContract.initialize(
             networkIDMainnet,
             polTokenContract.target, // zero for ether

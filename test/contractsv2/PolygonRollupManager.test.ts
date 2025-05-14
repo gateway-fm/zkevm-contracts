@@ -173,6 +173,11 @@ describe("Polygon Rollup Manager", () => {
             "0x"
         );
 
+        // Set proxied token manager address
+        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target))
+            .to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
+            .withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
+
         // Initialize Mock
         await rollupManagerContract.initializeMock(
             trustedAggregator.address,

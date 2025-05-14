@@ -66,11 +66,6 @@ contract PolygonZkEVMBridgeV2 is
     // Current bridge version
     string public constant BRIDGE_VERSION = "al-v0.3.0";
 
-    // This is used to return an uncontrolled default address other than address(0) in the function Otherwise, the constructor of TokenWrappedTransparentProxy
-    // will revert when it calls that function, as it will not change admin to the zero address.
-    address public constant INVALID_WTOKEN_PROXY_ADMIN =
-        0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF;
-
     // Network identifier
     uint32 public networkID;
 
@@ -108,10 +103,10 @@ contract PolygonZkEVMBridgeV2 is
     ITokenWrappedBridgeUpgradeable public WETHToken;
 
     // Address of the proxied tokens manager, is the admin of proxied wrapped tokens
-    address public proxiedTokensManager;
+    address internal proxiedTokensManager;
 
     //  This account will be able to accept the proxiedTokensManager role
-    address pendingProxiedTokensManager;
+    address public pendingProxiedTokensManager;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
@@ -238,12 +233,20 @@ contract PolygonZkEVMBridgeV2 is
     /**
      * @notice initializer to set the proxiedTokensManager
      * @param _proxiedTokensManager Address of the proxied tokens manager
-     * @dev This function is INSECURE in case you are deploying this contract in mainnet. This contract should only be used for testing or to upgrade productive bridge already deployed on mainnet
+     * @dev This function is INSECURE in case you are deploying this contract in mainnet. This contract should only be used to upgrade productive bridge already deployed on mainnet.
+     * @dev Only use this function to upgrade current deployed bridge on mainnet ethereum. IMPORTANT: Call it with upgradeAndCall at upgrade process
      */
-    function initialize(
+    function setProxiedTokensManager(
         address _proxiedTokensManager
-    ) external virtual reinitializer(2) {
-        // It's not allowed proxiedTokensManager to be zero on mainnet
+    ) external virtual {
+        require(proxiedTokensManager == address(0), "Already initialized");
+        require(
+            _proxiedTokensManager != address(this),
+            BridgeAddressNotAllowed()
+        );
+
+        // It's not allowed proxiedTokensManager to be zero on mainnet. If disabling token upgradability is required, add a not owned account like 0xffff...fffff.
+        /// @dev Dont set an invalid address on L1
         if (_proxiedTokensManager == address(0)) {
             revert InvalidZeroAddress();
         }
@@ -1013,11 +1016,6 @@ contract PolygonZkEVMBridgeV2 is
         address newProxiedTokensManager
     ) external {
         require(msg.sender == proxiedTokensManager, OnlyProxiedTokensManager());
-        // Check that the proposed newProxiedTokensManager is not the bridge address
-        require(
-            newProxiedTokensManager != address(this),
-            BridgeAddressNotAllowed()
-        );
 
         pendingProxiedTokensManager = newProxiedTokensManager;
 
@@ -1258,15 +1256,11 @@ contract PolygonZkEVMBridgeV2 is
             .initialize(name, symbol, decimals);
     }
 
-    function getProxiedTokensManager()
-        external
-        view
-        returns (address finalProxiedTokensManager)
-    {
-        finalProxiedTokensManager = proxiedTokensManager;
-        if (finalProxiedTokensManager == address(0)) {
-            finalProxiedTokensManager = INVALID_WTOKEN_PROXY_ADMIN;
-        }
+    /**
+     * @notice Returns internal proxiedTokensManager address
+     */
+    function getProxiedTokensManager() external view returns (address) {
+        return proxiedTokensManager;
     }
 
     /// @notice This function is used to get the implementation address of the wrapped token bridge

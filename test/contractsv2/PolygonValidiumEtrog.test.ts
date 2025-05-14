@@ -119,6 +119,9 @@ describe("PolygonValidiumEtrog", () => {
             "0x"
         );
 
+        // Set proxied token manager address
+        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target)).to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole").withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
+
         // fund sequencer address with Matic tokens
         await polTokenContract.transfer(trustedSequencer.address, ethers.parseEther("1000"));
 
