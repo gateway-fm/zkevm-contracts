@@ -128,9 +128,16 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     await batch.executeTxs();
     await zkEVMDB.consolidate(batch);
 
-    // replace old bridge and ger manager by sovereign contracts bytecode
+    // replace old bridge and ger manager by sovereign contracts bytecode, storage and nonce
     oldBridge.contractName = GENESIS_CONTRACT_NAMES.SOVEREIGN_BRIDGE_IMPLEMENTATION;
     oldBridge.bytecode = `0x${await zkEVMDB.getBytecode(sovereignBridgeAddress)}`;
+    oldBridge.storage = await zkEVMDB.dumpStorage(sovereignBridgeAddress);
+    oldBridge.storage = Object.entries(oldBridge.storage).reduce((acc, [key, value]) => {
+        acc[key] = padTo32Bytes(value);
+        return acc;
+    }, {});
+    const bridgeInfo = await zkEVMDB.getCurrentAccountState(sovereignBridgeAddress);
+    oldBridge.nonce = Number(bridgeInfo.nonce);
 
     // Compute the address of the BytecodeStorer contract deployed by the deployed sovereign bridge
     const precalculatedAddressBytecodeStorer = ethers.getCreateAddress(
@@ -175,21 +182,26 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     expect(Number(bridgeState.nonce)).to.equal(3)
 
     // Check if the genesis contains TokenWrappedImplementation contract
-    const tokenWrappedImplementationObject = genesis.genesis.find(function (obj) {
+    let tokenWrappedImplementationObject = genesis.genesis.find(function (obj) {
         return obj.contractName == GENESIS_CONTRACT_NAMES.TOKEN_WRAPPED_IMPLEMENTATION;
     });
 
     // If its not contained add it to the genesis
     if (typeof tokenWrappedImplementationObject === "undefined") {
         const tokenWrappedImplementationDeployedBytecode = `0x${await zkEVMDB.getBytecode(precalculatedAddressTokenWrappedImplementation)}`;
-        const tokenWrappedImplementationCodeGenesis = {
+        tokenWrappedImplementationObject = {
             contractName: GENESIS_CONTRACT_NAMES.TOKEN_WRAPPED_IMPLEMENTATION,
             balance: "0",
             nonce: "1",
             address: precalculatedAddressTokenWrappedImplementation,
             bytecode: tokenWrappedImplementationDeployedBytecode,
         };
-        genesis.genesis.push(tokenWrappedImplementationCodeGenesis);
+        tokenWrappedImplementationObject.storage = await zkEVMDB.dumpStorage(precalculatedAddressTokenWrappedImplementation);
+        tokenWrappedImplementationObject.storage = Object.entries(tokenWrappedImplementationObject.storage).reduce((acc, [key, value]) => {
+            acc[key] = padTo32Bytes(value);
+            return acc;
+        }, {});
+        genesis.genesis.push(tokenWrappedImplementationObject);
     } else {
         tokenWrappedImplementationObject.address = precalculatedAddressTokenWrappedImplementation;
         // Check bytecode of the TokenWrappedImplementation contract
@@ -200,8 +212,13 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     const oldGer = genesis.genesis.find(function (obj) {
         return supportedGERManagers.includes(obj.contractName);
     });
-    oldGer.contractName = GENESIS_CONTRACT_NAMES.GER_L2_IMPLEMENTATION;
+    oldGer.contractName = GENESIS_CONTRACT_NAMES.GER_L2_SOVEREIGN_IMPLEMENTATION;
     oldGer.bytecode = `0x${await zkEVMDB.getBytecode(GERAddress)}`;
+    oldGer.storage = await zkEVMDB.dumpStorage(GERAddress);
+    oldGer.storage = Object.entries(oldGer.storage).reduce((acc, [key, value]) => {
+        acc[key] = padTo32Bytes(value);
+        return acc;
+    }, {});
 
     // Setup a second zkEVM to initialize both contracts
     const zkEVMDB2 = await ZkEVMDB.newZkEVM(
@@ -295,6 +312,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Update bridgeProxy storage and nonce
     bridgeProxy.contractName = GENESIS_CONTRACT_NAMES.SOVEREIGN_BRIDGE_PROXY;
     bridgeProxy.storage = await zkEVMDB2.dumpStorage(bridgeProxy.address);
+
     // Update nonce, in case weth is deployed at initialize, it is increased
     const bridgeProxyState = await zkEVMDB2.getCurrentAccountState(bridgeProxy.address)
     bridgeProxy.nonce = String(Number(bridgeProxyState.nonce));
@@ -336,6 +354,10 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         return acc;
     }, {});
 
+    // CHECK tokenWrappedImplementationObject STORAGE
+    // Storage slot for initialize contract
+    expect(tokenWrappedImplementationObject.storage["0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00"]).to.equal("0x000000000000000000000000000000000000000000000000ffffffffffffffff");
+
     // CHECK BRIDGE PROXY STORAGE
     // Storage value pointing bridge implementation
     expect(bridgeProxy.storage["0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"]).to.include(
@@ -376,6 +398,9 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
 
     // Check bridge implementation bytecode contains tokenWrappedImplementation contract address
     expect(oldBridge.bytecode).to.include(precalculatedAddressTokenWrappedImplementation.toLowerCase().slice(2));
+
+    // Check bridge implementation has initializer disabled
+    expect(oldBridge.storage["0x0000000000000000000000000000000000000000000000000000000000000000"].slice(-2)).to.equal("ff");
 
     // Storage value for rollup/network id
     // RollupID value is stored at position 68 with globalExitRootManager address. Slice from byte 2 to 2-8 to get the rollupID
@@ -480,6 +505,9 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         return acc;
     }, {});
 
+    // CHECK GER IMPLEMENTATION STORAGE
+    expect(oldGer.storage["0x0000000000000000000000000000000000000000000000000000000000000034"].slice(-2)).to.equal("ff");
+
     // CHECK GER PROXY STORAGE
     // Storage value of proxy implementation
     expect(gerProxy.storage["0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"]).to.include(
@@ -506,7 +534,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     }
 
     expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000035"]).to.include(
-      globalExitRootRemover.toLowerCase().slice(2)
+        globalExitRootRemover.toLowerCase().slice(2)
     );
 
     // Create a new zkEVM to generate a genesis an empty system address storage
