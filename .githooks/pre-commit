@@ -68,6 +68,7 @@ if npm run lint; then
     forge selectors ls > docs/selectors.txt
     git add docs/selectors.txt
     git add compiled-contracts
+    sh storage-layout.sh
     exit 0
 else
     exit 1

@@ -6,7 +6,6 @@ import "@nomiclabs/hardhat-solhint";
 import "@nomicfoundation/hardhat-chai-matchers";
 import {HardhatUserConfig} from "hardhat/config";
 import 'solidity-coverage'
-import 'hardhat-storage-layout';
 
 const DEFAULT_MNEMONIC = "test test test test test test test test test test test junk";
 

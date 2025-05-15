@@ -103,7 +103,7 @@ contract PolygonZkEVMBridgeV2 is
     ITokenWrappedBridgeUpgradeable public WETHToken;
 
     // Address of the proxied tokens manager, is the admin of proxied wrapped tokens
-    address internal proxiedTokensManager;
+    address public proxiedTokensManager;
 
     //  This account will be able to accept the proxiedTokensManager role
     address public pendingProxiedTokensManager;

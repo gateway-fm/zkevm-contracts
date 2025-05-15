@@ -498,7 +498,7 @@ describe("Polygon Rollup Manager", () => {
             newCreatedRollupID,
             gasTokenAddress,
             gasTokenNetwork,
-            "0x" // empty metadata
+            "0x", // empty metadata
         );
 
         // Check transaction
