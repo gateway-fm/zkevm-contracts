@@ -241,6 +241,8 @@ contract AggLayerGateway is
         if (defaultAggchainVKeys[defaultAggchainSelector] != bytes32(0)) {
             revert AggchainVKeyAlreadyExists();
         }
+
+        // Check new key is non-zero
         if (newAggchainVKey == bytes32(0)) {
             revert VKeyCannotBeZero();
         }
@@ -265,6 +267,11 @@ contract AggLayerGateway is
             revert AggchainVKeyNotFound();
         }
 
+        // Check new key is non-zero
+        if (newDefaultAggchainVKey == bytes32(0)) {
+            revert VKeyCannotBeZero();
+        }
+
         // Update the VKey
         bytes32 previousVKey = defaultAggchainVKeys[defaultAggchainSelector];
         defaultAggchainVKeys[defaultAggchainSelector] = newDefaultAggchainVKey;
@@ -274,6 +281,24 @@ contract AggLayerGateway is
             previousVKey,
             newDefaultAggchainVKey
         );
+    }
+
+    /**
+     * @notice Function to unset a default aggchain verification key from the mapping
+     * @param defaultAggchainSelector The 4 bytes selector to update the default aggchain verification keys.
+     */
+    function unsetDefaultAggchainVKey(
+        bytes4 defaultAggchainSelector
+    ) external onlyRole(AGGCHAIN_DEFAULT_VKEY_ROLE) {
+        // Check if the key exists
+        if (defaultAggchainVKeys[defaultAggchainSelector] == bytes32(0)) {
+            revert AggchainVKeyNotFound();
+        }
+
+        // Set key to zero
+        defaultAggchainVKeys[defaultAggchainSelector] = bytes32(0);
+
+        emit UnsetDefaultAggchainVKey(defaultAggchainSelector);
     }
 
     /**
