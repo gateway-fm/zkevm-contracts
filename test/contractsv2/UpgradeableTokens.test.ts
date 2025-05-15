@@ -9,8 +9,9 @@ import {
     TokenWrappedBridgeUpgradeable,
     TokenWrappedTransparentProxy
 } from "../../typechain-types";
-import { claimBeforeBridge, createClaimAndAddGER } from "./helpers/helpers-sovereign-bridge";
+import { claimBeforeBridge } from "./helpers/helpers-sovereign-bridge";
 import { takeSnapshot } from "@nomicfoundation/hardhat-network-helpers";
+import { computeWrappedTokenProxyAddress } from "./helpers/helpers-sovereign-bridge"
 
 
 describe("Upgradeable Tokens", () => {
@@ -137,6 +138,63 @@ describe("Upgradeable Tokens", () => {
                 ],
             },
         }) as unknown as BridgeL2SovereignChain;
+    });
+
+    it("Should migrate from a legacy token to a new upgradeable token, make a claim and migrate legacy tokens", async () => {
+
+        const originNetwork = 0; // mainnet
+        const tokenAddress = polTokenContract.target;
+        const amount = 1000;
+        const legacyTokenAddress = await sovereignBridgeContract.tokenInfoToWrappedToken(ethers.solidityPackedKeccak256(["uint32", "address"],
+            [originNetwork, tokenAddress]));
+
+        // Deploy proxied token
+        await expect(sovereignBridgeContract.deployWrappedTokenAndRemap(originNetwork, tokenAddress)).to.be.revertedWithCustomError(sovereignBridgeContract, "OnlyBridgeManager");
+        const proxiedTokenAddress = await computeWrappedTokenProxyAddress(originNetwork, tokenAddress, sovereignBridgeContract, false);
+
+        await expect(sovereignBridgeContract.connect(bridgeManager).deployWrappedTokenAndRemap(originNetwork, tokenAddress)).to.emit(sovereignBridgeContract, "SetSovereignTokenAddress").withArgs(
+            originNetwork,
+            tokenAddress,
+            proxiedTokenAddress,
+            false);
+
+        expect(await sovereignBridgeContract.tokenInfoToWrappedToken(ethers.solidityPackedKeccak256(["uint32", "address"],
+            [originNetwork, tokenAddress]))).to.be.equal(proxiedTokenAddress);
+
+        // Check balance of proxied token
+        const proxyWrappedAddressContract = maticTokenFactory.attach(proxiedTokenAddress) as ERC20PermitMock;
+        expect(await proxyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(0);
+        // Check balance of legacy token
+        const legacyWrappedAddressContract = maticTokenFactory.attach(legacyTokenAddress) as ERC20PermitMock;
+        expect(await legacyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount);
+
+        // Make a claim to the new deployed proxy token
+        const destinationNetwork = networkIDRollup;
+        const destinationAddress = receiver.address;
+        const metadata = metadataToken;
+        await claimBeforeBridge(
+            LEAF_TYPE_ASSET,
+            originNetwork, // originNetwork
+            tokenAddress,
+            destinationNetwork,
+            destinationAddress,
+            amount,
+            metadata,
+            sovereignGERContract,
+            sovereignBridgeContract,
+            polTokenContract,
+            indexLET
+        );
+        expect(await proxyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount);
+
+        // Migrate tokens from legacy token to new proxied token
+        await expect(sovereignBridgeContract.connect(receiver).migrateLegacyToken(legacyTokenAddress, amount, "0x"))
+        .to.emit(sovereignBridgeContract, "MigrateLegacyToken")
+        .withArgs(receiver.address, legacyTokenAddress, proxiedTokenAddress, amount);
+
+        // Check amounts after migration
+        expect(await proxyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount*2);
+        expect(await legacyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(0);
     });
 
     it("Should deploy a bridge and claim asset in different chains with different arguments and check address is the same", async () => {

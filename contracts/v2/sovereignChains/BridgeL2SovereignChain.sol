@@ -575,7 +575,7 @@ contract BridgeL2SovereignChain is
             legacyTokenAddress
         ];
         if (legacyTokenInfo.originTokenAddress == address(0)) {
-            revert TokenNotMapped();
+            revert TokenNotMapped(legacyTokenAddress);
         }
 
         // Check current token mapped is proposed updatedTokenAddress
@@ -658,6 +658,50 @@ contract BridgeL2SovereignChain is
                 unsetGlobalIndexHashChain
             );
         }
+    }
+
+    /**
+     * @notice Function to deploy an upgradeable wrapped token without having to claim asset. It is used to upgrade legacy tokens to the new upgradeable token. After deploying the token it is remapped to be the new functional wtoken
+     * @param originNetwork Origin network of the token
+     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
+     */
+    function deployWrappedTokenAndRemap(
+        uint32 originNetwork,
+        address originTokenAddress
+    ) external onlyBridgeManager {
+        // Compute tokenInfoHash
+        bytes32 tokenInfoHash = keccak256(
+            abi.encodePacked(originNetwork, originTokenAddress)
+        );
+
+        // Only allow to deploy a wrapped token if the token is mapped, meaning is legacy and there is a plan to remap it to the new one
+        ITokenWrappedBridgeUpgradeable wrappedToken = ITokenWrappedBridgeUpgradeable(
+                tokenInfoToWrappedToken[tokenInfoHash]
+            );
+        require(
+            address(wrappedToken) != address(0),
+            TokenNotMapped(address(wrappedToken))
+        );
+
+        // Deploy the wrapped token
+        address wrappedTokenProxy = address(
+            _deployWrappedToken(
+                tokenInfoHash,
+                abi.encode(
+                    wrappedToken.name(),
+                    wrappedToken.symbol(),
+                    wrappedToken.decimals()
+                )
+            )
+        );
+
+        // Remap the deployed wrapped token
+        _setSovereignTokenAddress(
+            originNetwork,
+            originTokenAddress,
+            wrappedTokenProxy,
+            false
+        );
     }
 
     /**

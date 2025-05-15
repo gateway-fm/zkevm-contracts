@@ -19,7 +19,7 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
     /**
      * @dev Thrown when trying to remove a token mapping that has not been updated by a new one
      */
-    error TokenNotMapped();
+    error TokenNotMapped(address tokenAddress);
 
     /**
      * @dev Thrown when trying to migrate a legacy token that is already the current token
