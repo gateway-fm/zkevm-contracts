@@ -363,6 +363,19 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     expect(bridgeProxy.storage["0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"]).to.include(
         oldBridge.address.toLowerCase().slice(2)
     );
+    // rollup manager address in bridge storage, storage slot 0x6c
+    if (polygonRollupManager === ethers.ZeroAddress) {
+        expect(bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006c"]).to.be.undefined;
+    } else {
+        expect(bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006c"]).to.include(
+            polygonRollupManager.toLowerCase().slice(2)
+        );
+    }
+    // pendingProxiedTokensManager address in bridge storage, storage slot 0x71, should be undefined
+    expect(bridgeProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000071"]).to.be.undefined;
+
+    // proxiedTokensManager address in bridge storage, storage slot 0x70
+    expect(bridgeProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000070"]).to.include(proxiedTokensManager.toLowerCase().slice(2));
 
     // Storage value of proxyAdmin
     const proxyAdminObject = genesis.genesis.find(function (obj) {
@@ -525,6 +538,10 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     );
     // Check ger proxy initialized value
     expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000034"].slice(-2)).to.equal("01");
+    // Check storage value of pendingGlobalExitRootUpdater at slot 0x39
+    expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000039"]).to.be.undefined;
+    // Check storage value of pendingGlobalExitRootRemover at slot 0x3a
+    expect(gerProxy.storage["0x000000000000000000000000000000000000000000000000000000000000003a"]).to.be.undefined;
 
     if (ethers.isAddress(globalExitRootRemover) && globalExitRootRemover !== ethers.ZeroAddress) {
         // Storage value of global exit root remover
@@ -535,6 +552,25 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
 
     expect(gerProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000035"]).to.include(
         globalExitRootRemover.toLowerCase().slice(2)
+    );
+
+    // Base genesis checks
+    const polygonTimelockObj = genesis.genesis.find(function (obj) {
+        return obj.contractName == GENESIS_CONTRACT_NAMES.POLYGON_TIMELOCK;
+    });
+    // Check polygonTimelock is the owner of ProxyAdmin
+    expect(proxyAdminObject.storage["0x0000000000000000000000000000000000000000000000000000000000000000"]).to.include(
+        polygonTimelockObj.address.toLowerCase().slice(2)
+    );
+    // Check deployer is the owner of Polygon deployer
+    const polygonDeployerObj = genesis.genesis.find(function (obj) {
+        return obj.contractName == GENESIS_CONTRACT_NAMES.POLYGON_DEPLOYER;
+    });
+    const deployerAddressObj = genesis.genesis.find(function (obj) {
+        return obj.accountName == "deployer";
+    });
+    expect(polygonDeployerObj.storage["0x0000000000000000000000000000000000000000000000000000000000000000"]).to.include(
+        deployerAddressObj.address.toLowerCase().slice(2)
     );
 
     // Create a new zkEVM to generate a genesis an empty system address storage

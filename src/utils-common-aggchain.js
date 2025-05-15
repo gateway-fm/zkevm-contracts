@@ -36,6 +36,8 @@ const GENESIS_CONTRACT_NAMES = {
     GER_L2_IMPLEMENTATION: 'PolygonZkEVMGlobalExitRootL2 implementation',
     GER_L2_PROXY: 'PolygonZkEVMGlobalExitRootL2 proxy',
     PROXY_ADMIN: 'ProxyAdmin',
+    POLYGON_TIMELOCK: 'PolygonZkEVMTimelock',
+    POLYGON_DEPLOYER: 'PolygonZkEVMDeployer',
 };
 /// //////////////////////////////
 /// // Functions for Aggchain ////
