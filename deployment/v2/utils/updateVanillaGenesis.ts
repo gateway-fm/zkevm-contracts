@@ -439,17 +439,19 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
 
             // Storage address for sovereignWETHAddressIsNotMintable mapping
             // To get the key we encode the key of the mapping with the position in the mapping
+            const mappingSlot = 162; // Slot of the mapping in the bridge contract
+            const key = ethers.keccak256(
+                ethers.AbiCoder.defaultAbiCoder().encode(
+                    ["address", "uint256"],
+                    [sovereignWETHAddress, mappingSlot]
+                )
+            );
             if (sovereignWETHAddressIsNotMintable) {
-                const mappingSlot = 162; // Slot of the mapping in the bridge contract
-                const key = ethers.keccak256(
-                    ethers.AbiCoder.defaultAbiCoder().encode(
-                        ["address", "uint256"],
-                        [sovereignWETHAddress, mappingSlot]
-                    )
-                );
                 expect(bridgeProxy.storage[key]).to.equal(
                     "0x0000000000000000000000000000000000000000000000000000000000000001"
                 );
+            } else {
+                expect(bridgeProxy.storage[key]).to.be.undefined;
             }
         } else {
             // Storage value for WETH address (only if network with native gas token), deployed at bridge initialization
