@@ -115,19 +115,25 @@ describe("PolygonZkEVMEtrog", () => {
         // check precalculated address
         expect(precalculateRollupManagerAddress).to.be.equal(rollupManagerContract.target);
 
-        await polygonZkEVMBridgeContract.initialize(
+        // Get bridge proxy admin
+        const proxyAdminAddress = await upgrades.erc1967.getAdminAddress(polygonZkEVMBridgeContract.target);
+        const proxyAdminFactory = await ethers.getContractFactory(
+            "@openzeppelin/contracts4/proxy/transparent/ProxyAdmin.sol:ProxyAdmin"
+        );
+        const proxyAdmin = proxyAdminFactory.attach(proxyAdminAddress);
+        const ownerAddress = await proxyAdmin.owner();
+
+        await expect(polygonZkEVMBridgeContract.initialize(
             networkIDMainnet,
             ethers.ZeroAddress, // zero for ether
             ethers.ZeroAddress, // zero for ether
             polygonZkEVMGlobalExitRoot.target,
             rollupManagerContract.target,
             "0x"
-        );
+        )).to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
+            .withArgs(ethers.ZeroAddress, ownerAddress);
 
-        // Set proxied token manager address
-        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target))
-        .to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
-        .withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
+        expect(await polygonZkEVMBridgeContract.getProxiedTokensManager()).to.be.equal(ownerAddress);
 
         // fund sequencer address with Matic tokens
         await polTokenContract.transfer(trustedSequencer.address, ethers.parseEther("1000"));
@@ -742,9 +748,9 @@ describe("PolygonZkEVMEtrog", () => {
         expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
-        expect(await newWrappedToken.name()).to.be.equal(tokenName);
-        expect(await newWrappedToken.symbol()).to.be.equal(tokenSymbol);
-        expect(await newWrappedToken.decimals()).to.be.equal(decimals);
+        expect(await newWrappedToken.connect(trustedAggregator).name()).to.be.equal(tokenName);
+        expect(await newWrappedToken.connect(trustedAggregator).symbol()).to.be.equal(tokenSymbol);
+        expect(await newWrappedToken.connect(trustedAggregator).decimals()).to.be.equal(decimals);
 
         // Initialzie using rollup manager with gas token
         await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerContract.target]);

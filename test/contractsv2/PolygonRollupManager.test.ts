@@ -164,19 +164,18 @@ describe("Polygon Rollup Manager", () => {
         expect(precalculateBridgeAddress).to.be.equal(polygonZkEVMBridgeContract.target);
         expect(precalculateRollupManagerAddress).to.be.equal(rollupManagerContract.target);
 
-        await polygonZkEVMBridgeContract.initialize(
+        // Get bridge proxy admin
+        const proxyBridgeAdminAddress = await upgrades.erc1967.getAdminAddress(polygonZkEVMBridgeContract.target);
+
+        await expect(polygonZkEVMBridgeContract.initialize(
             networkIDMainnet,
             ethers.ZeroAddress, // zero for ether
             ethers.ZeroAddress, // zero for ether
             polygonZkEVMGlobalExitRoot.target,
             rollupManagerContract.target,
             "0x"
-        );
-
-        // Set proxied token manager address
-        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target))
-            .to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
-            .withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
+        )).to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
+            .withArgs(ethers.ZeroAddress, proxyBridgeAdminAddress);
 
         // Initialize Mock
         await rollupManagerContract.initializeMock(

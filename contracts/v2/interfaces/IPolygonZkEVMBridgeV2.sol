@@ -109,6 +109,21 @@ interface IPolygonZkEVMBridgeV2 {
      */
     error BridgeAddressNotAllowed();
 
+    /**
+     * @dev Thrown when initializing sovereign bridge with invalid sovereign WETH token params
+     */
+    error InvalidInitializeFunction();
+
+    /**
+     * @dev Thrown when failing to retrieve the owner from proxyAdmin
+     */
+    error InvalidProxyAdmin(address proxyAdmin);
+
+    /**
+     * @dev Thrown when the owner of a proxyAdmin is zero address
+     */
+    error InvalidZeroProxyAdminOwner(address proxyAdmin);
+
     function wrappedTokenToTokenInfo(
         address destinationAddress
     ) external view returns (uint32, address);

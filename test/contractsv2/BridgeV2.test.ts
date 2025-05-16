@@ -78,11 +78,6 @@ describe("PolygonZkEVMBridge Contract", () => {
             "0x"
         );
 
-        // Set proxied token manager address
-        await expect(polygonZkEVMBridgeContract.setProxiedTokensManager(polygonZkEVMGlobalExitRoot.target))
-            .to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
-            .withArgs(ethers.ZeroAddress, polygonZkEVMGlobalExitRoot.target);
-
         // deploy token
         const maticTokenFactory = await ethers.getContractFactory("ERC20PermitMock");
         polTokenContract = await maticTokenFactory.deploy(
@@ -833,9 +828,9 @@ describe("PolygonZkEVMBridge Contract", () => {
         expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
-        expect(await newWrappedToken.name()).to.be.equal(tokenName);
-        expect(await newWrappedToken.symbol()).to.be.equal(tokenSymbol);
-        expect(await newWrappedToken.decimals()).to.be.equal(decimals);
+        expect(await newWrappedToken.connect(acc1).name()).to.be.equal(tokenName);
+        expect(await newWrappedToken.connect(acc1).symbol()).to.be.equal(tokenSymbol);
+        expect(await newWrappedToken.connect(acc1).decimals()).to.be.equal(decimals);
 
         // Can't claim because nullifier
         await expect(
@@ -855,7 +850,7 @@ describe("PolygonZkEVMBridge Contract", () => {
         ).to.be.revertedWithCustomError(polygonZkEVMBridgeContract, "AlreadyClaimed");
         expect(true).to.be.equal(await polygonZkEVMBridgeContract.isClaimed(indexLocal, indexRollup + 1));
 
-        expect(await newWrappedToken.totalSupply()).to.be.equal(amount);
+        expect(await newWrappedToken.connect(acc1).totalSupply()).to.be.equal(amount);
 
         // Claim again the other leaf to mint tokens
         const index2 = 1;
@@ -893,9 +888,9 @@ describe("PolygonZkEVMBridge Contract", () => {
         const rollupExitRoot = await polygonZkEVMGlobalExitRoot.lastRollupExitRoot();
 
         // create a new deposit
-        await expect(newWrappedToken.approve(polygonZkEVMBridgeContract.target, amount))
+        await expect(newWrappedToken.connect(acc1).approve(polygonZkEVMBridgeContract.target, amount))
             .to.emit(newWrappedToken, "Approval")
-            .withArgs(deployer.address, polygonZkEVMBridgeContract.target, amount);
+            .withArgs(acc1.address, polygonZkEVMBridgeContract.target, amount);
 
         /*
          *  pre compute root merkle tree in Js
@@ -931,8 +926,8 @@ describe("PolygonZkEVMBridge Contract", () => {
         const rootJSMainnet = merkleTreeMainnet.getRoot();
 
         // Tokens are burnt
-        expect(await newWrappedToken.totalSupply()).to.be.equal(amount * 2n);
-        expect(await newWrappedToken.balanceOf(destinationAddress)).to.be.equal(amount * 2n);
+        expect(await newWrappedToken.connect(acc1).totalSupply()).to.be.equal(amount * 2n);
+        expect(await newWrappedToken.connect(acc1).balanceOf(destinationAddress)).to.be.equal(amount * 2n);
         await expect(
             polygonZkEVMBridgeContract.bridgeAsset(
                 newDestinationNetwork,
@@ -959,9 +954,9 @@ describe("PolygonZkEVMBridge Contract", () => {
             .to.emit(newWrappedToken, "Transfer")
             .withArgs(deployer.address, ethers.ZeroAddress, amount);
 
-        expect(await newWrappedToken.totalSupply()).to.be.equal(amount);
-        expect(await newWrappedToken.balanceOf(deployer.address)).to.be.equal(amount);
-        expect(await newWrappedToken.balanceOf(polygonZkEVMBridgeContract.target)).to.be.equal(0);
+        expect(await newWrappedToken.connect(acc1).totalSupply()).to.be.equal(amount);
+        expect(await newWrappedToken.connect(acc1).balanceOf(deployer.address)).to.be.equal(amount);
+        expect(await newWrappedToken.connect(acc1).balanceOf(polygonZkEVMBridgeContract.target)).to.be.equal(0);
 
         // check merkle root with SC
         const rootSCMainnet = await polygonZkEVMBridgeContract.getRoot();

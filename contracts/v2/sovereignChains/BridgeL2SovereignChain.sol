@@ -42,9 +42,9 @@ contract BridgeL2SovereignChain is
     // Map to store wrappedAddresses that are not mintable
     mapping(bytes32 tokenInfoHash => uint256 amount) public localBalanceTree;
 
-    /// @notice Value to detect if the contract has been initialized previously.
-    ///         This mechanism is used to properly select the initializer
-    uint8 private _initializerVersion;
+    /// @dev Deprecated in favor of _initializerVersion at PolygonZkEVMBridgeV2
+    /// @custom:oz-renamed-from _initializerVersion
+    uint8 private _initializerVersionLegacy;
 
     //  This account will be able to accept the emergencyBridgePauser role
     address public pendingEmergencyBridgePauser;
@@ -166,14 +166,6 @@ contract BridgeL2SovereignChain is
         bytes32 tokenInfoHash,
         uint256 amount
     );
-
-    /// @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
-    modifier getInitializedVersion() {
-        _initializerVersion = _getInitializedVersion();
-        _;
-        /// @dev Is set to zero always after usage for transient storage mimic and better gas optimization
-        _initializerVersion = 0;
-    }
 
     /**
      * Disable initializers on the implementation following the best practices
@@ -373,9 +365,7 @@ contract BridgeL2SovereignChain is
     /**
      * @notice Override the function to prevent the usage, only allowed for L1 bridge, not sovereign chains
      */
-    function setProxiedTokensManager(
-        address //proxiedTokensManager
-    ) external pure override(PolygonZkEVMBridgeV2) {
+    function initialize() public pure override(PolygonZkEVMBridgeV2) {
         revert InvalidInitializeFunction();
     }
 

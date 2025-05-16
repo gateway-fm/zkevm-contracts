@@ -32,11 +32,6 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
     error InvalidSovereignWETHAddressParams();
 
     /**
-     * @dev Thrown when initializing sovereign bridge with invalid sovereign WETH token params
-     */
-    error InvalidInitializeFunction();
-
-    /**
      * @dev Thrown when initializing calling a function with invalid arrays length
      */
     error InputArraysLengthMismatch();

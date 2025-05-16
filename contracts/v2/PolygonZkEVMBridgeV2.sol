@@ -12,6 +12,7 @@ import "../lib/EmergencyManager.sol";
 import "../lib/GlobalExitRootLib.sol";
 import "./lib/BytecodeStorer.sol";
 import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable} from "./lib/TokenWrappedBridgeUpgradeable.sol";
+import {ERC1967Utils} from "@openzeppelin/contracts5/proxy/ERC1967/ERC1967Utils.sol";
 
 /**
  * PolygonZkEVMBridge that will be deployed on Ethereum and all Polygon rollups
@@ -108,6 +109,10 @@ contract PolygonZkEVMBridgeV2 is
     //  This account will be able to accept the proxiedTokensManager role
     address public pendingProxiedTokensManager;
 
+    // @notice Value to detect if the contract has been initialized previously.
+    ///         This mechanism is used to properly select the initializer
+    uint8 internal _initializerVersion;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
@@ -169,6 +174,14 @@ contract PolygonZkEVMBridgeV2 is
         address newProxiedTokensManager
     );
 
+    /// @dev Modifier to retrieve initializer version value previous on using the reinitializer modifier, its used in the initialize function.
+    modifier getInitializedVersion() {
+        _initializerVersion = _getInitializedVersion();
+        _;
+        /// @dev Is set to zero always after usage for transient storage mimic and better gas optimization
+        _initializerVersion = 0;
+    }
+
     constructor() {
         // Deploy the wrapped token contract
         /// @dev this contract is used to store the bytecode of the wrapped token contract, previously stored in the bridge contract but moved to a separate contract to reduce the bytecode size.
@@ -200,7 +213,14 @@ contract PolygonZkEVMBridgeV2 is
         IBasePolygonZkEVMGlobalExitRoot _globalExitRootManager,
         address _polygonRollupManager,
         bytes memory _gasTokenMetadata
-    ) external virtual initializer {
+    ) external virtual getInitializedVersion reinitializer(2) {
+        if (_initializerVersion != 0) {
+            revert InvalidInitializeFunction();
+        }
+
+        // Set PolygonTimelock contract address as proxied tokens manager, the owner of current proxy contract
+        _setProxiedTokensManagerFromProxy();
+
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonRollupManager = _polygonRollupManager;
@@ -231,28 +251,20 @@ contract PolygonZkEVMBridgeV2 is
     }
 
     /**
-     * @notice initializer to set the proxiedTokensManager
-     * @param _proxiedTokensManager Address of the proxied tokens manager
-     * @dev This function is INSECURE in case you are deploying this contract in mainnet. This contract should only be used to upgrade productive bridge already deployed on mainnet.
-     * @dev Only use this function to upgrade current deployed bridge on mainnet ethereum. IMPORTANT: Call it with upgradeAndCall at upgrade process
+     * @notice initializer to set PolygonTimelock as proxiedTokensManager
      */
-    function setProxiedTokensManager(
-        address _proxiedTokensManager
-    ) external virtual {
-        require(proxiedTokensManager == address(0), "Already initialized");
-        require(
-            _proxiedTokensManager != address(this),
-            BridgeAddressNotAllowed()
-        );
-
-        // It's not allowed proxiedTokensManager to be zero on mainnet. If disabling token upgradability is required, add a not owned account like 0xffff...fffff.
-        /// @dev Dont set an invalid address on L1
-        if (_proxiedTokensManager == address(0)) {
-            revert InvalidZeroAddress();
+    function initialize()
+        public
+        virtual
+        getInitializedVersion
+        reinitializer(2)
+    {
+        if (_initializerVersion == 0) {
+            revert InvalidInitializeFunction();
         }
-        proxiedTokensManager = _proxiedTokensManager;
 
-        emit AcceptProxiedTokensManagerRole(address(0), _proxiedTokensManager);
+        // Set PolygonTimelock contract address as proxied tokens manager, the owner of current proxy contract
+        _setProxiedTokensManagerFromProxy();
     }
 
     modifier onlyRollupManager() {
@@ -260,6 +272,32 @@ contract PolygonZkEVMBridgeV2 is
             revert OnlyRollupManager();
         }
         _;
+    }
+
+    /**
+     * @notice Set PolygonTimelock contract address as proxied tokens manager, the owner of current proxy contract
+     */
+    function _setProxiedTokensManagerFromProxy() private {
+        // Retrieve proxyAdmin from current proxy contract
+        address proxyAdmin = ERC1967Utils.getAdmin();
+
+        // Retrieve owner from proxyAdmin
+        /// @dev staticcall is used to have more control on return data and revert
+        (bool success, bytes memory returndata) = proxyAdmin.staticcall(
+            abi.encodeWithSignature("owner()")
+        );
+        require(
+            success && returndata.length == 32,
+            InvalidProxyAdmin(proxyAdmin)
+        );
+
+        // Set owner as proxiedTokensManager
+        proxiedTokensManager = abi.decode(returndata, (address));
+        require(
+            proxiedTokensManager != address(0),
+            InvalidZeroProxyAdminOwner(proxyAdmin)
+        );
+        emit AcceptProxiedTokensManagerRole(address(0), proxiedTokensManager);
     }
 
     /**

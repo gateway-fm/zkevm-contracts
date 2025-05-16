@@ -121,11 +121,6 @@ describe("BridgeL2SovereignChain Contract", () => {
                 proxiedTokensManager.address,
             )
         ).to.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");
-        await expect(
-            sovereignChainBridgeContract.setProxiedTokensManager(
-                proxiedTokensManager.address,
-            )
-        ).to.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");
 
         await sovereignChainBridgeContract.initialize(
             networkIDRollup2,
