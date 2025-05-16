@@ -170,6 +170,9 @@ async function main() {
     expect(await bridgeContract.proxiedTokensManager()).to.equal(proxiedTokensManagerAddress);
     expect(await bridgeContract.emergencyBridgePauser()).to.equal(emergencyBridgePauserAddress);
     expect(await bridgeContract.emergencyBridgeUnpauser()).to.equal(emergencyBridgeUnpauserAddress);
+    expect(await bridgeContract.bridgeManager()).to.equal(timelockSigner.address);
+    expect(await bridgeContract.pendingProxiedTokensManager()).to.equal(ethers.ZeroAddress);
+    expect(await bridgeContract.gasTokenAddress()).to.equal(ethers.ZeroAddress);
 }
 
 main().catch((e) => {
