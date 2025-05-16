@@ -384,7 +384,6 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             [ethers.randomBytes(32)],
             [100, 200],
             emergencyBridgePauser.address,
-            emergencyBridgePauser.address,
             proxiedTokensManager.address,
         )).to.revertedWithCustomError(sovereignChainBridgeContractFactory, "InputArraysLengthMismatch");
 
@@ -392,10 +391,8 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
             [ethers.randomBytes(32)],
             [100],
             emergencyBridgePauser.address,
-            emergencyBridgePauser.address,
             proxiedTokensManager.address,
-        )).to.emit(bridge, "AcceptEmergencyBridgePauserRole").withArgs(ethers.ZeroAddress, emergencyBridgePauser.address)
-        .to.emit(bridge, "AcceptProxiedTokensManagerRole").withArgs(ethers.ZeroAddress, proxiedTokensManager.address);;
+        )).to.emit(bridge, "AcceptProxiedTokensManagerRole").withArgs(ethers.ZeroAddress, proxiedTokensManager.address);
 
         // deploy and initialize wrong initializer
         const bridge2 = await upgrades.deployProxy(sovereignChainBridgeContractFactory, [], {
@@ -406,7 +403,6 @@ describe("BridgeL2SovereignChain Contract Upgrade AL", () => {
         await expect(bridge2.initialize(
             [ethers.randomBytes(32)],
             [100],
-            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address,
         )).to.be.revertedWithCustomError(sovereignChainBridgeContractFactory, "InvalidInitializeFunction");

@@ -117,7 +117,6 @@ describe("BridgeL2SovereignChain Contract", () => {
                 [ethers.randomBytes(32)],
                 [42],
                 emergencyBridgePauser.address,
-                emergencyBridgePauser.address,
                 proxiedTokensManager.address,
             )
         ).to.revertedWithCustomError(sovereignChainBridgeContract, "InvalidInitializeFunction");

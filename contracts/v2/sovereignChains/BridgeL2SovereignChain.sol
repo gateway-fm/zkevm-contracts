@@ -18,7 +18,7 @@ contract BridgeL2SovereignChain is
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
     // Current bridge version
-    string public constant BRIDGE_SOVEREIGN_VERSION = "al-v0.3.1";
+    string public constant BRIDGE_SOVEREIGN_VERSION = "al-v10.1.0";
 
     // Map to store wrappedAddresses that are not mintable
     mapping(address wrappedAddress => bool isNotMintable)
@@ -204,7 +204,7 @@ contract BridgeL2SovereignChain is
         address _emergencyBridgePauser,
         address _emergencyBridgeUnpauser,
         address _proxiedTokensManager
-    ) public virtual getInitializedVersion reinitializer(2) {
+    ) public virtual getInitializedVersion reinitializer(3) {
         if (_initializerVersion != 0) {
             revert InvalidInitializeFunction();
         }
@@ -290,17 +290,15 @@ contract BridgeL2SovereignChain is
      * Allow to initialize the LocalBalanceTree with the initial balances
      * @param tokenInfoHash Array of tokenInfoHash
      * @param amount Array of amount
-     * @param _emergencyBridgePauser Address of the emergencyBridgePauser role
      * @param _emergencyBridgeUnpauser Address of the emergencyBridgeUnpauser role
      * @param _proxiedTokensManager Address of the proxiedTokensManager role
      */
     function initialize(
         bytes32[] calldata tokenInfoHash,
         uint256[] calldata amount,
-        address _emergencyBridgePauser,
         address _emergencyBridgeUnpauser,
         address _proxiedTokensManager
-    ) public getInitializedVersion reinitializer(2) {
+    ) public getInitializedVersion reinitializer(3) {
         if (_initializerVersion == 0) {
             revert InvalidInitializeFunction();
         }
@@ -313,9 +311,7 @@ contract BridgeL2SovereignChain is
             _setInitialLocalBalanceTreeAmount(tokenInfoHash[i], amount[i]);
         }
 
-        // Set emergency bridge pauser and unpauser
-        emergencyBridgePauser = _emergencyBridgePauser;
-        emit AcceptEmergencyBridgePauserRole(address(0), emergencyBridgePauser);
+        // Set emergency bridge unpauser
         emergencyBridgeUnpauser = _emergencyBridgeUnpauser;
         emit AcceptEmergencyBridgeUnpauserRole(
             address(0),
