@@ -164,9 +164,6 @@ describe("Polygon Rollup Manager", () => {
         expect(precalculateBridgeAddress).to.be.equal(polygonZkEVMBridgeContract.target);
         expect(precalculateRollupManagerAddress).to.be.equal(rollupManagerContract.target);
 
-        // Get bridge proxy admin
-        const proxyBridgeAdminAddress = await upgrades.erc1967.getAdminAddress(polygonZkEVMBridgeContract.target);
-
         await expect(polygonZkEVMBridgeContract.initialize(
             networkIDMainnet,
             ethers.ZeroAddress, // zero for ether
@@ -175,7 +172,7 @@ describe("Polygon Rollup Manager", () => {
             rollupManagerContract.target,
             "0x"
         )).to.emit(polygonZkEVMBridgeContract, "AcceptProxiedTokensManagerRole")
-            .withArgs(ethers.ZeroAddress, proxyBridgeAdminAddress);
+            .withArgs(ethers.ZeroAddress, deployer.address);
 
         // Initialize Mock
         await rollupManagerContract.initializeMock(
@@ -961,9 +958,9 @@ describe("Polygon Rollup Manager", () => {
         expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
-        expect(await newWrappedToken.name()).to.be.equal(tokenName);
-        expect(await newWrappedToken.symbol()).to.be.equal(tokenSymbol);
-        expect(await newWrappedToken.decimals()).to.be.equal(decimals);
+        expect(await newWrappedToken.connect(beneficiary).name()).to.be.equal(tokenName);
+        expect(await newWrappedToken.connect(beneficiary).symbol()).to.be.equal(tokenSymbol);
+        expect(await newWrappedToken.connect(beneficiary).decimals()).to.be.equal(decimals);
 
         // Can't claim because nullifier
         await expect(
@@ -983,7 +980,7 @@ describe("Polygon Rollup Manager", () => {
         ).to.be.revertedWithCustomError(polygonZkEVMBridgeContract, "AlreadyClaimed");
 
         // Check new token
-        expect(await newWrappedToken.totalSupply()).to.be.equal(amount);
+        expect(await newWrappedToken.connect(beneficiary).totalSupply()).to.be.equal(amount);
 
         // Force batches
 
@@ -1817,9 +1814,9 @@ describe("Polygon Rollup Manager", () => {
         expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
-        expect(await newWrappedToken.name()).to.be.equal(tokenName);
-        expect(await newWrappedToken.symbol()).to.be.equal(tokenSymbol);
-        expect(await newWrappedToken.decimals()).to.be.equal(decimals);
+        expect(await newWrappedToken.connect(beneficiary).name()).to.be.equal(tokenName);
+        expect(await newWrappedToken.connect(beneficiary).symbol()).to.be.equal(tokenSymbol);
+        expect(await newWrappedToken.connect(beneficiary).decimals()).to.be.equal(decimals);
 
         // Can't claim because nullifier
         await expect(
@@ -1839,7 +1836,7 @@ describe("Polygon Rollup Manager", () => {
         ).to.be.revertedWithCustomError(polygonZkEVMBridgeContract, "AlreadyClaimed");
 
         // Check new token
-        expect(await newWrappedToken.totalSupply()).to.be.equal(amount);
+        expect(await newWrappedToken.connect(beneficiary).totalSupply()).to.be.equal(amount);
     });
 
     it("should check full flow upgrading rollup etrog", async () => {
@@ -2398,9 +2395,9 @@ describe("Polygon Rollup Manager", () => {
         expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
-        expect(await newWrappedToken.name()).to.be.equal(tokenName);
-        expect(await newWrappedToken.symbol()).to.be.equal(tokenSymbol);
-        expect(await newWrappedToken.decimals()).to.be.equal(decimals);
+        expect(await newWrappedToken.connect(beneficiary).name()).to.be.equal(tokenName);
+        expect(await newWrappedToken.connect(beneficiary).symbol()).to.be.equal(tokenSymbol);
+        expect(await newWrappedToken.connect(beneficiary).decimals()).to.be.equal(decimals);
 
         // Can't claim because nullifier
         await expect(
@@ -2420,7 +2417,7 @@ describe("Polygon Rollup Manager", () => {
         ).to.be.revertedWithCustomError(polygonZkEVMBridgeContract, "AlreadyClaimed");
 
         // Check new token
-        expect(await newWrappedToken.totalSupply()).to.be.equal(amount);
+        expect(await newWrappedToken.connect(beneficiary).totalSupply()).to.be.equal(amount);
 
         // Upgrade rollup
         // In order to update a new rollup type, create an implementation of the contract
@@ -3476,9 +3473,9 @@ describe("Polygon Rollup Manager", () => {
         expect(await polygonZkEVMBridgeContract.tokenInfoToWrappedToken(salt)).to.be.equal(precalculateWrappedErc20);
 
         // Check the wrapper info
-        expect(await newWrappedToken.name()).to.be.equal(tokenName);
-        expect(await newWrappedToken.symbol()).to.be.equal(tokenSymbol);
-        expect(await newWrappedToken.decimals()).to.be.equal(decimals);
+        expect(await newWrappedToken.connect(beneficiary).name()).to.be.equal(tokenName);
+        expect(await newWrappedToken.connect(beneficiary).symbol()).to.be.equal(tokenSymbol);
+        expect(await newWrappedToken.connect(beneficiary).decimals()).to.be.equal(decimals);
 
         // Can't claim because nullifier
         await expect(
@@ -3498,7 +3495,7 @@ describe("Polygon Rollup Manager", () => {
         ).to.be.revertedWithCustomError(polygonZkEVMBridgeContract, "AlreadyClaimed");
 
         // Check new token
-        expect(await newWrappedToken.totalSupply()).to.be.equal(amount);
+        expect(await newWrappedToken.connect(beneficiary).totalSupply()).to.be.equal(amount);
     });
 
     it("Should test obsolete rollup", async () => {
