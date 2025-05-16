@@ -204,7 +204,7 @@ contract BridgeL2SovereignChain is
         address _emergencyBridgePauser,
         address _emergencyBridgeUnpauser,
         address _proxiedTokensManager
-    ) public virtual getInitializedVersion reinitializer(2) {
+    ) public virtual getInitializedVersion reinitializer(3) {
         if (_initializerVersion != 0) {
             revert InvalidInitializeFunction();
         }
@@ -300,7 +300,7 @@ contract BridgeL2SovereignChain is
         address _emergencyBridgePauser,
         address _emergencyBridgeUnpauser,
         address _proxiedTokensManager
-    ) public getInitializedVersion reinitializer(2) {
+    ) public getInitializedVersion reinitializer(3) {
         if (_initializerVersion == 0) {
             revert InvalidInitializeFunction();
         }

@@ -21,7 +21,11 @@ async function main() {
      * Check upgrade parameters
      * Check that every necessary parameter is fulfilled
      */
-    const mandatoryUpgradeParameters = ["emergencyBridgePauserAddress", "emergencyBridgeUnpauserAddress"];
+    const mandatoryUpgradeParameters = [
+        "proxiedTokensManagerAddress",
+        "emergencyBridgePauserAddress",
+        "emergencyBridgeUnpauserAddress",
+    ];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
     const {emergencyBridgePauserAddress, emergencyBridgeUnpauserAddress, proxiedTokensManagerAddress} =
@@ -70,7 +74,7 @@ async function main() {
     const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", deployer);
     const timelockContract = (await timelockContractFactory.attach(timelockAddress)) as TimelockController;
     // take params delay, or minimum timelock dela
-    const timelockDelay = upgradeParameters.timelockDelay || timelockContract.getMinDelay();
+    const timelockDelay = upgradeParameters.timelockDelay || (await timelockContract.getMinDelay());
 
     // Upgrade BridgeL2SovereignChain
     const bridgeFactory = await ethers.getContractFactory("BridgeL2SovereignChain", deployer);

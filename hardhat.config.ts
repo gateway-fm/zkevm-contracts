@@ -5,7 +5,7 @@ import "hardhat-switch-network";
 import "@nomiclabs/hardhat-solhint";
 import "@nomicfoundation/hardhat-chai-matchers";
 import {HardhatUserConfig} from "hardhat/config";
-import 'solidity-coverage'
+import "solidity-coverage";
 
 const DEFAULT_MNEMONIC = "test test test test test test test test test test test junk";
 
@@ -240,10 +240,10 @@ const config: HardhatUserConfig = {
                         enabled: true,
                         runs: 999999,
                     },
-                    evmVersion: "shanghai",// Same evm version than BridgeL2SovereignChain
-                    metadata: { bytecodeHash: "none" }, // Get always same bytecode
+                    evmVersion: "shanghai", // Same evm version than BridgeL2SovereignChain
+                    metadata: {bytecodeHash: "none"}, // Get always same bytecode
                 }, // try yul optimizer
-            }
+            },
         },
     },
     networks: {
@@ -320,6 +320,13 @@ const config: HardhatUserConfig = {
                 path: "m/44'/60'/0'/0",
                 initialIndex: 0,
                 count: 20,
+            },
+            chains: {
+                747474: {
+                    hardforkHistory: {
+                        cancun: 0,
+                    },
+                },
             },
         },
         polygonZKEVMTestnet: {

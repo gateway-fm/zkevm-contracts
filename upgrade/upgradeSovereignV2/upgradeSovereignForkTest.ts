@@ -92,7 +92,7 @@ async function main() {
     const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock", timelockSigner);
     const timelockContract = (await timelockContractFactory.attach(timelockAddress)) as TimelockController;
     // take params delay, or minimum timelock dela
-    const timelockDelay = upgradeParameters.timelockDelay || timelockContract.getMinDelay();
+    const timelockDelay = upgradeParameters.timelockDelay || (await timelockContract.getMinDelay());
 
     // Upgrade BridgeL2SovereignChain
     const bridgeFactory = await ethers.getContractFactory("BridgeL2SovereignChain", timelockSigner);
@@ -159,6 +159,7 @@ async function main() {
         data: executeData,
     };
     await (await timelockSigner.sendTransaction(txExecute)).wait();
+
     logger.info("#######################\n");
     logger.info("Upgrade executed successfully");
 
@@ -166,9 +167,9 @@ async function main() {
     const bridgeContract = bridgeFactory.attach(bridgeAddress) as BridgeL2SovereignChain;
 
     expect(await bridgeContract.BRIDGE_SOVEREIGN_VERSION()).to.equal(AL_VERSION);
-    expect(await bridgeContract.proxiedTokensManager()).to.equal(upgradeParams.proxiedTokensManagerAddress);
-    expect(await bridgeContract.emergencyBridgePauser()).to.equal(upgradeParams.emergencyBridgePauserAddress);
-    expect(await bridgeContract.emergencyBridgeUnpauser()).to.equal(upgradeParams.emergencyBridgeUnpauserAddress);
+    expect(await bridgeContract.proxiedTokensManager()).to.equal(proxiedTokensManagerAddress);
+    expect(await bridgeContract.emergencyBridgePauser()).to.equal(emergencyBridgePauserAddress);
+    expect(await bridgeContract.emergencyBridgeUnpauser()).to.equal(emergencyBridgeUnpauserAddress);
 }
 
 main().catch((e) => {
