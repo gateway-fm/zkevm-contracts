@@ -214,6 +214,9 @@ contract BridgeL2SovereignChain is
             InvalidZeroAddress()
         );
 
+        // Network ID must be different from 0 for sovereign chains
+        require(_networkID != 0, "InvalidZeroNetworkID");
+
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
         polygonRollupManager = _polygonRollupManager;
@@ -439,6 +442,8 @@ contract BridgeL2SovereignChain is
      * this will override the previous calls and only keep the last sovereignTokenAddress.
      * @notice The tokenInfoToWrappedToken mapping  value is replaced by the new sovereign address but it's not the case for the wrappedTokenToTokenInfo map where the value is added, this way user will always be able to withdraw their tokens
      * @notice The number of decimals between sovereign token and origin token is not checked, it doesn't affect the bridge functionality but the UI.
+     * @notice  if you set multiple sovereign token addresses for the same pair of originNetwork/originTokenAddress, means you are remapping the same tokenInfoHash
+     * to different sovereignTokenAddress so all those sovereignTokenAddresses will can bridge the mapped tokenInfoHash.
      * @param originNetwork Origin network
      * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
      * @param sovereignTokenAddress Address of the sovereign wrapped token
