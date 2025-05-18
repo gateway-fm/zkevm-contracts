@@ -40,7 +40,7 @@ cp ./upgrade/upgradeSovereignV2/upgrade_parameters.json.example ./upgrade/upgrad
 - Run tool:
 
 ```
-npx hardhat run ./upgrade/upgradeSovereignV2/upgradeSovereignV2.ts
+npx hardhat run ./upgrade/upgradeSovereignV2/upgradeSovereignV2.ts --network custom
 ```
 
 - OutputFile: `upgrade_output.json`
