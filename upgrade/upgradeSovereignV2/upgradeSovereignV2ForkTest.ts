@@ -22,67 +22,60 @@ const pathOutputJson = path.join(__dirname, "./upgrade_output.json");
 const upgradeParameters = require("./upgrade_parameters.json");
 
 async function main() {
+    upgrades.silenceWarnings();
+
     /*
      * Check upgrade parameters
      * Check that every necessary parameter is fulfilled
      */
+    logger.info('Check input paraneters');
+
     const mandatoryUpgradeParameters = [
+        "bridgeL2SovereignChainAddress",
         "proxiedTokensManagerAddress",
-        "emergencyBridgePauserAddress",
         "emergencyBridgeUnpauserAddress",
     ];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
-    const {emergencyBridgePauserAddress, emergencyBridgeUnpauserAddress, proxiedTokensManagerAddress} =
+    // load params
+    const {bridgeL2SovereignChainAddress, emergencyBridgeUnpauserAddress, proxiedTokensManagerAddress} =
         upgradeParameters;
+    const salt = upgradeParameters.timelockSalt || ethers.ZeroHash;
 
     // ############
     // FORK config
     // ############
     // load fork params
-    const {rpc, timelockAdmin} = upgradeParameters.forkParams;
-    if (!rpc || !timelockAdmin) {
-        throw new Error("Missing fork parameters: 'rpc' or 'timelockAdmin' is not defined.");
-    }
+    const forkParams = upgradeParameters.forkParams;
+    checkParams(forkParams, ["rpc", "timelockAdmin"]);
+
+    const {rpc, timelockAdmin} = forkParams;
+    await reset(rpc);
+
     logger.info(`Using fork RPC: ${rpc}`);
 
-    await reset(rpc);
     // Get timelock multisig
     await ethers.provider.send("hardhat_impersonateAccount", [timelockAdmin]);
     const timelockSigner = await ethers.getSigner(timelockAdmin as any);
     await setBalance(timelockAdmin, 100n ** 18n);
 
-    const globalExitRootManagerL2SovereignChainAddress =
-        typeof upgradeParameters.globalExitRootManagerL2SovereignChainAddress === "undefined"
-            ? "0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa"
-            : upgradeParameters.globalExitRootManagerL2SovereignChainAddress;
-    const salt = upgradeParameters.timelockSalt || ethers.ZeroHash;
-
-    // Load onchain parameters
-    const gerManagerL2SovereignChainPessimisticFactory = await ethers.getContractFactory(
-        "GlobalExitRootManagerL2SovereignChainPessimistic"
-    );
-    const gerManagerL2SovereignChainContract = (await gerManagerL2SovereignChainPessimisticFactory.attach(
-        globalExitRootManagerL2SovereignChainAddress
-    )) as GlobalExitRootManagerL2SovereignChainPessimistic;
-
-    const bridgeAddress = await gerManagerL2SovereignChainContract.bridgeAddress();
-
     logger.info(`Upgrading with: ${timelockSigner.address}`);
 
+    // Force import hardhat manifest
+    logger.info("Force import hardhat manifest");
     // As this contract is deployed in the genesis of a L2 network, no open zeppelin network file is created, we need to force import it
-    await upgrades.forceImport(
-        globalExitRootManagerL2SovereignChainAddress,
-        gerManagerL2SovereignChainPessimisticFactory,
-        {
-            constructorArgs: [bridgeAddress],
-            kind: "transparent",
-        }
-    );
+    const bridgeFactory = await ethers.getContractFactory("BridgeL2SovereignChain", timelockSigner);
+    await upgrades.forceImport(bridgeL2SovereignChainAddress, bridgeFactory, {
+        constructorArgs: [],
+        kind: "transparent",
+    });
 
+    // get proxy admin and timelock
+    logger.info("Get proxy admin information");
     const proxyAdmin = await upgrades.admin.getInstance();
+
     // Assert correct admin
-    expect(await upgrades.erc1967.getAdminAddress(globalExitRootManagerL2SovereignChainAddress as string)).to.be.equal(
+    expect(await upgrades.erc1967.getAdminAddress(bridgeL2SovereignChainAddress as string)).to.be.equal(
         proxyAdmin.target
     );
 
@@ -95,29 +88,25 @@ async function main() {
     const timelockDelay = upgradeParameters.timelockDelay || (await timelockContract.getMinDelay());
 
     // Upgrade BridgeL2SovereignChain
-    const bridgeFactory = await ethers.getContractFactory("BridgeL2SovereignChain", timelockSigner);
-    await upgrades.forceImport(bridgeAddress, bridgeFactory, {
-        constructorArgs: [],
-        kind: "transparent",
-    });
-
-    const impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
+    const impBridge = await upgrades.prepareUpgrade(bridgeL2SovereignChainAddress, bridgeFactory, {
         unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
         redeployImplementation: "always",
     });
-    logger.info("#######################\n");
+
     logger.info(`Polygon sovereign bridge implementation deployed at: ${impBridge}`);
+
+    // Create schedule and execute operation
+    logger.info("Create schedule and execute operation");
 
     const operationBridge = genTimelockOperation(
         proxyAdmin.target,
         0, // value
         proxyAdmin.interface.encodeFunctionData("upgradeAndCall", [
-            bridgeAddress,
+            bridgeL2SovereignChainAddress,
             impBridge,
-            bridgeFactory.interface.encodeFunctionData("initialize(bytes32[],uint256[],address,address,address)", [
+            bridgeFactory.interface.encodeFunctionData("initialize(bytes32[],uint256[],address,address)", [
                 [],
                 [],
-                emergencyBridgePauserAddress,
                 emergencyBridgeUnpauserAddress,
                 proxiedTokensManagerAddress,
             ]),
@@ -145,6 +134,11 @@ async function main() {
         salt, // salt
     ]);
 
+    logger.info({scheduleData});
+    logger.info({executeData});
+
+    // Simulate send schedule & execute transaction
+    logger.info("Send schedule & execute transaction");
     // send mutlsig transaction
     const txSchedule = {
         to: timelockContract.target,
@@ -160,19 +154,20 @@ async function main() {
     };
     await (await timelockSigner.sendTransaction(txExecute)).wait();
 
-    logger.info("#######################\n");
     logger.info("Upgrade executed successfully");
 
-    const AL_VERSION = "al-v0.3.1";
-    const bridgeContract = bridgeFactory.attach(bridgeAddress) as BridgeL2SovereignChain;
+    // sanity checks
+    const BRIDGE_SOVEREIGN_VERSION = "al-v10.1.0";
+    const bridgeContract = bridgeFactory.attach(bridgeL2SovereignChainAddress) as BridgeL2SovereignChain;
 
-    expect(await bridgeContract.BRIDGE_SOVEREIGN_VERSION()).to.equal(AL_VERSION);
+    expect(await bridgeContract.BRIDGE_SOVEREIGN_VERSION()).to.equal(BRIDGE_SOVEREIGN_VERSION);
     expect(await bridgeContract.proxiedTokensManager()).to.equal(proxiedTokensManagerAddress);
-    expect(await bridgeContract.emergencyBridgePauser()).to.equal(emergencyBridgePauserAddress);
     expect(await bridgeContract.emergencyBridgeUnpauser()).to.equal(emergencyBridgeUnpauserAddress);
     expect(await bridgeContract.bridgeManager()).to.equal(timelockSigner.address);
     expect(await bridgeContract.pendingProxiedTokensManager()).to.equal(ethers.ZeroAddress);
     expect(await bridgeContract.gasTokenAddress()).to.equal(ethers.ZeroAddress);
+
+    logger.info("Sanity checks successfully passed");
 }
 
 main().catch((e) => {

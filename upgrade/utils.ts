@@ -1,5 +1,6 @@
+import { execSync } from "child_process";
 import { ethers, run } from "hardhat";
-import { convertBigIntsToNumbers } from "../tools/utils"
+import { convertBigIntsToNumbers } from "../tools/utils";
 
 /**
  * Generates a timelock operation with the given input valies
@@ -111,6 +112,23 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
     return convertBigIntsToNumbers(objectDecoded);
 }
 
+/**
+ * Retrieves the current Git commit hash and repository URL
+ * @returns An object containing the commit hash and repository URL, or null if an error occurs
+ */
+function getGitInfo(): { commit: string; repo: string } | null {
+    try {
+      // Get the latest commit hash
+      const commit = execSync("git rev-parse HEAD").toString().trim();
+
+      // Get the repository URL
+      const repo = execSync("git config --get remote.origin.url").toString().trim();
+
+      return { commit, repo };
+    } catch (error) {
+        throw new Error(`getGitInfo: ${error}`);
+    }
+}
 
 // This is a workaround to fix the BigInt serialization issue in JSON
 // when using JSON.stringify on BigInt values, which is common in Ethers
@@ -121,4 +139,4 @@ Object.defineProperty(BigInt.prototype, "toJSON", {
     },
 });
 
-export { genTimelockOperation, verifyContractEtherscan, decodeScheduleData };
+export { genTimelockOperation, verifyContractEtherscan, decodeScheduleData, getGitInfo };

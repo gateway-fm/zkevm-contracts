@@ -317,6 +317,9 @@ const config: HardhatUserConfig = {
                 count: 20,
             },
         },
+        custom: {
+            url: process.env.CUSTOM_PROVIDER,
+        },
         hardhat: {
             initialDate: "0",
             allowUnlimitedContractSize: true,
@@ -329,6 +332,11 @@ const config: HardhatUserConfig = {
             },
             chains: {
                 747474: {
+                    hardforkHistory: {
+                        cancun: 0,
+                    },
+                },
+                3443: {
                     hardforkHistory: {
                         cancun: 0,
                     },
