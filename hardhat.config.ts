@@ -3,9 +3,11 @@ import "@openzeppelin/hardhat-upgrades";
 import "hardhat-dependency-compiler";
 import "hardhat-switch-network";
 import "@nomiclabs/hardhat-solhint";
-import "@nomicfoundation/hardhat-chai-matchers";
 import {HardhatUserConfig} from "hardhat/config";
-import 'solidity-coverage'
+import "solidity-coverage";
+import "@typechain/hardhat";
+import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-chai-matchers";
 
 const DEFAULT_MNEMONIC = "test test test test test test test test test test test junk";
 
@@ -19,6 +21,10 @@ const DEFAULT_MNEMONIC = "test test test test test test test test test test test
  */
 
 const config: HardhatUserConfig = {
+    typechain: {
+        outDir: "typechain-types",
+        target: "ethers-v6",
+    },
     dependencyCompiler: {
         paths: [
             "@openzeppelin/contracts4/token/ERC20/presets/ERC20PresetFixedSupply.sol",
@@ -240,10 +246,10 @@ const config: HardhatUserConfig = {
                         enabled: true,
                         runs: 999999,
                     },
-                    evmVersion: "shanghai",// Same evm version than BridgeL2SovereignChain
-                    metadata: { bytecodeHash: "none" }, // Get always same bytecode
+                    evmVersion: "shanghai", // Same evm version than BridgeL2SovereignChain
+                    metadata: {bytecodeHash: "none"}, // Get always same bytecode
                 }, // try yul optimizer
-            }
+            },
         },
     },
     networks: {
@@ -311,6 +317,17 @@ const config: HardhatUserConfig = {
                 count: 20,
             },
         },
+        custom: {
+            url: process.env.CUSTOM_PROVIDER
+                ? process.env.CUSTOM_PROVIDER
+                : "http://127.0.0.1:8545",
+            accounts: {
+                mnemonic: process.env.MNEMONIC || DEFAULT_MNEMONIC,
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 20,
+            },
+        },
         hardhat: {
             initialDate: "0",
             allowUnlimitedContractSize: true,
@@ -320,6 +337,18 @@ const config: HardhatUserConfig = {
                 path: "m/44'/60'/0'/0",
                 initialIndex: 0,
                 count: 20,
+            },
+            chains: {
+                747474: {
+                    hardforkHistory: {
+                        cancun: 0,
+                    },
+                },
+                3443: {
+                    hardforkHistory: {
+                        cancun: 0,
+                    },
+                },
             },
         },
         polygonZKEVMTestnet: {
