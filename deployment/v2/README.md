@@ -103,6 +103,8 @@ A new folder will be created with the following name `deployments/${network}_$(d
         - `submissionInterval`: The minimum interval in L2 blocks at which checkpoints must be submitted
         - `aggchainManager`: Address that manages all the functionalities related to the aggchain
         - `optimisticModeManager`: Address that can trigger the optimistic mode
+        - `aggregationVkey`:  The verification key of the aggregation SP1 program.
+        - `rangeVkeyCommitment`: The 32 byte commitment to the BabyBear representation of the verification key of the range SP1 program. 
     - `useDefaultGateway`: bool, flag to setup initial values for the owned gateway
     - `ownedAggchainVKey`: bytes32, Initial owned aggchain verification key
     - `initAggchainVKeySelector`: bytes4, Initial aggchain verification key selector
