@@ -14,6 +14,34 @@ const AGGCHAIN_TYPE_FEP = '0x0001';
 /// //////////////////////////////////
 
 /**
+ * Function to sort the initParams object
+ * @param {Object} initParams initialization parameters
+ * @returns {Object} sorted initParams object
+ */
+function sortInitParamsAggchainFEP(initParams) {
+    const initParamsOrder = [
+        'l2BlockTime',
+        'rollupConfigHash',
+        'startingOutputRoot',
+        'startingBlockNumber',
+        'startingTimestamp',
+        'submissionInterval',
+        'optimisticModeManager',
+        'aggregationVkey',
+        'rangeVkeyCommitment',
+    ];
+    const sortedInitParams = {};
+    initParamsOrder.forEach((key) => {
+        if (key in initParams) {
+            sortedInitParams[key] = initParams[key];
+        } else {
+            throw new Error(`${key} not found in initParams`);
+        }
+    });
+    return sortedInitParams;
+}
+
+/**
  * Function to encode the initialize bytes for the custom chain (version 0 --> initializerVersion = 0)
  * @param {Object} initParams initialization parameters
  * @param {Boolean} useDefaultGateway use owned gateway
@@ -39,6 +67,8 @@ function encodeInitializeBytesAggchainFEPv0(
     trustedSequencerURL,
     networkName,
 ) {
+    // sort the initParams object
+    const sortedInitParams = sortInitParamsAggchainFEP(initParams);
     return ethers.AbiCoder.defaultAbiCoder().encode(
         [
             'tuple(uint256, bytes32, bytes32, uint256, uint256, uint256, address, bytes32, bytes32)',
@@ -53,7 +83,7 @@ function encodeInitializeBytesAggchainFEPv0(
             'string',
         ],
         [
-            Object.values(initParams),
+            Object.values(sortedInitParams),
             useDefaultGateway,
             initOwnedAggchainVKey,
             initAggchainVKeySelector,
@@ -165,4 +195,5 @@ module.exports = {
     encodeInitializeBytesAggchainFEPv1,
     encodeAggchainDataFEP,
     computeHashAggchainParamsFEP,
+    sortInitParamsAggchainFEP,
 };

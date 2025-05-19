@@ -79,7 +79,7 @@ describe("AggchainFEP", () => {
             startingTimestamp: 0,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
@@ -232,7 +232,7 @@ describe("AggchainFEP", () => {
         expect(await aggchainFEPContract.l2BlockTime()).to.be.equal(initParams.l2BlockTime);
         expect(await aggchainFEPContract.submissionInterval()).to.be.equal(initParams.submissionInterval);
         expect(await aggchainFEPContract.rollupConfigHash()).to.be.equal(initParams.rollupConfigHash);
-        expect(await aggchainFEPContract.aggregationVkey()).to.be.equal(initParams.aggregationVKey);
+        expect(await aggchainFEPContract.aggregationVkey()).to.be.equal(initParams.aggregationVkey);
         expect(await aggchainFEPContract.rangeVkeyCommitment()).to.be.equal(initParams.rangeVkeyCommitment);
         expect(await aggchainFEPContract.optimisticModeManager()).to.be.equal(initParams.optimisticModeManager);
         expect(await aggchainFEPContract.latestOutputIndex()).to.be.equal(0);
@@ -312,7 +312,7 @@ describe("AggchainFEP", () => {
             startingTimestamp: 0,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
@@ -333,7 +333,7 @@ describe("AggchainFEP", () => {
         expect(await aggchainFEPContract.l2BlockTime()).to.be.equal(initParams.l2BlockTime);
         expect(await aggchainFEPContract.submissionInterval()).to.be.equal(initParams.submissionInterval);
         expect(await aggchainFEPContract.rollupConfigHash()).to.be.equal(initParams.rollupConfigHash);
-        expect(await aggchainFEPContract.aggregationVkey()).to.be.equal(initParams.aggregationVKey);
+        expect(await aggchainFEPContract.aggregationVkey()).to.be.equal(initParams.aggregationVkey);
         expect(await aggchainFEPContract.rangeVkeyCommitment()).to.be.equal(initParams.rangeVkeyCommitment);
         expect(await aggchainFEPContract.optimisticModeManager()).to.be.equal(initParams.optimisticModeManager);
         expect(await aggchainFEPContract.latestOutputIndex()).to.be.equal(0);
@@ -375,7 +375,7 @@ describe("AggchainFEP", () => {
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
@@ -484,7 +484,7 @@ describe("AggchainFEP", () => {
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
@@ -549,7 +549,7 @@ describe("AggchainFEP", () => {
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
@@ -619,7 +619,7 @@ describe("AggchainFEP", () => {
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
@@ -699,8 +699,8 @@ describe("AggchainFEP", () => {
         expect(newRangeVKeyCommitmentSC).to.be.equal(newRangeVKeyCommitment);
 
         // rangeVKeyCommitment
-        const oldAggregationVKey = await aggchainFEPContract.aggregationVkey();
-        const newAggregationVKey = ethers.id("newAggregationVKey");
+        const oldAggregationVkey = await aggchainFEPContract.aggregationVkey();
+        const newAggregationVkey = ethers.id("newAggregationVkey");
 
         await expect(aggchainFEPContract.updateAggregationVkey(newRangeVKeyCommitment)).to.be.revertedWithCustomError(
             aggchainFEPContract,
@@ -710,12 +710,12 @@ describe("AggchainFEP", () => {
             aggchainFEPContract,
             "AggregationVkeyMustBeDifferentThanZero"
         );
-        await expect(aggchainFEPContract.connect(aggchainManager).updateAggregationVkey(newAggregationVKey))
+        await expect(aggchainFEPContract.connect(aggchainManager).updateAggregationVkey(newAggregationVkey))
             .to.emit(aggchainFEPContract, "AggregationVkeyUpdated")
-            .withArgs(oldAggregationVKey, newAggregationVKey);
+            .withArgs(oldAggregationVkey, newAggregationVkey);
 
-        const newAggregationVKeySC = await aggchainFEPContract.aggregationVkey();
-        expect(newAggregationVKeySC).to.be.equal(newAggregationVKey);
+        const newAggregationVkeySC = await aggchainFEPContract.aggregationVkey();
+        expect(newAggregationVkeySC).to.be.equal(newAggregationVkey);
 
         // aggchainManager: managing role
         await expect(aggchainFEPContract.transferAggchainManagerRole(deployer.address)).to.be.revertedWithCustomError(
@@ -760,7 +760,7 @@ describe("AggchainFEP", () => {
             startingTimestamp: blockDataTimestamp - 20,
             submissionInterval: 5,
             optimisticModeManager: optModeManager.address,
-            aggregationVKey: ethers.id("aggregationVKey"),
+            aggregationVkey: ethers.id("aggregationVkey"),
             rangeVkeyCommitment: ethers.id("rangeVkeyCommitment"),
         };
 
