@@ -19,7 +19,7 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
     /**
      * @dev Thrown when trying to remove a token mapping that has not been updated by a new one
      */
-    error TokenNotMapped(address tokenAddress);
+    error TokenNotMapped();
 
     /**
      * @dev Thrown when trying to migrate a legacy token that is already the current token
@@ -59,6 +59,11 @@ interface IBridgeL2SovereignChains is IPolygonZkEVMBridgeV2 {
      * @dev Thrown when trying to activate emergency state in a not allowed bridge context (e.g. sovereign chains)
      */
     error EmergencyStateNotAllowed();
+
+    /**
+     * @dev Thrown when trying to initialize a sovereign bridge with a zero network ID, reserved for mainnet
+     */
+    error InvalidZeroNetworkID();
 
     /**
      @dev Thrown when trying to substract more rather than available balance
