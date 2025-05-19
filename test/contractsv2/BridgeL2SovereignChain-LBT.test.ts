@@ -153,7 +153,6 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
                 arrayTokeInfoHash,
                 arrayAmount,
                 emergencyBridgePauser.address,
-                emergencyBridgePauser.address,
                 proxiedTokensManager.address
             )
         ).to.be.revertedWithCustomError(sovereignChainBridgeContract, "InputArraysLengthMismatch");
@@ -165,7 +164,6 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
             sovereignChainBridgeContract.initialize(
                 arrayTokeInfoHashOk,
                 arrayAmountOk,
-                emergencyBridgePauser.address,
                 emergencyBridgePauser.address,
                 proxiedTokensManager.address
             )
@@ -198,7 +196,6 @@ describe("BridgeL2SovereignChain: LBT & upgrade", () => {
         await sovereignChainBridgeContract.initialize(
             [],
             [],
-            emergencyBridgePauser.address,
             emergencyBridgePauser.address,
             proxiedTokensManager.address
         )

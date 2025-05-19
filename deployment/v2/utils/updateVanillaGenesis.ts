@@ -25,7 +25,6 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         "rollupID",
         "gasTokenAddress",
         "gasTokenNetwork",
-        "polygonRollupManager",
         "gasTokenMetadata",
         "bridgeManager",
         "sovereignWETHAddress",
@@ -253,7 +252,6 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
         rollupID,
         gasTokenAddress,
         gasTokenNetwork,
-        polygonRollupManager,
         gasTokenMetadata,
         bridgeManager,
         sovereignWETHAddress,
@@ -271,7 +269,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
             gasTokenAddress,
             gasTokenNetwork,
             gerProxy.address, // Global exit root manager address from base genesis
-            polygonRollupManager,
+            ethers.ZeroAddress, // Polygon rollup manager address always zero for sovereign chains
             gasTokenMetadata,
             bridgeManager,
             sovereignWETHAddress,
@@ -363,14 +361,9 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     expect(bridgeProxy.storage["0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"]).to.include(
         oldBridge.address.toLowerCase().slice(2)
     );
-    // rollup manager address in bridge storage, storage slot 0x6c
-    if (polygonRollupManager === ethers.ZeroAddress) {
-        expect(bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006c"]).to.be.undefined;
-    } else {
-        expect(bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006c"]).to.include(
-            polygonRollupManager.toLowerCase().slice(2)
-        );
-    }
+    // rollup manager address in bridge storage, storage slot 0x6c, always zero (undefined)
+     expect(bridgeProxy.storage["0x000000000000000000000000000000000000000000000000000000000000006c"]).to.be.undefined;
+
     // pendingProxiedTokensManager address in bridge storage, storage slot 0x71, should be undefined
     expect(bridgeProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000071"]).to.be.undefined;
 
@@ -393,7 +386,7 @@ async function updateVanillaGenesis(genesis, chainID, initializeParams) {
     // Storage value for the _initialized uint8 variable of Initializable.sol contract, incremented each time the contract is successfully initialized. It also stores the _initializing param set to true when an initialization function is being executed, and it reverts to false once the initialization completed.
     // This is used to initialize the contract only once,and it depends if the contract is already deployed or not.
     expect(bridgeProxy.storage["0x0000000000000000000000000000000000000000000000000000000000000000"]).to.equal(
-        "0x0000000000000000000000000000000000000000000000000000000000000002"
+        "0x0000000000000000000000000000000000000000000000000000000000000003"
     );
 
     // Storage value for the _status variable of ReentrancyGuardUpgradeable contract. Tracks the current "status" of the contract to enforce the non-reentrant behavior. Default value is 1 (_NOT_ENTERED)

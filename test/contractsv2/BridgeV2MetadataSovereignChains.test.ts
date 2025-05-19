@@ -41,7 +41,7 @@ describe("SovereignBridge Contract", () => {
         ["string", "string", "uint8"],
         [tokenName, tokenSymbol, decimals]
     );
-    const networkIDMainnet = 0;
+    const networkIDMainnet = 2;
     const networkIDRollup = 1;
 
     const LEAF_TYPE_ASSET = 0;
