@@ -15,7 +15,7 @@ contract BridgeL2SovereignChain is
     PolygonZkEVMBridgeV2,
     IBridgeL2SovereignChains
 {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for ITokenWrappedBridgeUpgradeable;
 
     // Current bridge version
     string public constant BRIDGE_SOVEREIGN_VERSION = "v10.1.0";
@@ -215,7 +215,7 @@ contract BridgeL2SovereignChain is
         );
 
         // Network ID must be different from 0 for sovereign chains
-        require(_networkID != 0, "InvalidZeroNetworkID");
+        require(_networkID != 0, InvalidZeroNetworkID());
 
         networkID = _networkID;
         globalExitRootManager = _globalExitRootManager;
@@ -322,7 +322,16 @@ contract BridgeL2SovereignChain is
         );
 
         // set proxied tokens manager
+        require(
+            _proxiedTokensManager != address(this),
+            BridgeAddressNotAllowed()
+        );
+        // It's not allowed proxiedTokensManager to be zero address.
+        // If disabling token upgradability is required, add a not owned account like 0xffff...fffff
+        require(_proxiedTokensManager != address(0), InvalidZeroAddress());
+
         proxiedTokensManager = _proxiedTokensManager;
+
         emit AcceptProxiedTokensManagerRole(address(0), proxiedTokensManager);
 
         // OZ contract already initialized
@@ -404,7 +413,7 @@ contract BridgeL2SovereignChain is
      * @notice Remap multiple wrapped tokens to a new sovereign token address
      * @dev This function is a "multi/batch call" to `setSovereignTokenAddress`
      * @param originNetworks Array of Origin networks
-     * @param originTokenAddresses Array od Origin token addresses, 0 address is reserved for ether
+     * @param originTokenAddresses Origin token address, address of the token at the origin network.
      * @param sovereignTokenAddresses Array of Addresses of the sovereign wrapped token
      * @param isNotMintable Array of Flags to indicate if the wrapped token is not mintable
      */
@@ -444,7 +453,7 @@ contract BridgeL2SovereignChain is
      * @notice  if you set multiple sovereign token addresses for the same pair of originNetwork/originTokenAddress, means you are remapping the same tokenInfoHash
      * to different sovereignTokenAddress so all those sovereignTokenAddresses will can bridge the mapped tokenInfoHash.
      * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
+     * @param originTokenAddress Origin token address, address of the token at the origin network
      * @param sovereignTokenAddress Address of the sovereign wrapped token
      * @param isNotMintable Flag to indicate if the wrapped token is not mintable
      */
@@ -537,6 +546,13 @@ contract BridgeL2SovereignChain is
         address sovereignWETHTokenAddress,
         bool isNotMintable
     ) external onlyBridgeManager {
+        _setSovereignWETHAddress(sovereignWETHTokenAddress, isNotMintable);
+    }
+
+    function _setSovereignWETHAddress(
+        address sovereignWETHTokenAddress,
+        bool isNotMintable
+    ) internal {
         if (gasTokenAddress == address(0)) {
             revert WETHRemappingNotSupportedOnGasTokenNetworks();
         }
@@ -565,7 +581,7 @@ contract BridgeL2SovereignChain is
             legacyTokenAddress
         ];
         if (legacyTokenInfo.originTokenAddress == address(0)) {
-            revert TokenNotMapped(legacyTokenAddress);
+            revert TokenNotMapped();
         }
 
         // Check current token mapped is proposed updatedTokenAddress
@@ -652,46 +668,71 @@ contract BridgeL2SovereignChain is
 
     /**
      * @notice Function to deploy an upgradeable wrapped token without having to claim asset. It is used to upgrade legacy tokens to the new upgradeable token. After deploying the token it is remapped to be the new functional wtoken
+     * @notice This function can only be called once for each originNetwork/originTokenAddress pair because it deploys a deterministic contract with create2
+     * @dev WARNING: It's assumed the legacy token has not been remapped.
      * @param originNetwork Origin network of the token
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
+     * @param originTokenAddress Origin token address, address of the token at the origin network.
+     * @param isNotMintable Flag to indicate if the proxied wrapped token is not mintable
      */
     function deployWrappedTokenAndRemap(
         uint32 originNetwork,
-        address originTokenAddress
+        address originTokenAddress,
+        bool isNotMintable
     ) external onlyBridgeManager {
-        // Compute tokenInfoHash
-        bytes32 tokenInfoHash = keccak256(
-            abi.encodePacked(originNetwork, originTokenAddress)
-        );
+        /// @dev Check the token is not native from this network is done at `_setSovereignTokenAddress`
 
-        // Only allow to deploy a wrapped token if the token is mapped, meaning is legacy and there is a plan to remap it to the new one
-        ITokenWrappedBridgeUpgradeable wrappedToken = ITokenWrappedBridgeUpgradeable(
-                tokenInfoToWrappedToken[tokenInfoHash]
-            );
-        require(
-            address(wrappedToken) != address(0),
-            TokenNotMapped(address(wrappedToken))
-        );
-
-        // Deploy the wrapped token
-        address wrappedTokenProxy = address(
-            _deployWrappedToken(
-                tokenInfoHash,
-                abi.encode(
-                    wrappedToken.name(),
-                    wrappedToken.symbol(),
-                    wrappedToken.decimals()
+        if (
+            originTokenAddress == address(0) &&
+            originNetwork == _MAINNET_NETWORK_ID
+        ) {
+            // Deploy weth only supported for chains with gas token where weth address is not zero
+            /// @dev Check the chain is a gas token chain is done at `_setSovereignWETHAddress`
+            // Deploy the proxied weth token
+            address wrappedTokenProxy = address(
+                _deployWrappedToken(
+                    bytes32(0), // tokenInfoHash is 0 for weth
+                    abi.encode(
+                        WETHToken.name(),
+                        WETHToken.symbol(),
+                        WETHToken.decimals()
+                    )
                 )
-            )
-        );
+            );
 
-        // Remap the deployed wrapped token
-        _setSovereignTokenAddress(
-            originNetwork,
-            originTokenAddress,
-            wrappedTokenProxy,
-            false
-        );
+            // Remap the deployed wrapped token
+            _setSovereignWETHAddress(wrappedTokenProxy, isNotMintable);
+        } else {
+            // Compute tokenInfoHash
+            bytes32 tokenInfoHash = keccak256(
+                abi.encodePacked(originNetwork, originTokenAddress)
+            );
+            ITokenWrappedBridgeUpgradeable wrappedToken = ITokenWrappedBridgeUpgradeable(
+                    tokenInfoToWrappedToken[tokenInfoHash]
+                );
+
+            // Only allow to deploy a wrapped token if the token is mapped, meaning is a legacy (non upgradeable) wrapped token that will be updated to upgradeable version
+            require(address(wrappedToken) != address(0), TokenNotMapped());
+
+            // Deploy the wrapped token
+            address wrappedTokenProxy = address(
+                _deployWrappedToken(
+                    tokenInfoHash,
+                    abi.encode(
+                        wrappedToken.name(),
+                        wrappedToken.symbol(),
+                        wrappedToken.decimals()
+                    )
+                )
+            );
+
+            // Remap the deployed wrapped token
+            _setSovereignTokenAddress(
+                originNetwork,
+                originTokenAddress,
+                wrappedTokenProxy,
+                isNotMintable
+            );
+        }
     }
 
     /**
@@ -805,18 +846,12 @@ contract BridgeL2SovereignChain is
         // The token is either (1) a correctly wrapped token from another network
         // or (2) wrapped with custom contract from origin network
         if (wrappedAddressIsNotMintable[address(tokenWrapped)]) {
-            // Swap interface from ITokenWrappedBridgeUpgradeable to IERC20Upgradeable for ERC20 functions access.
-            IERC20Upgradeable tokenWrappedERC20 = IERC20Upgradeable(
-                address(tokenWrapped)
-            );
-            uint256 balanceBefore = tokenWrappedERC20.balanceOf(address(this));
+            uint256 balanceBefore = tokenWrapped.balanceOf(address(this));
+
             // Don't use burn but transfer to bridge
-            tokenWrappedERC20.safeTransferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            uint256 balanceAfter = tokenWrappedERC20.balanceOf(address(this));
+            tokenWrapped.safeTransferFrom(msg.sender, address(this), amount);
+
+            uint256 balanceAfter = tokenWrapped.balanceOf(address(this));
 
             return balanceAfter - balanceBefore;
         } else {
@@ -845,10 +880,7 @@ contract BridgeL2SovereignChain is
         // If is not mintable transfer instead of mint
         if (wrappedAddressIsNotMintable[address(tokenWrapped)]) {
             // Transfer tokens
-            IERC20Upgradeable(address(tokenWrapped)).safeTransfer(
-                destinationAddress,
-                amount
-            );
+            tokenWrapped.safeTransfer(destinationAddress, amount);
         } else {
             // Claim tokens
             tokenWrapped.mint(destinationAddress, amount);

@@ -26,6 +26,7 @@ describe("Upgradeable Tokens", () => {
     let bridgeManager2: any;
     let indexLET = 0;
     let sovereignBridgeContract: any;
+    let gasTokenBridgeContract: any;
     let polTokenContract: ERC20PermitMock;
     let polTokenContractUpgradeable: ERC20PermitMock;
     let sovereignGERContract: GlobalExitRootManagerL2SovereignChain;
@@ -59,6 +60,12 @@ describe("Upgradeable Tokens", () => {
             unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
         })) as unknown as BridgeL2SovereignChainPessimistic;
 
+        // Deploy pessimistic bridge with gas token
+        gasTokenBridgeContract = (await upgrades.deployProxy(sovBridgePessimisticFactory, [], {
+            initializer: false,
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
+        })) as unknown as BridgeL2SovereignChain;
+
         // deploy global exit root manager
         const sovGERFactory = await ethers.getContractFactory("GlobalExitRootManagerL2SovereignChain");
         sovereignGERContract = (await upgrades.deployProxy(
@@ -73,8 +80,8 @@ describe("Upgradeable Tokens", () => {
 
         await sovereignBridgeContract.initialize(
             networkIDRollup,
-            ethers.ZeroAddress, // zero for ether
-            ethers.ZeroAddress, // zero for ether
+            ethers.ZeroAddress, // gasTokenAddress: zero for ether
+            networkIDMainnet, // gasTokenNetwork: zero for ethereum, L1, mainnet
             sovereignGERContract.target,
             rollupManager.address,
             "0x",
@@ -95,6 +102,18 @@ describe("Upgradeable Tokens", () => {
             tokenSymbol,
             deployer.address,
             tokenInitialBalance
+        );
+
+        await gasTokenBridgeContract.initialize(
+            networkIDRollup + 1,
+            polTokenContract.target, // gasTokenAddress: zero for ether
+            networkIDMainnet, // gasTokenNetwork: zero for ethereum, L1, mainnet
+            sovereignGERContract.target,
+            rollupManager.address,
+            "0x",
+            ethers.Typed.address(bridgeManager),
+            ethers.ZeroAddress,
+            false
         );
 
         // Should make claim of a token
@@ -137,6 +156,19 @@ describe("Upgradeable Tokens", () => {
                 ],
             },
         }) as unknown as BridgeL2SovereignChain;
+
+        gasTokenBridgeContract = await upgrades.upgradeProxy(gasTokenBridgeContract.target, sovBridgeFactory, {
+            unsafeAllow: ["constructor", "missing-initializer-call", "missing-initializer"],
+            call: {
+                fn: "initialize(bytes32[],uint256[],address,address)",
+                args: [
+                    [],
+                    [],
+                    emergencyBridgePauser.address,
+                    proxiedTokensManager.address,
+                ],
+            },
+        }) as unknown as BridgeL2SovereignChain;
     });
 
     it("Should migrate from a legacy token to a new upgradeable token, make a claim and migrate legacy tokens", async () => {
@@ -148,14 +180,30 @@ describe("Upgradeable Tokens", () => {
             [originNetwork, tokenAddress]));
 
         // Deploy proxied token
-        await expect(sovereignBridgeContract.deployWrappedTokenAndRemap(originNetwork, tokenAddress)).to.be.revertedWithCustomError(sovereignBridgeContract, "OnlyBridgeManager");
+        await expect(sovereignBridgeContract.deployWrappedTokenAndRemap(originNetwork, tokenAddress, false))
+            .to.be.revertedWithCustomError(sovereignBridgeContract, "OnlyBridgeManager");
+
+        // Try to deploy a gas token at a gas token network
+        await expect(gasTokenBridgeContract.connect(bridgeManager).deployWrappedTokenAndRemap(originNetwork, tokenAddress, false))
+            .to.be.revertedWithCustomError(gasTokenBridgeContract, "TokenNotMapped");
+
+        // Deploy weth for a gas token network
+        const proxiedTokenAddressWETH = await computeWrappedTokenProxyAddress(originNetwork, ethers.ZeroAddress, gasTokenBridgeContract, true);
+        await expect(gasTokenBridgeContract.connect(bridgeManager).deployWrappedTokenAndRemap(originNetwork, ethers.ZeroAddress, false))
+            .to.emit(gasTokenBridgeContract, "SetSovereignWETHAddress")
+            .withArgs(
+                proxiedTokenAddressWETH,
+                false);
+
         const proxiedTokenAddress = await computeWrappedTokenProxyAddress(originNetwork, tokenAddress, sovereignBridgeContract, false);
 
-        await expect(sovereignBridgeContract.connect(bridgeManager).deployWrappedTokenAndRemap(originNetwork, tokenAddress)).to.emit(sovereignBridgeContract, "SetSovereignTokenAddress").withArgs(
-            originNetwork,
-            tokenAddress,
-            proxiedTokenAddress,
-            false);
+        await expect(sovereignBridgeContract.connect(bridgeManager).deployWrappedTokenAndRemap(originNetwork, tokenAddress, false))
+            .to.emit(sovereignBridgeContract, "SetSovereignTokenAddress")
+            .withArgs(
+                originNetwork,
+                tokenAddress,
+                proxiedTokenAddress,
+                false);
 
         expect(await sovereignBridgeContract.tokenInfoToWrappedToken(ethers.solidityPackedKeccak256(["uint32", "address"],
             [originNetwork, tokenAddress]))).to.be.equal(proxiedTokenAddress);
@@ -188,11 +236,11 @@ describe("Upgradeable Tokens", () => {
 
         // Migrate tokens from legacy token to new proxied token
         await expect(sovereignBridgeContract.connect(receiver).migrateLegacyToken(legacyTokenAddress, amount, "0x"))
-        .to.emit(sovereignBridgeContract, "MigrateLegacyToken")
-        .withArgs(receiver.address, legacyTokenAddress, proxiedTokenAddress, amount);
+            .to.emit(sovereignBridgeContract, "MigrateLegacyToken")
+            .withArgs(receiver.address, legacyTokenAddress, proxiedTokenAddress, amount);
 
         // Check amounts after migration
-        expect(await proxyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount*2);
+        expect(await proxyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(amount * 2);
         expect(await legacyWrappedAddressContract.balanceOf(receiver.address)).to.be.equal(0);
     });
 

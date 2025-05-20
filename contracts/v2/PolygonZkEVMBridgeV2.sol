@@ -3,16 +3,16 @@
 pragma solidity 0.8.28;
 
 import "./lib/DepositContractV2.sol";
-import "@openzeppelin/contracts-upgradeable4/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable4/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
 import "../interfaces/IBridgeMessageReceiver.sol";
 import "./interfaces/IPolygonZkEVMBridgeV2.sol";
 import "../lib/EmergencyManager.sol";
 import "../lib/GlobalExitRootLib.sol";
 import "./lib/BytecodeStorer.sol";
-import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable} from "./lib/TokenWrappedBridgeUpgradeable.sol";
+import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable, IERC20Metadata} from "./lib/TokenWrappedBridgeUpgradeable.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts5/proxy/ERC1967/ERC1967Utils.sol";
+import {IProxyAdmin} from "./interfaces/IProxyAdmin.sol";
 
 /**
  * PolygonZkEVMBridge that will be deployed on Ethereum and all Polygon rollups
@@ -23,7 +23,7 @@ contract PolygonZkEVMBridgeV2 is
     EmergencyManager,
     IPolygonZkEVMBridgeV2
 {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for ITokenWrappedBridgeUpgradeable;
 
     // Wrapped Token information struct
     struct TokenInformation {
@@ -31,7 +31,7 @@ contract PolygonZkEVMBridgeV2 is
         address originTokenAddress;
     }
 
-    // Address of the contract that contains the bytecodes to deploy wrapped tokens, upgradeable tokens and the code of the transparent proxy
+    // Address of the contract that contains the bytecode to deploy wrapped tokens, upgradeable tokens and the code of the transparent proxy
     /// @dev the constant has been exported to a separate contract to improve this bytecode length.
     /// @custom:oz-upgrades-unsafe-allow state-variable-immutable
     IBytecodeStorer public immutable wrappedTokenBytecodeStorer;
@@ -281,22 +281,14 @@ contract PolygonZkEVMBridgeV2 is
         // Retrieve proxyAdmin from current proxy contract
         address proxyAdmin = ERC1967Utils.getAdmin();
 
-        // Retrieve owner from proxyAdmin
-        /// @dev staticcall is used to have more control on return data and revert
-        (bool success, bytes memory returndata) = proxyAdmin.staticcall(
-            abi.encodeWithSignature("owner()")
-        );
-        require(
-            success && returndata.length == 32,
-            InvalidProxyAdmin(proxyAdmin)
-        );
+        // Retrieve owner from proxyAdmin and set it as proxiedTokensManager
+        proxiedTokensManager = IProxyAdmin(proxyAdmin).owner();
 
-        // Set owner as proxiedTokensManager
-        proxiedTokensManager = abi.decode(returndata, (address));
         require(
             proxiedTokensManager != address(0),
             InvalidZeroProxyAdminOwner(proxyAdmin)
         );
+
         emit AcceptProxiedTokensManagerRole(address(0), proxiedTokensManager);
     }
 
@@ -384,17 +376,16 @@ contract PolygonZkEVMBridgeV2 is
                     originNetwork = tokenInfo.originNetwork;
                 } else {
                     // In order to support fee tokens check the amount received, not the transferred
-                    uint256 balanceBefore = IERC20Upgradeable(token).balanceOf(
-                        address(this)
-                    );
-                    IERC20Upgradeable(token).safeTransferFrom(
+                    uint256 balanceBefore = ITokenWrappedBridgeUpgradeable(
+                        token
+                    ).balanceOf(address(this));
+                    ITokenWrappedBridgeUpgradeable(token).safeTransferFrom(
                         msg.sender,
                         address(this),
                         amount
                     );
-                    uint256 balanceAfter = IERC20Upgradeable(token).balanceOf(
-                        address(this)
-                    );
+                    uint256 balanceAfter = ITokenWrappedBridgeUpgradeable(token)
+                        .balanceOf(address(this));
 
                     // Override leafAmount with the received amount
                     leafAmount = balanceAfter - balanceBefore;
@@ -557,7 +548,7 @@ contract PolygonZkEVMBridgeV2 is
      * @param mainnetExitRoot Mainnet exit root
      * @param rollupExitRoot Rollup exit root
      * @param originNetwork Origin network
-     * @param originTokenAddress  Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
+     * @param originTokenAddress  Origin token address,
      * @param destinationNetwork Network destination
      * @param destinationAddress Address destination
      * @param amount Amount of tokens
@@ -633,10 +624,8 @@ contract PolygonZkEVMBridgeV2 is
                 // Transfer tokens
                 if (originNetwork == networkID) {
                     // The token is an ERC20 from this network
-                    IERC20Upgradeable(originTokenAddress).safeTransfer(
-                        destinationAddress,
-                        amount
-                    );
+                    ITokenWrappedBridgeUpgradeable(originTokenAddress)
+                        .safeTransfer(destinationAddress, amount);
                 } else {
                     // The tokens is not from this network
                     // Create a wrapper for the token if not exist yet
@@ -849,7 +838,7 @@ contract PolygonZkEVMBridgeV2 is
     /**
      * @notice Returns the address of a wrapper using the token information if already exist
      * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
+     * @param originTokenAddress Origin token address, address of the token at the origin network.
      */
     function getTokenWrappedAddress(
         uint32 originNetwork,
@@ -1321,7 +1310,7 @@ contract PolygonZkEVMBridgeV2 is
      */
     function _safeSymbol(address token) internal view returns (string memory) {
         (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeCall(IERC20MetadataUpgradeable.symbol, ())
+            abi.encodeCall(IERC20Metadata.symbol, ())
         );
         return success ? _returnDataToString(data) : "NO_SYMBOL";
     }
@@ -1332,7 +1321,7 @@ contract PolygonZkEVMBridgeV2 is
      */
     function _safeName(address token) internal view returns (string memory) {
         (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeCall(IERC20MetadataUpgradeable.name, ())
+            abi.encodeCall(IERC20Metadata.name, ())
         );
         return success ? _returnDataToString(data) : "NO_NAME";
     }
@@ -1344,7 +1333,7 @@ contract PolygonZkEVMBridgeV2 is
      */
     function _safeDecimals(address token) internal view returns (uint8) {
         (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeCall(IERC20MetadataUpgradeable.decimals, ())
+            abi.encodeCall(IERC20Metadata.decimals, ())
         );
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
@@ -1420,7 +1409,7 @@ contract PolygonZkEVMBridgeV2 is
     /**
      * @notice Returns the precalculated address of a upgradeable wrapped token using the token information
      * @param originNetwork Origin network
-     * @param originTokenAddress Origin token address, 0 address is reserved for gas token address. If WETH address is zero, means this gas token is ether, else means is a custom erc20 gas token
+     * @param originTokenAddress Origin token address, address of the token at the origin network.
      */
     function computeTokenProxyAddress(
         uint32 originNetwork,

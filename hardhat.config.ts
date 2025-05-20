@@ -219,16 +219,6 @@ const config: HardhatUserConfig = {
                     evmVersion: "cancun",
                 }, // try yul optimizer
             },
-            "contracts/v2/lib/TransparentUpgradeableProxy.sol": {
-                version: "0.8.28",
-                settings: {
-                    optimizer: {
-                        enabled: true,
-                        runs: 999,
-                    },
-                    evmVersion: "shanghai", // Same evm version than BridgeL2SovereignChain
-                },
-            },
             "contracts/v2/lib/TokenWrappedBridgeUpgradeable.sol": {
                 version: "0.8.28",
                 settings: {
