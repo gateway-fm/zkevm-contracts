@@ -52,8 +52,7 @@ async function main() {
         "adminZkEVM",
         "forkID",
         "consensusContract",
-        "programVKey",
-        "proxiedTokensManager",
+        "programVKey"
     ];
 
     for (const parameterName of mandatoryDeploymentParameters) {
@@ -118,7 +117,8 @@ async function main() {
             "globalExitRootUpdater",
             "globalExitRootRemover",
             "emergencyBridgePauser",
-            "emergencyBridgeUnpauser"
+            "emergencyBridgeUnpauser",
+            "proxiedTokensManager"
         ];
         for (const parameterName of mandatorySovereignParams) {
             if (typeof sovereignParams[parameterName] === undefined || sovereignParams[parameterName] === "") {
@@ -556,7 +556,7 @@ async function main() {
             globalExitRootRemover: sovereignParams.globalExitRootRemover,
             emergencyBridgePauser: sovereignParams.emergencyBridgePauser,
             emergencyBridgeUnpauser: sovereignParams.emergencyBridgeUnpauser,
-            proxiedTokensManager: createRollupParameters.proxiedTokensManager,
+            proxiedTokensManager: sovereignParams.proxiedTokensManager,
         };
         genesis = await updateVanillaGenesis(genesis, chainID, initializeParams);
         // Add weth proxy and implementation address to deployment output if gas token address is provided and sovereignWETHAddress is not provided
