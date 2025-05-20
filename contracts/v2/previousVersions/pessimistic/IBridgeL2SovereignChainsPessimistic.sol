@@ -39,7 +39,7 @@ interface IBridgeL2SovereignChainsPessimistic is
     error InvalidSovereignWETHAddressParams();
 
     /**
-     * @dev Thrown when initializing sovereign bridge with invalid sovereign WETH token params
+     * @dev Thrown when trying to initialize the incorrect initialize function
      */
     error InvalidInitializeFunction();
 
