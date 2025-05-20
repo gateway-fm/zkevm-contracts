@@ -15,7 +15,7 @@ contract BridgeL2SovereignChain is
     PolygonZkEVMBridgeV2,
     IBridgeL2SovereignChains
 {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for ITokenWrappedBridgeUpgradeable;
 
     // Current bridge version
     string public constant BRIDGE_SOVEREIGN_VERSION = "v10.1.0";
@@ -846,18 +846,12 @@ contract BridgeL2SovereignChain is
         // The token is either (1) a correctly wrapped token from another network
         // or (2) wrapped with custom contract from origin network
         if (wrappedAddressIsNotMintable[address(tokenWrapped)]) {
-            // Swap interface from ITokenWrappedBridgeUpgradeable to IERC20Upgradeable for ERC20 functions access.
-            IERC20Upgradeable tokenWrappedERC20 = IERC20Upgradeable(
-                address(tokenWrapped)
-            );
-            uint256 balanceBefore = tokenWrappedERC20.balanceOf(address(this));
+            uint256 balanceBefore = tokenWrapped.balanceOf(address(this));
+
             // Don't use burn but transfer to bridge
-            tokenWrappedERC20.safeTransferFrom(
-                msg.sender,
-                address(this),
-                amount
-            );
-            uint256 balanceAfter = tokenWrappedERC20.balanceOf(address(this));
+            tokenWrapped.safeTransferFrom(msg.sender, address(this), amount);
+
+            uint256 balanceAfter = tokenWrapped.balanceOf(address(this));
 
             return balanceAfter - balanceBefore;
         } else {
@@ -886,10 +880,7 @@ contract BridgeL2SovereignChain is
         // If is not mintable transfer instead of mint
         if (wrappedAddressIsNotMintable[address(tokenWrapped)]) {
             // Transfer tokens
-            IERC20Upgradeable(address(tokenWrapped)).safeTransfer(
-                destinationAddress,
-                amount
-            );
+            tokenWrapped.safeTransfer(destinationAddress, amount);
         } else {
             // Claim tokens
             tokenWrapped.mint(destinationAddress, amount);

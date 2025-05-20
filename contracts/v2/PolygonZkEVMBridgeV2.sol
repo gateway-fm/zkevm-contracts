@@ -3,15 +3,14 @@
 pragma solidity 0.8.28;
 
 import "./lib/DepositContractV2.sol";
-import "@openzeppelin/contracts-upgradeable4/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable4/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IBasePolygonZkEVMGlobalExitRoot.sol";
 import "../interfaces/IBridgeMessageReceiver.sol";
 import "./interfaces/IPolygonZkEVMBridgeV2.sol";
 import "../lib/EmergencyManager.sol";
 import "../lib/GlobalExitRootLib.sol";
 import "./lib/BytecodeStorer.sol";
-import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable} from "./lib/TokenWrappedBridgeUpgradeable.sol";
+import {ITokenWrappedBridgeUpgradeable, TokenWrappedBridgeUpgradeable, IERC20Metadata} from "./lib/TokenWrappedBridgeUpgradeable.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts5/proxy/ERC1967/ERC1967Utils.sol";
 import {IProxyAdmin} from "./interfaces/IProxyAdmin.sol";
 
@@ -24,7 +23,7 @@ contract PolygonZkEVMBridgeV2 is
     EmergencyManager,
     IPolygonZkEVMBridgeV2
 {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for ITokenWrappedBridgeUpgradeable;
 
     // Wrapped Token information struct
     struct TokenInformation {
@@ -377,17 +376,16 @@ contract PolygonZkEVMBridgeV2 is
                     originNetwork = tokenInfo.originNetwork;
                 } else {
                     // In order to support fee tokens check the amount received, not the transferred
-                    uint256 balanceBefore = IERC20Upgradeable(token).balanceOf(
-                        address(this)
-                    );
-                    IERC20Upgradeable(token).safeTransferFrom(
+                    uint256 balanceBefore = ITokenWrappedBridgeUpgradeable(
+                        token
+                    ).balanceOf(address(this));
+                    ITokenWrappedBridgeUpgradeable(token).safeTransferFrom(
                         msg.sender,
                         address(this),
                         amount
                     );
-                    uint256 balanceAfter = IERC20Upgradeable(token).balanceOf(
-                        address(this)
-                    );
+                    uint256 balanceAfter = ITokenWrappedBridgeUpgradeable(token)
+                        .balanceOf(address(this));
 
                     // Override leafAmount with the received amount
                     leafAmount = balanceAfter - balanceBefore;
@@ -626,10 +624,8 @@ contract PolygonZkEVMBridgeV2 is
                 // Transfer tokens
                 if (originNetwork == networkID) {
                     // The token is an ERC20 from this network
-                    IERC20Upgradeable(originTokenAddress).safeTransfer(
-                        destinationAddress,
-                        amount
-                    );
+                    ITokenWrappedBridgeUpgradeable(originTokenAddress)
+                        .safeTransfer(destinationAddress, amount);
                 } else {
                     // The tokens is not from this network
                     // Create a wrapper for the token if not exist yet
@@ -1314,7 +1310,7 @@ contract PolygonZkEVMBridgeV2 is
      */
     function _safeSymbol(address token) internal view returns (string memory) {
         (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeCall(IERC20MetadataUpgradeable.symbol, ())
+            abi.encodeCall(IERC20Metadata.symbol, ())
         );
         return success ? _returnDataToString(data) : "NO_SYMBOL";
     }
@@ -1325,7 +1321,7 @@ contract PolygonZkEVMBridgeV2 is
      */
     function _safeName(address token) internal view returns (string memory) {
         (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeCall(IERC20MetadataUpgradeable.name, ())
+            abi.encodeCall(IERC20Metadata.name, ())
         );
         return success ? _returnDataToString(data) : "NO_NAME";
     }
@@ -1337,7 +1333,7 @@ contract PolygonZkEVMBridgeV2 is
      */
     function _safeDecimals(address token) internal view returns (uint8) {
         (bool success, bytes memory data) = address(token).staticcall(
-            abi.encodeCall(IERC20MetadataUpgradeable.decimals, ())
+            abi.encodeCall(IERC20Metadata.decimals, ())
         );
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
