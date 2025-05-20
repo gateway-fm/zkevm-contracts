@@ -686,7 +686,7 @@ contract BridgeL2SovereignChain is
             originNetwork == _MAINNET_NETWORK_ID
         ) {
             // Deploy weth only supported for chains with gas token where weth address is not zero
-            /// @dev Check the chain is a gas token chain is done at `_setSovereignTokenAddress`
+            /// @dev Check the chain is a gas token chain is done at `_setSovereignWETHAddress`
             // Deploy the proxied weth token
             address wrappedTokenProxy = address(
                 _deployWrappedToken(
