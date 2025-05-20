@@ -110,7 +110,7 @@ interface IPolygonZkEVMBridgeV2 {
     error BridgeAddressNotAllowed();
 
     /**
-     * @dev Thrown when initializing sovereign bridge with invalid sovereign WETH token params
+     * @dev Thrown when trying to initialize the incorrect initialize function
      */
     error InvalidInitializeFunction();
 

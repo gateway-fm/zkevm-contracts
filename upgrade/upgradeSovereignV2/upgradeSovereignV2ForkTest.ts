@@ -157,7 +157,7 @@ async function main() {
     logger.info("Upgrade executed successfully");
 
     // sanity checks
-    const BRIDGE_SOVEREIGN_VERSION = "al-v10.1.0";
+    const BRIDGE_SOVEREIGN_VERSION = "v10.1.0";
     const bridgeContract = bridgeFactory.attach(bridgeL2SovereignChainAddress) as BridgeL2SovereignChain;
 
     expect(await bridgeContract.BRIDGE_SOVEREIGN_VERSION()).to.equal(BRIDGE_SOVEREIGN_VERSION);
