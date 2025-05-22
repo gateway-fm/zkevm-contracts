@@ -1,6 +1,6 @@
 # Upgrade PolygonRollupManager V3 (AL)
 
-Script to create schedule and execute transaction for upgrading PolygonRollupManager
+Script to create schedule and execute transaction for upgrading PolygonRollupManager, globalExitRootManager and BridgeV2
 
 ## Setup
 
@@ -37,7 +37,6 @@ cp ./upgrade/upgradeAL/upgrade_parameters.json.example ./upgrade/upgradeAL/upgra
     - "multiplierGas": "", -> Optional: Gas multiplier with 3 decimals. If `maxFeePerGas` and `maxPriorityFeePerGas` are set, this will not take effect
     - "timelockAdminAddress": "0x..", -> Optional: The address of the timelock admin, only used at the shallow fork tests
     - "rpc": "rpc url" -> Optional: only used for shallow fork testing, is the rpc of the node to fork
-    - "proxiedTokensManagerAddress": "0x.." -> Address of the proxied tokens manager role
 
 - Run tool:
 

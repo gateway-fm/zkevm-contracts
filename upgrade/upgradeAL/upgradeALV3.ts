@@ -8,7 +8,7 @@ import { logger } from "../../src/logger";
 import * as dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { ethers, upgrades } from "hardhat";
-import { PolygonRollupManagerPessimistic } from "../../typechain-types";
+import { PolygonRollupManagerPessimistic, PolygonZkEVMBridgeV2 } from "../../typechain-types";
 import { genTimelockOperation, verifyContractEtherscan, decodeScheduleData } from "../utils";
 import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
 
@@ -17,15 +17,14 @@ const pathOutputJson = path.join(__dirname, "./upgrade_output.json");
 const upgradeParameters = require("./upgrade_parameters.json");
 
 async function main() {
-
     /*
      * Check upgrade parameters
      * Check that every necessary parameter is fulfilled
      */
-    const mandatoryUpgradeParameters = ["rollupManagerAddress", "aggLayerGatewayAddress", "timelockDelay", "proxiedTokensManagerAddress"];
+    const mandatoryUpgradeParameters = ["rollupManagerAddress", "aggLayerGatewayAddress", "timelockDelay"];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
-    const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress, proxiedTokensManagerAddress } = upgradeParameters;
+    const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress } = upgradeParameters;
     const salt = upgradeParameters.timelockSalt || ethers.ZeroHash;
 
     // Load onchain parameters
@@ -43,7 +42,7 @@ async function main() {
 
     // Load deployer
     const deployer = await getDeployerFromParameters(currentProvider, upgradeParameters, ethers);
-    logger.info("deploying implementation with: ", deployer.address);
+    logger.info(`deploying implementation with: ${deployer.address}`);
 
     const proxyAdmin = await upgrades.admin.getInstance();
 
@@ -86,11 +85,24 @@ async function main() {
     const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2", deployer);
     const impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
         unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
-    });
+    }) as string;
     logger.info("#######################\n");
     logger.info(`Polygon bridge implementation deployed at: ${impBridge}`);
 
-    await verifyContractEtherscan(impBridge as string, []);
+    await verifyContractEtherscan(impBridge, []);
+
+    // Verify bytecodeStorer
+    const bridgeContract = bridgeFactory.attach(impBridge) as PolygonZkEVMBridgeV2;
+    const bytecodeStorerAddress = await bridgeContract.wrappedTokenBytecodeStorer();
+    await verifyContractEtherscan(bytecodeStorerAddress, []);
+    logger.info("#######################\n");
+    logger.info(`wrappedTokenBytecodeStorer deployed at: ${bytecodeStorerAddress}`);
+
+    // Verify wrappedTokenBridgeImplementation
+    const wrappedTokenBridgeImplementationAddress = await bridgeContract.getWrappedTokenBridgeImplementation();
+    await verifyContractEtherscan(wrappedTokenBridgeImplementationAddress, []);
+    logger.info("#######################\n");
+    logger.info(`wrappedTokenBridge Implementation deployed at: ${wrappedTokenBridgeImplementationAddress}`);
 
     const operationBridge = genTimelockOperation(
         proxyAdmin.target,
@@ -98,7 +110,7 @@ async function main() {
         proxyAdmin.interface.encodeFunctionData("upgradeAndCall", [
             bridgeAddress,
             impBridge,
-            bridgeFactory.interface.encodeFunctionData("initialize(address)", [proxiedTokensManagerAddress])
+            bridgeFactory.interface.encodeFunctionData("initialize()", [])
         ]), // data
         ethers.ZeroHash, // predecessor
         salt // salt
@@ -159,6 +171,13 @@ async function main() {
 
     outputJson.decodedScheduleData = objectDecoded;
 
+    outputJson.deployedContracts = {
+        rollupManagerImplementation: implRollupManager,
+        bridgeImplementation: impBridge,
+        globalExitRootManagerImplementation: globalExitRootManagerImp,
+        wrappedTokenBytecodeStorer: bytecodeStorerAddress,
+        wrappedTokenBridgeImplementation: wrappedTokenBridgeImplementationAddress,
+    }
     fs.writeFileSync(pathOutputJson, JSON.stringify(utils.stringifyBigInts(outputJson), null, 2));
 }
 
