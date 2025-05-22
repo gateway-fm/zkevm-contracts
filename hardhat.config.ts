@@ -224,7 +224,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 999999,
+                        runs: 500,
                     },
                     evmVersion: "shanghai", // Same evm version than BridgeL2SovereignChain
                 },
