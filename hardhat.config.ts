@@ -8,6 +8,7 @@ import "solidity-coverage";
 import "@typechain/hardhat";
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-verify";
 
 const DEFAULT_MNEMONIC = "test test test test test test test test test test test junk";
 

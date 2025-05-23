@@ -33,6 +33,7 @@
         "@0xpolygonhermez/zkevm-commonjs": "github:0xPolygonHermez/zkevm-commonjs#v8.0.0-fork.12",
         "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
         "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
+        "@nomicfoundation/hardhat-verify": "^1.1.1",
         "@nomiclabs/hardhat-solhint": "^4.0.1",
         "@openzeppelin/contracts-upgradeable4": "npm:@openzeppelin/contracts-upgradeable@4.8.2",
         "@openzeppelin/contracts-upgradeable5": "npm:@openzeppelin/contracts-upgradeable@5.0.0",
