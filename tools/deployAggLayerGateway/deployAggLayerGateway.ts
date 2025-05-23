@@ -39,6 +39,9 @@ async function main() {
     const deployer = await getDeployerFromParameters(currentProvider, deployParameters, ethers);
     console.log("deploying with: ", deployer.address);
 
+    const proxyAdmin = await upgrades.admin.getInstance();
+    const proxyOwnerAddress = await proxyAdmin.owner();
+
     /*
      * Deployment of AggLayerGateway
      */
@@ -60,9 +63,8 @@ async function main() {
     console.log("aggLayerGatewayContract deployed to:", aggLayerGatewayContract.target);
     console.log("#######################\n\n");
 
-    const proxyAdmin = await upgrades.admin.getInstance();
     expect(await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string)).to.be.equal(proxyAdmin.target);
-    const proxyOwnerAddress = await proxyAdmin.owner();
+
     await verifyContractEtherscan(aggLayerGatewayContract.target as string, []);
 
     // Check deployment
