@@ -8,7 +8,7 @@ import { ethers, upgrades } from "hardhat";
 const deployParameters = require("./deploy_parameters.json");
 const pathOutput = path.join(__dirname, `./deploy_output.json`);
 import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
-import { verifyContractEtherscan } from "../../upgrade/utils";
+import { verifyContractEtherscan, getGitInfo } from "../../upgrade/utils";
 import { AggLayerGateway } from "../../typechain-types";
 
 async function main() {
@@ -94,6 +94,7 @@ async function main() {
 
     // Compute output
     const outputJson = {
+        gitInfo: getGitInfo(),
         aggLayerGatewayAddress: aggLayerGatewayContract.target,
         deployer: deployer.address,
         proxyAdminAddress: proxyAdmin.target,

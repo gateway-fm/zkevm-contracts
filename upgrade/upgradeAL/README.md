@@ -26,6 +26,7 @@ cp ./upgrade/upgradeAL/upgrade_parameters.json.example ./upgrade/upgradeAL/upgra
 
 - Fill configuration file
 
+    - "tagSCPreviousVersion": -> The smart contract tag of the previous upgrade version
     - "network": "sepolia", -> Optional: hardhat network used if wants to verify the deployed implementation
     - "rollupManagerAddress": "0x.." -> Address of the rollup manager proxy to upgrade
     - "aggLayerGatewayAddress": "0x.." -> Address of the aggLayerGateway proxy contract used to initialize the new version of the rollup Manager

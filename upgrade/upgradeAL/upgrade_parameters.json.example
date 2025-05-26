@@ -1,4 +1,5 @@
 {
+    "tagSCPreviousVersion": "v1.0.0",
     "network": "sepolia",
     "rollupManagerAddress": "0x...",
     "aggLayerGatewayAddress":"0x...",

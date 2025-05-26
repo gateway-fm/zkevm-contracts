@@ -9,7 +9,7 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 import { ethers, upgrades } from "hardhat";
 import { PolygonRollupManagerPessimistic, PolygonZkEVMBridgeV2 } from "../../typechain-types";
-import { genTimelockOperation, verifyContractEtherscan, decodeScheduleData } from "../utils";
+import { genTimelockOperation, verifyContractEtherscan, decodeScheduleData, getGitInfo } from "../utils";
 import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
 
 const pathOutputJson = path.join(__dirname, "./upgrade_output.json");
@@ -21,10 +21,10 @@ async function main() {
      * Check upgrade parameters
      * Check that every necessary parameter is fulfilled
      */
-    const mandatoryUpgradeParameters = ["rollupManagerAddress", "aggLayerGatewayAddress", "timelockDelay"];
+    const mandatoryUpgradeParameters = ["rollupManagerAddress", "aggLayerGatewayAddress", "timelockDelay", "tagSCPreviousVersion"];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
-    const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress } = upgradeParameters;
+    const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress, tagSCPreviousVersion } = upgradeParameters;
     const salt = upgradeParameters.timelockSalt || ethers.ZeroHash;
 
     // Load onchain parameters
@@ -159,6 +159,8 @@ async function main() {
     // Get current block number, used in the shallow fork tests
     const blockNumber = await ethers.provider.getBlockNumber();
     const outputJson = {
+        tagSCPreviousVersion: tagSCPreviousVersion,
+        gitInfo: getGitInfo(),
         scheduleData,
         executeData,
         timelockContractAddress: timelockAddress,
