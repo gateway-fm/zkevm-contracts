@@ -1,4 +1,5 @@
 {
+    "tagSCPreviousVersion": "v1.0.0",
     "network": "sepolia",
     "rollupManagerAddress": "0x...",
     "aggLayerGatewayAddress":"0x...",
@@ -10,6 +11,5 @@
     "multiplierGas": "",
     "deployerPvtKey": "0x..",
     "rpc": "...",
-    "timelockAdminAddress": "0x..",
-    "proxiedTokensManagerAddress":"0x.."
+    "timelockAdminAddress": "0x.."
 }

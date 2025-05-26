@@ -25,6 +25,7 @@ cp ./upgrade/upgradeSovereignV2/upgrade_parameters.json.example ./upgrade/upgrad
 ```
 
 - Fill configuration file:
+    - "tagSCPreviousVersion": -> The smart contract tag of the previous upgrade version
     - "proxiedTokensManagerAddress": "0x.." -> Address of the proxied tokens manager role
     - "emergencyBridgeUnpauserAddress": "0x.." -> Address of the emergency bridge unpauser role
     - "globalExitRootManagerL2SovereignChainAddress": "0x.." -> Optional: the address of the proxy to upgrade, if not set the hardcoded value used in most chains is used (0xa40d5f56745a118d0906a34e69aec8c0db1cb8fa)

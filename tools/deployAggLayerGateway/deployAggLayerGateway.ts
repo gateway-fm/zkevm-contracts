@@ -8,7 +8,7 @@ import { ethers, upgrades } from "hardhat";
 const deployParameters = require("./deploy_parameters.json");
 const pathOutput = path.join(__dirname, `./deploy_output.json`);
 import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
-import { verifyContractEtherscan } from "../../upgrade/utils";
+import { verifyContractEtherscan, getGitInfo } from "../../upgrade/utils";
 import { AggLayerGateway } from "../../typechain-types";
 
 async function main() {
@@ -39,6 +39,9 @@ async function main() {
     const deployer = await getDeployerFromParameters(currentProvider, deployParameters, ethers);
     console.log("deploying with: ", deployer.address);
 
+    const proxyAdmin = await upgrades.admin.getInstance();
+    const proxyOwnerAddress = await proxyAdmin.owner();
+
     /*
      * Deployment of AggLayerGateway
      */
@@ -60,9 +63,8 @@ async function main() {
     console.log("aggLayerGatewayContract deployed to:", aggLayerGatewayContract.target);
     console.log("#######################\n\n");
 
-    const proxyAdmin = await upgrades.admin.getInstance();
     expect(await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string)).to.be.equal(proxyAdmin.target);
-    const proxyOwnerAddress = await proxyAdmin.owner();
+
     await verifyContractEtherscan(aggLayerGatewayContract.target as string, []);
 
     // Check deployment
@@ -92,6 +94,7 @@ async function main() {
 
     // Compute output
     const outputJson = {
+        gitInfo: getGitInfo(),
         aggLayerGatewayAddress: aggLayerGatewayContract.target,
         deployer: deployer.address,
         proxyAdminAddress: proxyAdmin.target,

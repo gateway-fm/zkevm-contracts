@@ -17,7 +17,7 @@ const upgradeOutput = require("../upgrade_output.json");
 describe('Should shallow fork network, execute upgrade and validate Upgrade', () => {
     it('Should shallow fork network, execute upgrade and validate Upgrade', async () => {
         const AL_VERSION = "al-v0.3.0";
-        const mandatoryParameters = ["network", "rollupManagerAddress", "proxiedTokensManagerAddress"];
+        const mandatoryParameters = ["network", "rollupManagerAddress"];
         checkParams(upgradeParams, mandatoryParameters);
         if (!["mainnet", "sepolia"].includes(upgradeParams.network)) {
             throw new Error("Invalid network");
@@ -180,8 +180,9 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
         expect(await bridgeContract.gasTokenAddress()).to.equal(bridgeGasTokenAddress);
         expect(await bridgeContract.gasTokenNetwork()).to.equal(bridgeGasTokenNetwork);
         expect(await bridgeContract.gasTokenMetadata()).to.equal(bridgeGasTokenMetadata);
-        expect(await bridgeContract.getProxiedTokensManager()).to.equal(upgradeParams.proxiedTokensManagerAddress);
-
+        expect(await bridgeContract.getProxiedTokensManager()).to.equal(upgradeOutput.timelockContractAddress);
+        expect(await bridgeContract.getWrappedTokenBridgeImplementation()).to.equal(upgradeOutput.deployedContracts.wrappedTokenBridgeImplementation);
+        expect(await bridgeContract.wrappedTokenBytecodeStorer()).to.equal(upgradeOutput.deployedContracts.wrappedTokenBytecodeStorer);
         logger.info(`✓ Checked bridge contract storage parameters`);
 
         // Check ger contract

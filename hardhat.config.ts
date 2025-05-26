@@ -8,6 +8,7 @@ import "solidity-coverage";
 import "@typechain/hardhat";
 import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-verify";
 
 const DEFAULT_MNEMONIC = "test test test test test test test test test test test junk";
 
@@ -224,7 +225,7 @@ const config: HardhatUserConfig = {
                 settings: {
                     optimizer: {
                         enabled: true,
-                        runs: 999999,
+                        runs: 500,
                     },
                     evmVersion: "shanghai", // Same evm version than BridgeL2SovereignChain
                 },

@@ -51,8 +51,7 @@ npx hardhat run ./tools/deployAggLayerGateway/deployAggLayerGateway.ts --network
  "aggchainDefaultVKeyRoleAddress": "0x229A5bDBb09d8555f9214F7a6784804999BA4E0D",
  "addRouteRoleAddress": "0x229A5bDBb09d8555f9214F7a6784804999BA4E0D",
  "freezeRouteRoleAddress": "0x229A5bDBb09d8555f9214F7a6784804999BA4E0D"
- "verifierAddress:":
- "0x..."
+ "verifierAddress:": "0x..."
 }
 ```
 
