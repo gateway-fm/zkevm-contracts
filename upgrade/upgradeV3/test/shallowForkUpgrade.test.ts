@@ -192,8 +192,12 @@ describe('Should shallow fork network, execute upgrade and validate Upgrade', ()
         expect(await bridgeContract.gasTokenNetwork()).to.equal(bridgeGasTokenNetwork);
         expect(await bridgeContract.gasTokenMetadata()).to.equal(bridgeGasTokenMetadata);
         expect(await bridgeContract.getProxiedTokensManager()).to.equal(upgradeOutput.timelockContractAddress);
-        expect(await bridgeContract.getWrappedTokenBridgeImplementation()).to.equal(upgradeOutput.deployedContracts.wrappedTokenBridgeImplementation);
-        expect(await bridgeContract.wrappedTokenBytecodeStorer()).to.equal(upgradeOutput.deployedContracts.wrappedTokenBytecodeStorer);
+        expect(await bridgeContract.getWrappedTokenBridgeImplementation()).to.equal(
+            upgradeOutput.deployedContracts.wrappedTokenBridgeImplementation,
+        );
+        expect(await bridgeContract.wrappedTokenBytecodeStorer()).to.equal(
+            upgradeOutput.deployedContracts.wrappedTokenBytecodeStorer,
+        );
         logger.info(`✓ Checked bridge contract storage parameters`);
 
         // Check ger contract

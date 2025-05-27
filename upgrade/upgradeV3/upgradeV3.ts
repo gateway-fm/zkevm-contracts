@@ -1,17 +1,18 @@
 /* eslint-disable no-await-in-loop, no-use-before-define, no-lonely-if */
 /* eslint-disable, no-inner-declarations, no-undef, import/no-unresolved */
-import { expect } from "chai";
-import path = require("path");
-import fs = require("fs");
-import { utils } from "ffjavascript";
-import { logger } from "../../src/logger";
-import * as dotenv from "dotenv";
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
-import { ethers, upgrades } from "hardhat";
-import { PolygonRollupManagerPessimistic, PolygonZkEVMBridgeV2 } from "../../typechain-types";
-import { genTimelockOperation, verifyContractEtherscan, decodeScheduleData, getGitInfo } from "../utils";
-import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from "../../src/utils";
+import { expect } from 'chai';
+import path = require('path');
+import fs = require('fs');
+import { utils } from 'ffjavascript';
+import * as dotenv from 'dotenv';
+import { ethers, upgrades } from 'hardhat';
+import { logger } from '../../src/logger';
+import { PolygonRollupManagerPessimistic, PolygonZkEVMBridgeV2 } from '../../typechain-types';
+import { genTimelockOperation, verifyContractEtherscan, decodeScheduleData, getGitInfo } from '../utils';
+import { checkParams, getProviderAdjustingMultiplierGas, getDeployerFromParameters } from '../../src/utils';
 import * as upgradeParameters from './upgrade_parameters.json';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
@@ -22,7 +23,12 @@ async function main() {
      * Check upgrade parameters
      * Check that every necessary parameter is fulfilled
      */
-    const mandatoryUpgradeParameters = ["rollupManagerAddress", "aggLayerGatewayAddress", "timelockDelay", "tagSCPreviousVersion"];
+    const mandatoryUpgradeParameters = [
+        'rollupManagerAddress',
+        'aggLayerGatewayAddress',
+        'timelockDelay',
+        'tagSCPreviousVersion',
+    ];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
     const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress, tagSCPreviousVersion, unsafeSkipStorageCheck } = upgradeParameters;
@@ -112,13 +118,13 @@ async function main() {
     const bridgeContract = bridgeFactory.attach(impBridge) as PolygonZkEVMBridgeV2;
     const bytecodeStorerAddress = await bridgeContract.wrappedTokenBytecodeStorer();
     await verifyContractEtherscan(bytecodeStorerAddress, []);
-    logger.info("#######################\n");
+    logger.info('#######################\n');
     logger.info(`wrappedTokenBytecodeStorer deployed at: ${bytecodeStorerAddress}`);
 
     // Verify wrappedTokenBridgeImplementation
     const wrappedTokenBridgeImplementationAddress = await bridgeContract.getWrappedTokenBridgeImplementation();
     await verifyContractEtherscan(wrappedTokenBridgeImplementationAddress, []);
-    logger.info("#######################\n");
+    logger.info('#######################\n');
     logger.info(`wrappedTokenBridge Implementation deployed at: ${wrappedTokenBridgeImplementationAddress}`);
 
     const operationBridge = genTimelockOperation(
@@ -127,7 +133,7 @@ async function main() {
         proxyAdmin.interface.encodeFunctionData('upgradeAndCall', [
             bridgeAddress,
             impBridge,
-            bridgeFactory.interface.encodeFunctionData("initialize()", [])
+            bridgeFactory.interface.encodeFunctionData('initialize()', []),
         ]), // data
         ethers.ZeroHash, // predecessor
         salt, // salt
@@ -180,7 +186,7 @@ async function main() {
     // Get current block number, used in the shallow fork tests
     const blockNumber = await ethers.provider.getBlockNumber();
     const outputJson = {
-        tagSCPreviousVersion: tagSCPreviousVersion,
+        tagSCPreviousVersion,
         gitInfo: getGitInfo(),
         scheduleData,
         executeData,
@@ -199,7 +205,7 @@ async function main() {
         globalExitRootManagerImplementation: globalExitRootManagerImp,
         wrappedTokenBytecodeStorer: bytecodeStorerAddress,
         wrappedTokenBridgeImplementation: wrappedTokenBridgeImplementationAddress,
-    }
+    };
     fs.writeFileSync(pathOutputJson, JSON.stringify(utils.stringifyBigInts(outputJson), null, 2));
 }
 

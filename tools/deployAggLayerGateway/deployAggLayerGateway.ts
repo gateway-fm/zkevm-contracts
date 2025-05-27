@@ -71,7 +71,9 @@ async function main() {
     console.log('aggLayerGatewayContract deployed to:', aggLayerGatewayContract.target);
     console.log('#######################\n\n');
 
-    expect(await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string)).to.be.equal(proxyAdmin.target);
+    expect(await upgrades.erc1967.getAdminAddress(aggLayerGatewayContract.target as string)).to.be.equal(
+        proxyAdmin.target,
+    );
 
     await verifyContractEtherscan(aggLayerGatewayContract.target as string, []);
 
