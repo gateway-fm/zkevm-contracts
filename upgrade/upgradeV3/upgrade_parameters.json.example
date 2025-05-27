@@ -1,15 +1,15 @@
 {
     "tagSCPreviousVersion": "v1.0.0",
-    "network": "sepolia",
     "rollupManagerAddress": "0x...",
     "aggLayerGatewayAddress":"0x...",
     "timelockDelay": 3600,
     "timelockSalt": "",
-    "deployerPvtKey": "",
     "maxFeePerGas": "",
     "maxPriorityFeePerGas": "",
     "multiplierGas": "",
-    "deployerPvtKey": "0x..",
-    "rpc": "...",
     "timelockAdminAddress": "0x.."
+    "forkParams": {
+        "rpc": "...",
+        "network": "sepolia"
+    },
 }

@@ -17,14 +17,14 @@ const upgradeOutput = require("../upgrade_output.json");
 describe('Should shallow fork network, execute upgrade and validate Upgrade', () => {
     it('Should shallow fork network, execute upgrade and validate Upgrade', async () => {
         const AL_VERSION = "al-v0.3.0";
-        const mandatoryParameters = ["network", "rollupManagerAddress"];
+        const mandatoryParameters = ["rollupManagerAddress"];
         checkParams(upgradeParams, mandatoryParameters);
-        if (!["mainnet", "sepolia"].includes(upgradeParams.network)) {
+        if (!["mainnet", "sepolia"].includes(upgradeParams.forkParams.network)) {
             throw new Error("Invalid network");
         }
 
         // hard fork
-        const rpc = typeof upgradeParams.rpc === "undefined" ? `https://${upgradeParams.network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}` : upgradeParams.rpc;
+        const rpc = typeof upgradeParams.forkParams.rpc === "undefined" ? `https://${upgradeParams.forkParams.network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}` : upgradeParams.forkParams.rpc;
         logger.info(`Shallow forking ${rpc}`);
         await reset(rpc, upgradeOutput.implementationDeployBlockNumber + 1);
         await mine();

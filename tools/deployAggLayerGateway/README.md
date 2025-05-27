@@ -16,7 +16,7 @@ npm i
 cp .env.example .env
 ```
 
-Fill `.env` with your `ETHERSCAN_API_KEY`
+Fill `.env` with your `ETHERSCAN_API_KEY` and `DEPLOYER_PRIVATE_KEY`
 
 - Copy configuration files:
 
@@ -31,7 +31,13 @@ cp ./tools/deployAggLayerGateway/deploy_parameters.json.example ./tools/deployAg
     - "addRouteRoleAddress": "0x.." -> The address of the AGGLAYER_ADD_ROUTE_ROLE role
     - "freezeRouteRoleAddress": "0x..." -> The address of the AGGLAYER_FREEZE_ROUTE_ROLE role
     - "verifierAddress": "0x...", -> The address of the verifier
-    - "deployerPvtKey": "0x...", -> Optional: The private key of the wallet used to deploy the new implementation
+
+- Set correct openzeppelin manifest  
+
+**Ensure `.openzeppelin` network file is properly set** with the correct admin data for the deployment environment:  
+    - [Devnet](https://github.com/agglayer/networks/blob/feature/ALV3/networks/ethereum/devnet/openzeppelin-manifest/sepolia.json)  
+    - [Testnet](https://github.com/agglayer/networks/blob/feature/ALV3/networks/ethereum/testnet/openzeppelin-manifest/sepolia.json)  
+    - [Mainnet](https://github.com/agglayer/networks/blob/feature/ALV3/networks/ethereum/mainnet/openzeppelin-manifest/mainnet.json)
 
 - Run tool:
 
