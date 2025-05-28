@@ -86,6 +86,7 @@ contract PolygonZkEVMBridgeV2 is
     mapping(address => TokenInformation) public wrappedTokenToTokenInfo;
 
     // Rollup manager address, previously PolygonZkEVM
+    /// @custom:oz-renamed-from polygonZkEVMaddress
     address public polygonRollupManager;
 
     // Native address
@@ -116,7 +117,6 @@ contract PolygonZkEVMBridgeV2 is
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      */
-    /// @custom:oz-renamed-from _gap
     uint256[48] private __gap;
 
     /**
