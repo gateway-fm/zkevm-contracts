@@ -57,7 +57,7 @@ async function getDeployerFromParameters(currentProvider, parameters, connectedE
     } else if (process.env.MNEMONIC) {
         deployer = connectedEthers.HDNodeWallet.fromMnemonic(
             connectedEthers.Mnemonic.fromPhrase(process.env.MNEMONIC),
-            "m/44'/60'/0'/0/0"
+            "m/44'/60'/0'/0/0",
         ).connect(currentProvider);
     } else if (parameters.deployerPvtKey) {
         deployer = new connectedEthers.Wallet(parameters.deployerPvtKey, currentProvider);
