@@ -25,15 +25,18 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 describe('Should shallow fork network, execute upgrade and validate Upgrade', () => {
     it('Should shallow fork network, execute upgrade and validate Upgrade', async () => {
-        const AL_VERSION = "al-v0.3.0";
-        const mandatoryParameters = ["rollupManagerAddress"];
+        const AL_VERSION = 'al-v0.3.0';
+        const mandatoryParameters = ['rollupManagerAddress'];
         checkParams(upgradeParams, mandatoryParameters);
-        if (!["mainnet", "sepolia"].includes(upgradeParams.forkParams.network)) {
-            throw new Error("Invalid network");
+        if (!['mainnet', 'sepolia'].includes(upgradeParams.forkParams.network)) {
+            throw new Error('Invalid network');
         }
 
         // hard fork
-        const rpc = typeof upgradeParams.forkParams.rpc === "undefined" ? `https://${upgradeParams.forkParams.network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}` : upgradeParams.forkParams.rpc;
+        const rpc =
+            typeof upgradeParams.forkParams.rpc === 'undefined'
+                ? `https://${upgradeParams.forkParams.network}.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
+                : upgradeParams.forkParams.rpc;
         logger.info(`Shallow forking ${rpc}`);
         await reset(rpc, upgradeOutput.implementationDeployBlockNumber + 1);
         await mine();

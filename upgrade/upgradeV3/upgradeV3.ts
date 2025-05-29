@@ -31,7 +31,13 @@ async function main() {
     ];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
-    const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress, tagSCPreviousVersion, unsafeSkipStorageCheck } = upgradeParameters;
+    const {
+        rollupManagerAddress,
+        timelockDelay,
+        aggLayerGatewayAddress,
+        tagSCPreviousVersion,
+        unsafeSkipStorageCheck,
+    } = upgradeParameters;
     const salt = upgradeParameters.timelockSalt || ethers.ZeroHash;
 
     // Load onchain parameters
@@ -94,22 +100,22 @@ async function main() {
     );
 
     // Upgrade bridge
-    const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2", deployer);
+    const bridgeFactory = await ethers.getContractFactory('PolygonZkEVMBridgeV2', deployer);
 
     let impBridge;
     if (unsafeSkipStorageCheck === true) {
-        logger.warn("Unsafe skip storage check is enabled, this may lead to issues if the storage layout has changed.");
-        impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
-            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
+        logger.warn('Unsafe skip storage check is enabled, this may lead to issues if the storage layout has changed.');
+        impBridge = (await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
+            unsafeAllow: ['constructor', 'missing-initializer', 'missing-initializer-call'],
             unsafeSkipStorageCheck: true,
-        }) as string;
+        })) as string;
     } else {
-        impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
-            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
-        }) as string;
+        impBridge = (await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
+            unsafeAllow: ['constructor', 'missing-initializer', 'missing-initializer-call'],
+        })) as string;
     }
 
-    logger.info("#######################\n");
+    logger.info('#######################\n');
     logger.info(`Polygon bridge implementation deployed at: ${impBridge}`);
 
     await verifyContractEtherscan(impBridge, []);
