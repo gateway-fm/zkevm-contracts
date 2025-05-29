@@ -1,6 +1,7 @@
-import { execSync } from "child_process";
-import { ethers, run } from "hardhat";
-import { convertBigIntsToNumbers } from "../tools/utils";
+/* eslint-disable no-console */
+import { execSync } from 'child_process';
+import { ethers, run } from 'hardhat';
+import { convertBigIntsToNumbers } from '../tools/utils';
 
 /**
  * Generates a timelock operation with the given input valies
@@ -13,8 +14,8 @@ import { convertBigIntsToNumbers } from "../tools/utils";
  */
 function genTimelockOperation(target: any, value: any, data: any, predecessor: any, salt: any) {
     const abiEncoded = ethers.AbiCoder.defaultAbiCoder().encode(
-        ["address", "uint256", "bytes", "uint256", "bytes32"],
-        [target, value, data, predecessor, salt]
+        ['address', 'uint256', 'bytes', 'uint256', 'bytes32'],
+        [target, value, data, predecessor, salt],
     );
     const id = ethers.keccak256(abiEncoded);
     return {
@@ -35,23 +36,27 @@ function genTimelockOperation(target: any, value: any, data: any, predecessor: a
  */
 async function verifyContractEtherscan(implementationAddress: string, constructorArguments: Array<string>) {
     try {
-        console.log(`Trying to verify implementation contract ${implementationAddress} with arguments ${constructorArguments}`);
+        console.log(
+            `Trying to verify implementation contract ${implementationAddress} with arguments ${constructorArguments}`,
+        );
         // wait a few seconds before trying etherscan verification
-        console.log("Waiting 20 seconds before verifying on Etherscan");
-        await new Promise((r) => setTimeout(r, 20000));
-        console.log("Verifying...")
+        console.log('Waiting 20 seconds before verifying on Etherscan');
+        await new Promise((r) => {
+            setTimeout(r, 20000);
+        });
+        console.log('Verifying...');
         // verify
-        await run("verify:verify", {
+        await run('verify:verify', {
             address: implementationAddress,
-            constructorArguments: constructorArguments,
+            constructorArguments,
         });
     } catch (error) {
-        console.log("Error verifying the new implementation contract: ", error);
-        console.log("you can verify the new impl address with:");
+        console.log('Error verifying the new implementation contract: ', error);
+        console.log('you can verify the new impl address with:');
         console.log(
-            `npx hardhat verify --constructor-args upgrade/arguments.js ${implementationAddress} --network ${process.env.HARDHAT_NETWORK}\n`
+            `npx hardhat verify --constructor-args upgrade/arguments.js ${implementationAddress} --network ${process.env.HARDHAT_NETWORK}\n`,
         );
-        console.log("Copy the following constructor arguments on: upgrade/arguments.js \n", constructorArguments);
+        console.log('Copy the following constructor arguments on: upgrade/arguments.js \n', constructorArguments);
     }
 }
 
@@ -62,7 +67,7 @@ async function verifyContractEtherscan(implementationAddress: string, constructo
  * @returns The decoded data
  */
 async function decodeScheduleData(scheduleData: any, contractFactory: any) {
-    const timelockContractFactory = await ethers.getContractFactory("PolygonZkEVMTimelock");
+    const timelockContractFactory = await ethers.getContractFactory('PolygonZkEVMTimelock');
     const timelockTx = timelockContractFactory.interface.parseTransaction({ data: scheduleData });
     const objectDecoded = {} as any;
     const paramsArray = timelockTx?.fragment.inputs as any;
@@ -70,7 +75,7 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
         const currentParam = paramsArray[i];
         objectDecoded[currentParam.name] = timelockTx?.args[i];
 
-        if (currentParam.name == "data") {
+        if (currentParam.name === 'data') {
             const decodedData = contractFactory.interface.parseTransaction({
                 data: timelockTx?.args[i],
             });
@@ -81,12 +86,11 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
             objectDecodedData.selector = decodedData?.selector;
 
             for (let j = 0; j < paramsArrayData?.length; j++) {
-                const currentParam = paramsArrayData[j];
-                objectDecodedData[currentParam.name] = decodedData?.args[j];
+                const currentParamData = paramsArrayData[j];
+                objectDecodedData[currentParamData.name] = decodedData?.args[j];
             }
-            objectDecoded["decodedData"] = objectDecodedData;
-
-        } else if (currentParam.name == "payloads") {
+            objectDecoded.decodedData = objectDecodedData;
+        } else if (currentParam.name === 'payloads') {
             // for each payload
             const payloads = timelockTx?.args[i];
             for (let j = 0; j < payloads.length; j++) {
@@ -102,8 +106,8 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
                 const paramsArrayData = decodedProxyAdmin?.fragment.inputs;
 
                 for (let n = 0; n < paramsArrayData?.length; n++) {
-                    const currentParam = paramsArrayData[n];
-                    resultDecodeProxyAdmin[currentParam.name] = decodedProxyAdmin?.args[n];
+                    const currentParamData = paramsArrayData[n];
+                    resultDecodeProxyAdmin[currentParamData.name] = decodedProxyAdmin?.args[n];
                 }
                 objectDecoded[`decodePayload_${j}`] = resultDecodeProxyAdmin;
             }
@@ -118,13 +122,13 @@ async function decodeScheduleData(scheduleData: any, contractFactory: any) {
  */
 function getGitInfo(): { commit: string; repo: string } | null {
     try {
-      // Get the latest commit hash
-      const commit = execSync("git rev-parse HEAD").toString().trim();
+        // Get the latest commit hash
+        const commit = execSync('git rev-parse HEAD').toString().trim();
 
-      // Get the repository URL
-      const repo = execSync("git config --get remote.origin.url").toString().trim();
+        // Get the repository URL
+        const repo = execSync('git config --get remote.origin.url').toString().trim();
 
-      return { commit, repo };
+        return { commit, repo };
     } catch (error) {
         throw new Error(`getGitInfo: ${error}`);
     }
@@ -132,12 +136,11 @@ function getGitInfo(): { commit: string; repo: string } | null {
 
 // This is a workaround to fix the BigInt serialization issue in JSON
 // when using JSON.stringify on BigInt values, which is common in Ethers
-Object.defineProperty(BigInt.prototype, "toJSON", {
+// eslint-disable-next-line no-extend-native
+Object.defineProperty(BigInt.prototype, 'toJSON', {
     get() {
-        "use strict";
         return () => String(this);
     },
 });
-
 
 export { genTimelockOperation, verifyContractEtherscan, decodeScheduleData, getGitInfo };

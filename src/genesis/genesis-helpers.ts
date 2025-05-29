@@ -1,18 +1,14 @@
-const ethers = require('ethers');
+import * as ethers from 'ethers';
+import { TIMELOCK, STORAGE_ONE_VALUE } from '../constants';
+import { valueToStorageBytes } from '../utils';
 
-const { TIMELOCK, STORAGE_ONE_VALUE } = require('../constants');
-const { valueToStorageBytes } = require('../utils');
-
-function setupRole(storage, address, roleHash) {
+export function setupRole(storage, address, roleHash) {
     const storagePosition = ethers.solidityPackedKeccak256(
         ['uint256', 'uint256'],
         [roleHash, TIMELOCK.ROLES_MAPPING_STORAGE_POS],
     );
 
-    const storagePositionRole = ethers.solidityPackedKeccak256(
-        ['uint256', 'uint256'],
-        [address, storagePosition],
-    );
+    const storagePositionRole = ethers.solidityPackedKeccak256(['uint256', 'uint256'], [address, storagePosition]);
 
     storage[storagePositionRole] = STORAGE_ONE_VALUE;
 }
@@ -25,7 +21,7 @@ function setupRole(storage, address, roleHash) {
  * @param {string} timelockAddress - Grant admin to this address
  * @returns {Object} - Timelock storage slots
  */
-function initializeTimelockStorage(minDelay, adminAddress, timelockAddress) {
+export function initializeTimelockStorage(minDelay, adminAddress, timelockAddress) {
     const storage = {};
 
     // set TIMELOCK_ADMIN_ROLE as an adminRole to all timelock roles
@@ -59,7 +55,3 @@ function initializeTimelockStorage(minDelay, adminAddress, timelockAddress) {
 
     return storage;
 }
-
-module.exports = {
-    initializeTimelockStorage,
-};

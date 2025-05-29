@@ -8,32 +8,31 @@
 /* eslint-disable guard-for-in */
 /* eslint-disable import/no-extraneous-dependencies */
 
-const { Scalar } = require('ffjavascript');
-const fs = require('fs');
-
-const ethers = require('ethers');
-const {
-    Address,
-} = require('ethereumjs-util');
-const { defaultAbiCoder } = require('@ethersproject/abi');
-const path = require('path');
-
-const { argv } = require('yargs');
-const {
-    MemDB, ZkEVMDB, getPoseidon, processorUtils, smtUtils, Constants,
-} = require('@0xpolygonhermez/zkevm-commonjs');
-const contractsPolygonHermez = require('../index');
+import { Scalar } from 'ffjavascript';
+import fs from 'fs';
+import { ethers } from 'ethers';
+import { Address } from 'ethereumjs-util';
+import { defaultAbiCoder } from '@ethersproject/abi';
+import path from 'path';
+import { argv } from 'yargs';
+import { MemDB, ZkEVMDB, getPoseidon, processorUtils, smtUtils, Constants } from '@0xpolygonhermez/zkevm-commonjs';
+import * as contractsPolygonHermez from '../index';
 
 // Example of use: node create-genesis.js --gen genesis-gen.json --out genesis.json
 async function main() {
     // load generator
-    const inputPath = (typeof argv.gen === 'undefined') ? undefined : argv.gen;
-    if (inputPath === undefined) { throw Error('Input genesis must be provided'); }
+    const inputPath = typeof argv.gen === 'undefined' ? undefined : argv.gen;
+    if (inputPath === undefined) {
+        throw Error('Input genesis must be provided');
+    }
 
     // load output file
-    const outPath = (typeof argv.out === 'undefined') ? undefined : argv.out;
-    if (outPath === undefined) { throw Error('Output file must be specified'); }
+    const outPath = typeof argv.out === 'undefined' ? undefined : argv.out;
+    if (outPath === undefined) {
+        throw Error('Output file must be specified');
+    }
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const genesisGenerator = require(path.join(__dirname, inputPath));
 
     const genesisOutput = {};
@@ -44,13 +43,7 @@ async function main() {
     const accHashInput = [F.zero, F.zero, F.zero, F.zero];
     const globalExitRoot = ethers.constants.HashZero;
 
-    const {
-        genesis,
-        txs,
-        sequencerAddress,
-        timestamp,
-        defaultChainId,
-    } = genesisGenerator;
+    const { genesis, txs, sequencerAddress, timestamp, defaultChainId } = genesisGenerator;
 
     const db = new MemDB(F);
 
@@ -88,8 +81,8 @@ async function main() {
         };
 
         // Contract deployment from tx
-        let bytecode; let
-            abi;
+        let bytecode;
+        let abi;
         if (contractsPolygonHermez[currentTx.contractName]) {
             ({ bytecode, abi } = contractsPolygonHermez[currentTx.contractName]);
         }
@@ -103,9 +96,10 @@ async function main() {
             } else {
                 tx.data = bytecode;
             }
-            const addressContract = await ethers.utils.getContractAddress(
-                { from: currentTx.from, nonce: currentTx.nonce },
-            );
+            const addressContract = await ethers.utils.getContractAddress({
+                from: currentTx.from,
+                nonce: currentTx.nonce,
+            });
             addressToContractName[addressContract.toLowerCase()] = currentTx.contractName;
         }
 
@@ -126,7 +120,7 @@ async function main() {
             const signature = signingKey.signDigest(digest);
             const r = signature.r.slice(2).padStart(64, '0'); // 32 bytes
             const s = signature.s.slice(2).padStart(64, '0'); // 32 bytes
-            const v = (signature.v).toString(16).padStart(2, '0'); // 1 bytes
+            const v = signature.v.toString(16).padStart(2, '0'); // 1 bytes
             customRawTx = signData.concat(r).concat(s).concat(v);
         } else {
             const rawTxEthers = await wallet.signTransaction(tx);
@@ -180,9 +174,11 @@ async function main() {
             currentAccountOutput.bytecode = `0x${smCode.toString('hex')}`;
             currentAccountOutput.storage = storage;
             currentAccountOutput.contractName = addressToContractName[address];
-        } else if (address !== Constants.ADDRESS_SYSTEM
-            && address.toLowerCase() !== Constants.ADDRESS_GLOBAL_EXIT_ROOT_MANAGER_L2.toLowerCase()) {
-            currentAccountOutput.pvtKey = (genesis.find((o) => o.address.toLowerCase() === address.toLowerCase())).pvtKey;
+        } else if (
+            address !== Constants.ADDRESS_SYSTEM &&
+            address.toLowerCase() !== Constants.ADDRESS_GLOBAL_EXIT_ROOT_MANAGER_L2.toLowerCase()
+        ) {
+            currentAccountOutput.pvtKey = genesis.find((o) => o.address.toLowerCase() === address.toLowerCase()).pvtKey;
         }
         accountsOutput.push(currentAccountOutput);
     }
@@ -204,17 +200,23 @@ async function main() {
             const receipt = {
                 status: decodedTxs[index].receipt.status,
                 gasUsed: `0x${decodedTxs[index].receipt.gasUsed.toString('hex')}`,
-                logs: decodedTxs[index].receipt.logs ? decodedTxs[index].receipt.logs.map((log) => log.map((infoLogs) => {
-                    if (Array.isArray(infoLogs)) {
-                        return infoLogs.map((buffer) => `0x${buffer.toString('hex')}`);
-                    }
-                    return `0x${infoLogs.toString('hex')}`;
-                })) : [],
+                logs: decodedTxs[index].receipt.logs
+                    ? decodedTxs[index].receipt.logs.map((log) =>
+                          log.map((infoLogs) => {
+                              if (Array.isArray(infoLogs)) {
+                                  return infoLogs.map((buffer) => `0x${buffer.toString('hex')}`);
+                              }
+                              return `0x${infoLogs.toString('hex')}`;
+                          }),
+                      )
+                    : [],
             };
             return {
                 rawTx,
                 receipt,
-                createAddress: decodedTxs[index].createdAddress ? `${decodedTxs[index].createdAddress.toString('hex')}` : null,
+                createAddress: decodedTxs[index].createdAddress
+                    ? `${decodedTxs[index].createdAddress.toString('hex')}`
+                    : null,
             };
         }
         return {
