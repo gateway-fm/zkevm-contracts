@@ -7,7 +7,8 @@
     "maxFeePerGas": "",
     "maxPriorityFeePerGas": "",
     "multiplierGas": "",
-    "timelockAdminAddress": "0x.."
+    "timelockAdminAddress": "0x..",
+    "unsafeSkipStorageCheck": false,
     "forkParams": {
         "rpc": "...",
         "network": "sepolia"

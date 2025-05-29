@@ -27,7 +27,6 @@ cp ./upgrade/upgradeV3/upgrade_parameters.json.example ./upgrade/upgradeV3/upgra
 - Fill configuration file
 
     - "tagSCPreviousVersion": -> The smart contract tag of the previous upgrade version
-    - "network": "sepolia", -> Optional: hardhat network used if wants to verify the deployed implementation
     - "rollupManagerAddress": "0x.." -> Address of the rollup manager proxy to upgrade
     - "aggLayerGatewayAddress": "0x.." -> Address of the aggLayerGateway proxy contract used to initialize the new version of the rollup Manager
     - "timelockDelay": 3600, -> the timelock delay between schedule and execution transaction
@@ -36,7 +35,10 @@ cp ./upgrade/upgradeV3/upgrade_parameters.json.example ./upgrade/upgradeV3/upgra
     - "maxPriorityFeePerGas": "", -> Optional: Set `maxPriorityFeePerGas`, must define as well `maxFeePerGas` to use it
     - "multiplierGas": "", -> Optional: Gas multiplier with 3 decimals. If `maxFeePerGas` and `maxPriorityFeePerGas` are set, this will not take effect
     - "timelockAdminAddress": "0x..", -> Optional: The address of the timelock admin, only used at the shallow fork tests
-    - "rpc": "rpc url" -> Optional: only used for shallow fork testing, is the rpc of the node to fork
+    - "unsafeSkipStorageCheck": false, -> Optional: enable to make an upgrade without checking storage compatilbility with hardhat plugin. WARNING: not recommended, only for testing purposes or dev environments!
+    - "forkParams"
+      - "rpc": "rpc url" -> Optional: only used for shallow fork testing, is the rpc of the node to fork
+      - "network": "sepolia", -> Optional: hardhat network used if wants to verify the deployed implementation
 
 - Run tool:
 
