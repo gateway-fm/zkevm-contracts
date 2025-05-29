@@ -52,13 +52,15 @@ function getProviderAdjustingMultiplierGas(parameters, connectedEthers) {
  */
 async function getDeployerFromParameters(currentProvider, parameters, connectedEthers) {
     let deployer;
-    if (parameters.deployerPvtKey) {
-        deployer = new connectedEthers.Wallet(parameters.deployerPvtKey, currentProvider);
+    if (process.env.DEPLOYER_PRIVATE_KEY) {
+        deployer = new connectedEthers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, currentProvider);
     } else if (process.env.MNEMONIC) {
         deployer = connectedEthers.HDNodeWallet.fromMnemonic(
             connectedEthers.Mnemonic.fromPhrase(process.env.MNEMONIC),
             "m/44'/60'/0'/0/0",
         ).connect(currentProvider);
+    } else if (parameters.deployerPvtKey) {
+        deployer = new connectedEthers.Wallet(parameters.deployerPvtKey, currentProvider);
     } else {
         [deployer] = await connectedEthers.getSigners();
     }

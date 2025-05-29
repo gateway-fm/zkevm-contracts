@@ -383,7 +383,7 @@ async function main() {
         console.log({scheduleData});
         console.log({executeData});
 
-        outputJson.genesis = genesis.root;
+        outputJson.genesis = genesisFinal.root;
         outputJson.verifierAddress = verifierAddress;
         outputJson.consensusContract = consensusContract;
         outputJson.scheduleData = scheduleData;

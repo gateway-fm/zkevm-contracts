@@ -24,7 +24,7 @@ async function main() {
     const mandatoryUpgradeParameters = ["rollupManagerAddress", "aggLayerGatewayAddress", "timelockDelay", "tagSCPreviousVersion"];
     checkParams(upgradeParameters, mandatoryUpgradeParameters);
 
-    const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress, tagSCPreviousVersion } = upgradeParameters;
+    const { rollupManagerAddress, timelockDelay, aggLayerGatewayAddress, tagSCPreviousVersion, unsafeSkipStorageCheck } = upgradeParameters;
     const salt = upgradeParameters.timelockSalt || ethers.ZeroHash;
 
     // Load onchain parameters
@@ -83,9 +83,20 @@ async function main() {
 
     // Upgrade bridge
     const bridgeFactory = await ethers.getContractFactory("PolygonZkEVMBridgeV2", deployer);
-    const impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
-        unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
-    }) as string;
+
+    let impBridge;
+    if (unsafeSkipStorageCheck === true) {
+        logger.warn("Unsafe skip storage check is enabled, this may lead to issues if the storage layout has changed.");
+        impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
+            unsafeSkipStorageCheck: true,
+        }) as string;
+    } else {
+        impBridge = await upgrades.prepareUpgrade(bridgeAddress, bridgeFactory, {
+            unsafeAllow: ["constructor", "missing-initializer", "missing-initializer-call"],
+        }) as string;
+    }
+
     logger.info("#######################\n");
     logger.info(`Polygon bridge implementation deployed at: ${impBridge}`);
 
