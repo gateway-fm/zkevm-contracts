@@ -17,6 +17,7 @@ import { checkParams } from '../../src/utils';
 import { logger } from '../../src/logger';
 import { formatGenesis, getGitInfo } from './helpers';
 import { checkBridgeAddress } from '../utils';
+import { GENESIS_CONTRACT_NAMES } from '../../src/utils-common-aggchain';
 // read files
 import genesisBase from './genesis-base.json';
 import createGenesisSovereignParams from './create-genesis-sovereign-params.json';
@@ -208,7 +209,7 @@ async function main() {
     ) {
         console.log('Rollup with custom gas token, adding WETH address to deployment output...');
         const wethObject = genesisBase.genesis.find(function (obj: { contractName: string }) {
-            return obj.contractName === 'WETH';
+            return obj.contractName === GENESIS_CONTRACT_NAMES.WETH_PROXY;
         });
         outWETHAddress = wethObject.address;
     }
@@ -251,7 +252,7 @@ async function main() {
     if (createGenesisSovereignParams.setTimelockParameters === true) {
         logger.info('Add timelockParameters');
         const timelockContractInfo = finalGenesis.genesis.find(function (obj) {
-            return obj.contractName === 'PolygonZkEVMTimelock';
+            return obj.contractName === GENESIS_CONTRACT_NAMES.POLYGON_TIMELOCK;
         });
 
         const storageTimelock = initializeTimelockStorage(
