@@ -1,13 +1,14 @@
-import {ethers, upgrades} from "hardhat";
-import {Address, AggchainFEP} from "../../typechain-types";
-import {expect} from "chai";
-import fs = require("fs");
-import path = require("path");
+import { ethers, upgrades } from 'hardhat';
+import { expect } from 'chai';
+import fs = require('fs');
+import path = require('path');
+import { Address, AggchainFEP } from '../../typechain-types';
 
-const dataFEP = require("../test-vectors/aggchainFEP/aggchainFEP.json");
-const pathTestVector = path.join(__dirname, "../test-vectors/aggchainFEP/aggchainFEP.json");
-const utilsFEP = require("../../src/utils-aggchain-FEP");
-const utilsCommon = require("../../src/utils-common-aggchain");
+import dataFEP from '../test-vectors/aggchainFEP/aggchainFEP.json';
+import * as utilsFEP from '../../src/utils-aggchain-FEP';
+import * as utilsCommon from '../../src/utils-common-aggchain';
+
+const pathTestVector = path.join(__dirname, '../test-vectors/aggchainFEP/aggchainFEP.json');
 
 // SIGNERS
 let admin: any;
@@ -15,15 +16,15 @@ let aggchainManager: any;
 let vKeyManager: any;
 let aggchainFEPContract: AggchainFEP;
 
-const gerManagerAddress = "0xA00000000000000000000000000000000000000A" as unknown as Address;
-const polTokenAddress = "0xB00000000000000000000000000000000000000B" as unknown as Address;
-const rollupManagerAddress = "0xC00000000000000000000000000000000000000C" as unknown as Address;
-const bridgeAddress = "0xD00000000000000000000000000000000000000D" as unknown as Address;
-const aggLayerGatewayAddress = "0xE00000000000000000000000000000000000000E" as unknown as Address;
+const gerManagerAddress = '0xA00000000000000000000000000000000000000A' as unknown as Address;
+const polTokenAddress = '0xB00000000000000000000000000000000000000B' as unknown as Address;
+const rollupManagerAddress = '0xC00000000000000000000000000000000000000C' as unknown as Address;
+const bridgeAddress = '0xD00000000000000000000000000000000000000D' as unknown as Address;
+const aggLayerGatewayAddress = '0xE00000000000000000000000000000000000000E' as unknown as Address;
 
-describe("Test vectors aggchain FEP", () => {
+describe('Test vectors aggchain FEP', () => {
     upgrades.silenceWarnings();
-    const update = process.env.UPDATE === "true";
+    const update = process.env.UPDATE === 'true';
 
     for (let i = 0; i < dataFEP.length; i++) {
         let initializeBytesAggchainV0: string;
@@ -35,6 +36,7 @@ describe("Test vectors aggchain FEP", () => {
 
         const data = dataFEP[i].input;
 
+        // eslint-disable-next-line @typescript-eslint/no-loop-func
         it(`generate id: ${i}`, async function () {
             // load signers
             [vKeyManager, admin, aggchainManager] = await ethers.getSigners();
@@ -46,7 +48,7 @@ describe("Test vectors aggchain FEP", () => {
 
             // deploy aggchain
             // create aggchainFEP implementation
-            const aggchainFEPFactory = await ethers.getContractFactory("AggchainFEP");
+            const aggchainFEPFactory = await ethers.getContractFactory('AggchainFEP');
             aggchainFEPContract = await upgrades.deployProxy(aggchainFEPFactory, [], {
                 initializer: false,
                 constructorArgs: [
@@ -56,7 +58,7 @@ describe("Test vectors aggchain FEP", () => {
                     rollupManagerAddress,
                     aggLayerGatewayAddress,
                 ],
-                unsafeAllow: ["constructor", "state-variable-immutable", "missing-initializer-call"],
+                unsafeAllow: ['constructor', 'state-variable-immutable', 'missing-initializer-call'],
             });
             await aggchainFEPContract.waitForDeployment();
 
@@ -71,15 +73,17 @@ describe("Test vectors aggchain FEP", () => {
                 data.trustedSequencer,
                 data.gasTokenAddress,
                 data.trustedSequencerURL,
-                data.networkName
+                data.networkName,
             );
 
             // initialize using rollup manager & initializeBytesAggchain
-            await ethers.provider.send("hardhat_impersonateAccount", [rollupManagerAddress]);
+            await ethers.provider.send('hardhat_impersonateAccount', [rollupManagerAddress]);
             const rollupManagerSigner = await ethers.getSigner(rollupManagerAddress as any);
-            await aggchainFEPContract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
+            await aggchainFEPContract
+                .connect(rollupManagerSigner)
+                .initAggchainManager(aggchainManager.address, { gasPrice: 0 });
 
-            await aggchainFEPContract.connect(aggchainManager).initialize(initializeBytesAggchainV0, {gasPrice: 0});
+            await aggchainFEPContract.connect(aggchainManager).initialize(initializeBytesAggchainV0, { gasPrice: 0 });
 
             // check initializeBytesAggchain
             expect(await aggchainFEPContract.admin()).to.be.equal(admin.address);
@@ -89,7 +93,7 @@ describe("Test vectors aggchain FEP", () => {
             expect(await aggchainFEPContract.networkName()).to.be.equal(data.networkName);
             expect(await aggchainFEPContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
             expect(await aggchainFEPContract.ownedAggchainVKeys(aggchainVKeySelector)).to.be.equal(
-                data.initOwnedAggchainVKey
+                data.initOwnedAggchainVKey,
             );
 
             // encode aggchainParams
@@ -101,14 +105,14 @@ describe("Test vectors aggchain FEP", () => {
                 data.optimisticMode,
                 data.trustedSequencer,
                 data.initParams.rangeVkeyCommitment,
-                data.initParams.aggregationVkey
+                data.initParams.aggregationVkey,
             );
 
             // if useDefaultGateway is true, disable it
             if (data.useDefaultGateway) {
                 await expect(aggchainFEPContract.connect(vKeyManager).disableUseDefaultGatewayFlag()).to.emit(
                     aggchainFEPContract,
-                    "DisableUseDefaultGatewayFlag"
+                    'DisableUseDefaultGatewayFlag',
                 );
             }
 
@@ -116,21 +120,22 @@ describe("Test vectors aggchain FEP", () => {
             aggchainData = utilsFEP.encodeAggchainDataFEP(
                 data.initAggchainVKeySelector,
                 data.newStateRoot,
-                data.newl2BlockNumber
+                data.newl2BlockNumber,
             );
 
             // get aggchainHash
             aggchainHash = utilsCommon.computeAggchainHash(
                 utilsCommon.CONSENSUS_TYPE.GENERIC,
                 data.initOwnedAggchainVKey,
-                aggchainParams
+                aggchainParams,
             );
 
             // get aggchainHash from contract
             // Check InvalidAggchainDataLength
-            await expect(
-                aggchainFEPContract.getAggchainHash("0x", {gasPrice: 0})
-            ).to.be.revertedWithCustomError(aggchainFEPContract, "InvalidAggchainDataLength");
+            await expect(aggchainFEPContract.getAggchainHash('0x', { gasPrice: 0 })).to.be.revertedWithCustomError(
+                aggchainFEPContract,
+                'InvalidAggchainDataLength',
+            );
 
             const aggchainHashContract = await aggchainFEPContract.getAggchainHash(aggchainData, {
                 gasPrice: 0,
@@ -143,11 +148,11 @@ describe("Test vectors aggchain FEP", () => {
 
             // deploy polygonPessimisticConsensus
             // create polygonPessimisticConsensus implementation
-            const ppConsensusFactory = await ethers.getContractFactory("PolygonPessimisticConsensus");
+            const ppConsensusFactory = await ethers.getContractFactory('PolygonPessimisticConsensus');
             let ppConsensusContract = await upgrades.deployProxy(ppConsensusFactory, [], {
                 initializer: false,
                 constructorArgs: [gerManagerAddress, polTokenAddress, bridgeAddress, rollupManagerAddress],
-                unsafeAllow: ["constructor", "state-variable-immutable"],
+                unsafeAllow: ['constructor', 'state-variable-immutable'],
             });
             await ppConsensusContract.waitForDeployment();
 
@@ -162,7 +167,7 @@ describe("Test vectors aggchain FEP", () => {
                     data.networkName,
                     {
                         gasPrice: 0,
-                    }
+                    },
                 );
 
             // upgrade to aggchainFEP (reinitialize)
@@ -175,12 +180,12 @@ describe("Test vectors aggchain FEP", () => {
                     aggLayerGatewayAddress,
                 ],
                 unsafeAllow: [
-                    "constructor",
-                    "state-variable-immutable",
-                    "enum-definition",
-                    "struct-definition",
-                    "missing-initializer",
-                    "missing-initializer-call",
+                    'constructor',
+                    'state-variable-immutable',
+                    'enum-definition',
+                    'struct-definition',
+                    'missing-initializer',
+                    'missing-initializer-call',
                 ],
             });
 
@@ -190,11 +195,13 @@ describe("Test vectors aggchain FEP", () => {
                 data.useDefaultGateway,
                 data.initOwnedAggchainVKey,
                 data.initAggchainVKeySelector,
-                vKeyManager.address
+                vKeyManager.address,
             );
 
-            await ppConsensusContract.connect(rollupManagerSigner).initAggchainManager(aggchainManager.address, {gasPrice: 0});
-            await ppConsensusContract.connect(aggchainManager).initialize(initializeBytesAggchainV1, {gasPrice: 0});
+            await ppConsensusContract
+                .connect(rollupManagerSigner)
+                .initAggchainManager(aggchainManager.address, { gasPrice: 0 });
+            await ppConsensusContract.connect(aggchainManager).initialize(initializeBytesAggchainV1, { gasPrice: 0 });
 
             // check initializeBytesAggchain
             expect(await aggchainFEPContract.admin()).to.be.equal(admin.address);
@@ -204,7 +211,7 @@ describe("Test vectors aggchain FEP", () => {
             expect(await aggchainFEPContract.networkName()).to.be.equal(data.networkName);
             expect(await aggchainFEPContract.gasTokenAddress()).to.be.equal(data.gasTokenAddress);
             expect(await aggchainFEPContract.ownedAggchainVKeys(aggchainVKeySelector)).to.be.equal(
-                data.initOwnedAggchainVKey
+                data.initOwnedAggchainVKey,
             );
 
             // add data to test-vector
@@ -220,6 +227,7 @@ describe("Test vectors aggchain FEP", () => {
                 dataFEP[i].output.aggchainHash = aggchainHash;
                 dataFEP[i].output.aggchainParams = aggchainParams;
 
+                // eslint-disable-next-line no-console
                 console.log(`Writing data to test-vector: ${i}. Path: ${pathTestVector}`);
                 await fs.writeFileSync(pathTestVector, JSON.stringify(dataFEP, null, 2));
             } else {

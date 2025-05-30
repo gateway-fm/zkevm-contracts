@@ -54,7 +54,7 @@ describe('Test vectors aggchain FEP utils', () => {
             if (update) {
                 aggchainInitBytesV0[i].output = {};
                 aggchainInitBytesV0[i].output.initBytesAggchainFEPv0 = initBytesAggchainFEPv0;
-                console.log(`WRITE: ${path.join(pathTestvectors, "aggchain-initBytesv0.json")}`);
+                console.log(`WRITE: ${path.join(pathTestvectors, 'aggchain-initBytesv0.json')}`);
                 fs.writeFileSync(
                     path.join(pathTestvectors, 'aggchain-initBytesv0.json'),
                     JSON.stringify(aggchainInitBytesV0, null, 2),
@@ -78,7 +78,7 @@ describe('Test vectors aggchain FEP utils', () => {
             if (update) {
                 aggchainInitBytesV1[i].output = {};
                 aggchainInitBytesV1[i].output.initBytesAggchainFEPv1 = initBytesAggchainFEPv1;
-                console.log(`WRITE: ${path.join(pathTestvectors, "aggchain-initBytesv1.json")}`);
+                console.log(`WRITE: ${path.join(pathTestvectors, 'aggchain-initBytesv1.json')}`);
                 fs.writeFileSync(
                     path.join(pathTestvectors, 'aggchain-initBytesv1.json'),
                     JSON.stringify(aggchainInitBytesV1, null, 2),
