@@ -37,7 +37,6 @@ async function main() {
         'rollupAdminAddress',
         'consensusContractName',
         'rollupManagerAddress',
-        'rollupTypeId',
         'gasTokenAddress',
         'type',
     ];
@@ -154,7 +153,7 @@ async function main() {
 
     // Retrieve the first storage slot (_initialized)
     const initializedSlot = await ethers.provider.getStorage(aggchainContract.target, 0);
-    const initializedValue = Number(initializedSlot);
+    const initializedValue = Number(BigInt(initializedSlot) & BigInt(0xff)); // Extract only the first byte
 
     let initializeBytesAggchain;
 
