@@ -138,7 +138,7 @@ async function main() {
     const polygonConsensusFactory = (await ethers.getContractFactory(consensusContractName, deployer)) as any;
 
     // Check chainID
-    let rollupID = await rollupManagerContract.chainIDToRollupID(chainID);
+    const rollupID = await rollupManagerContract.chainIDToRollupID(chainID);
     const rollup = await rollupManagerContract.rollupIDToRollupData(rollupID);
     if (
         supportedAggchainsArray.includes(consensusContractName) &&
@@ -293,11 +293,6 @@ async function main() {
         console.log('#######################\n');
         console.log(`Initialized succesfully`);
     }
-    // Update rollupId
-    rollupID = await rollupManagerContract.chainIDToRollupID(chainID);
-
-    fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
-    console.log('Finished script, output saved at: ', destPath);
 }
 
 main().catch((e) => {

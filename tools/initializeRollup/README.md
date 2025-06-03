@@ -2,23 +2,23 @@
 
 Script to call `initializeRollup` function.
 
-- This script needs of a genesis as input only if we are trying to deploy a sovereign chain. The genesis will only be updated in case of trying to deploy a sovereign chain. In this case, this new sovereign genesis will be appended at the output file
+- This script requires a genesis as input only if deploying a sovereign chain. The genesis will only be updated if deploying a sovereign chain, and the new genesis will be appended to the output file.
 
 ## Setup
 
-- install packages
+- Install packages
 
 ```
 npm i
 ```
 
-- Set env variables
+- Set environment variables
 
 ```
 cp .env.example .env
 ```
 
-Fill `.env` with your `INFURA_PROJECT_ID` and `ETHERSCAN_API_KEY`
+Fill `.env` with your `INFURA_PROJECT_ID` and (optionally) `MNEMONIC` or `ETHERSCAN_API_KEY`.
 
 - Copy configuration files:
 
@@ -26,38 +26,41 @@ Fill `.env` with your `INFURA_PROJECT_ID` and `ETHERSCAN_API_KEY`
 cp ./tools/initializeRollup/initialize_rollup.json.example ./tools/initializeRollup/initialize_rollup.json
 ```
 
-- Set your parameters -> initialize_rollup.json.json
+- Set your parameters in `initialize_rollup.json`:
 
-    - `type`: Specify the type of rollup creation, only available:
-        - `EOA`: If creating the rollup from a wallet, the script will execute the creation of the rollup on the specified network
-        - `Multisig`: If creating the rollup from a multisig, the script will output the calldata of the transaction to execute for creating the rollup
-        - `Timelock`: If creating the rollup through a timelock, the script will output the execute and schedule data to send to the timelock contract
-    - `trustedSequencerURL`: Sequencer URL of the new created rollup
-    - `networkName`: Network name of the new created rollup
-    - `trustedSequencer`: Sequencer address of the new created rollup
-    - `chainID`: ChainID of the rollup, must be a new one, can not have more than 32 bits
-    - `rollupAdminAddress`: Admin address of the new created rollup
-    - `consensusContractName`: select between consensus contract. Supported: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus"]`. This is the name of the consensus of the rollupType of the rollup to be created
-    - `gasTokenAddress`: Address of the native gas token of the rollup, zero if ether
-    - `deployerPvtKey`: Not mandatory, used to deploy from specific wallet
-    - `maxFeePerGas(optional)`: string, Set `maxFeePerGas`, must define as well `maxPriorityFeePerGas` to use it
-    - `maxPriorityFeePerGas(optional)`: string, Set `maxPriorityFeePerGas`, must define as well `maxFeePerGas` to use it
-    - `multiplierGas(optional)`: number, Gas multiplier with 3 decimals. If `maxFeePerGas` and `maxPriorityFeePerGas` are set, this will not take effect
-    - `timelockDelay(optional)`: timelock delay, only required on timelock type
-    - `timelockSalt(optional)`: timelock salt, only required on timelock type
-    - `rollupManagerAddress`: Address of deployed rollupManager contract
-    - `rollupTypeId`: The id of the rollup type of the rollup to deploy. WARNING: the type must match with the `consensusContractName`. Example: if the type is validium, the contract name has to be `PolygonValidiumEtrog`
-    - `isVanillaClient`: Flag for vanilla/sovereign clients handling
-    - `sovereignParams`:
-        - `bridgeManager`: bridge manager address
-        - `sovereignWETHAddress`: sovereign WETH address
-        - `sovereignWETHAddressIsNotMintable`: Flag to indicate if the wrapped ETH is not mintable
-        - `globalExitRootUpdater`: Address of globalExitRootUpdater for sovereign chains
-        - `globalExitRootRemover`: Address of globalExitRootRemover for sovereign chains
-
-- Set your parameters -> genesis.json
-- Is the genesis used to create the rollupType
-- It is only necessary in case you want to create a sovereign/vanilla chain because it will be updated
+    - `type`: Specify the type of rollup creation. Options:
+        - `EOA`: Create the rollup from a wallet; the script executes the creation on the specified network.
+        - `Multisig`: Output the calldata for creating the rollup from a multisig.
+        - `Timelock`: Output the execute and schedule data for a timelock contract.
+    - `trustedSequencerURL`: Sequencer URL of the new rollup.
+    - `networkName`: Network name of the new rollup.
+    - `trustedSequencer`: Sequencer address of the new rollup.
+    - `chainID`: ChainID of the rollup (must be unique, 32 bits max).
+    - `rollupAdminAddress`: Admin address of the new rollup.
+    - `consensusContractName`: Supported: `["PolygonZkEVMEtrog", "PolygonValidiumEtrog", "PolygonPessimisticConsensus", "AggchainECDSA", "AggchainFEP"]`.
+    - `gasTokenAddress`: Address of the native gas token (zero address if ether).
+    - `deployerPvtKey` (optional): Private key to deploy from a specific wallet.
+    - `maxFeePerGas` (optional): String, set `maxFeePerGas` (in gwei). Must also set `maxPriorityFeePerGas` to use.
+    - `maxPriorityFeePerGas` (optional): String, set `maxPriorityFeePerGas` (in gwei). Must also set `maxFeePerGas` to use.
+    - `multiplierGas` (optional): Number, gas multiplier with 3 decimals. Ignored if `maxFeePerGas` and `maxPriorityFeePerGas` are set.
+    - `timelockDelay` (required for Timelock): Timelock delay in seconds.
+    - `timelockSalt` (optional for Timelock): Timelock salt.
+    - `rollupManagerAddress`: Address of deployed RollupManager contract.
+    - `aggchainParams` (required for Aggchain consensus contracts):
+        - `initParams`: Object with Aggchain-specific initialization parameters:
+            - `l2BlockTime`: Number. L2 block time in seconds.
+            - `rollupConfigHash`: String. Hash of the rollup configuration.
+            - `startingOutputRoot`: String. Initial output root for the rollup.
+            - `startingBlockNumber`: Number. Starting block number for the rollup.
+            - `startingTimestamp`: Number. Starting timestamp for the rollup.
+            - `submissionInterval`: Number. Interval (in blocks) for submissions.
+            - `optimisticModeManager`: Address. Address of the optimistic mode manager.
+            - `aggregationVkey`: String. Aggregation verification key.
+            - `rangeVkeyCommitment`: String. Range verification key commitment.
+        - `useDefaultGateway`: Boolean.
+        - `initOwnedAggchainVKey`: String.
+        - `initAggchainVKeySelector`: String.
+        - `vKeyManager`: Address.
 
 - Run tool:
 
@@ -67,7 +70,6 @@ npx hardhat run ./tools/initializeRollup/initializeRollup.ts --network sepolia
 
 ### More Info
 
-- All commands are done from root repository
-- The output files will be saved at `./tools/initializeRollup/create_new_rollup_output_{type}_{date}.json`
-- In case is a sovereign chain, the updated genesis is saved inside the output file, the original `genesis.json` is not modified
-- If the script fails, check the logs, most of the errors are handled and are auto explanatory
+- All commands are run from the root repository.
+- Output files are saved at `./tools/initializeRollup/initialize_rollup_output_{type}_{date}.json`.
+- If the script fails, check the logs; most errors are handled and self-explanatory.
