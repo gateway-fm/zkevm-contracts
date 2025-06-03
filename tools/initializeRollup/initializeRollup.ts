@@ -7,8 +7,11 @@ import { ethers } from 'hardhat';
 import { VerifierType, ConsensusContracts } from '../../src/pessimistic-utils';
 import { genOperation, transactionTypes, convertBigIntsToNumbers } from '../utils';
 import { AGGCHAIN_CONTRACT_NAMES } from '../../src/utils-common-aggchain';
-import { encodeInitializeBytesAggchainECDSAv0 } from '../../src/utils-aggchain-ECDSA';
-import { encodeInitializeBytesAggchainFEPv0 } from '../../src/utils-aggchain-FEP';
+import {
+    encodeInitializeBytesAggchainECDSAv0,
+    encodeInitializeBytesAggchainECDSAv1,
+} from '../../src/utils-aggchain-ECDSA';
+import { encodeInitializeBytesAggchainFEPv0, encodeInitializeBytesAggchainFEPv1 } from '../../src/utils-aggchain-FEP';
 import { PolygonRollupManager } from '../../typechain-types';
 import initializeRollupParameters from './initialize_rollup.json';
 
@@ -34,7 +37,6 @@ async function main() {
         'rollupAdminAddress',
         'consensusContractName',
         'rollupManagerAddress',
-        'rollupTypeId',
         'gasTokenAddress',
         'type',
     ];
@@ -136,7 +138,7 @@ async function main() {
     const polygonConsensusFactory = (await ethers.getContractFactory(consensusContractName, deployer)) as any;
 
     // Check chainID
-    let rollupID = await rollupManagerContract.chainIDToRollupID(chainID);
+    const rollupID = await rollupManagerContract.chainIDToRollupID(chainID);
     const rollup = await rollupManagerContract.rollupIDToRollupData(rollupID);
     if (
         supportedAggchainsArray.includes(consensusContractName) &&
@@ -147,37 +149,65 @@ async function main() {
         );
     }
 
+    const aggchainContract = await polygonConsensusFactory.attach(rollup.rollupContract);
+
+    // Retrieve the first storage slot (_initialized)
+    const initializedSlot = await ethers.provider.getStorage(aggchainContract.target, 0);
+    const initializedValue = Number(BigInt(initializedSlot) & BigInt(0xff)); // Extract only the first byte
+
     let initializeBytesAggchain;
 
-    if (consensusContractName === AGGCHAIN_CONTRACT_NAMES.ECDSA) {
-        initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv0(
-            aggchainParams.useDefaultGateway,
-            aggchainParams.initOwnedAggchainVKey,
-            aggchainParams.initAggchainVKeySelector,
-            aggchainParams.vKeyManager,
-            rollupAdminAddress,
-            trustedSequencer,
-            initializeRollupParameters.gasTokenAddress,
-            trustedSequencerURL,
-            networkName,
-        );
-    } else if (consensusContractName === AGGCHAIN_CONTRACT_NAMES.FEP) {
-        initializeBytesAggchain = encodeInitializeBytesAggchainFEPv0(
-            aggchainParams.initParams,
-            aggchainParams.useDefaultGateway,
-            aggchainParams.initOwnedAggchainVKey,
-            aggchainParams.initAggchainVKeySelector,
-            aggchainParams.vKeyManager,
-            initializeRollupParameters.rollupAdminAddress,
-            trustedSequencer,
-            initializeRollupParameters.gasTokenAddress,
-            trustedSequencerURL,
-            networkName,
-        );
+    if (initializedValue === 0) {
+        if (consensusContractName === AGGCHAIN_CONTRACT_NAMES.ECDSA) {
+            initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv0(
+                aggchainParams.useDefaultGateway,
+                aggchainParams.initOwnedAggchainVKey,
+                aggchainParams.initAggchainVKeySelector,
+                aggchainParams.vKeyManager,
+                rollupAdminAddress,
+                trustedSequencer,
+                initializeRollupParameters.gasTokenAddress,
+                trustedSequencerURL,
+                networkName,
+            );
+        } else if (consensusContractName === AGGCHAIN_CONTRACT_NAMES.FEP) {
+            initializeBytesAggchain = encodeInitializeBytesAggchainFEPv0(
+                aggchainParams.initParams,
+                aggchainParams.useDefaultGateway,
+                aggchainParams.initOwnedAggchainVKey,
+                aggchainParams.initAggchainVKeySelector,
+                aggchainParams.vKeyManager,
+                rollupAdminAddress,
+                trustedSequencer,
+                initializeRollupParameters.gasTokenAddress,
+                trustedSequencerURL,
+                networkName,
+            );
+        } else {
+            throw new Error(`Aggchain ${consensusContractName} not supported`);
+        }
+    } else if (initializedValue === 1) {
+        if (consensusContractName === AGGCHAIN_CONTRACT_NAMES.ECDSA) {
+            initializeBytesAggchain = encodeInitializeBytesAggchainECDSAv1(
+                aggchainParams.useDefaultGateway,
+                aggchainParams.initOwnedAggchainVKey,
+                aggchainParams.initAggchainVKeySelector,
+                aggchainParams.vKeyManager,
+            );
+        } else if (consensusContractName === AGGCHAIN_CONTRACT_NAMES.FEP) {
+            initializeBytesAggchain = encodeInitializeBytesAggchainFEPv1(
+                aggchainParams.initParams,
+                aggchainParams.useDefaultGateway,
+                aggchainParams.initOwnedAggchainVKey,
+                aggchainParams.initAggchainVKeySelector,
+                aggchainParams.vKeyManager,
+            );
+        } else {
+            throw new Error(`Aggchain ${consensusContractName} not supported`);
+        }
     } else {
-        throw new Error(`Aggchain ${consensusContractName} not supported`);
+        throw new Error(`Unexpected value in _initialized storage slot: ${initializedValue}`);
     }
-    const aggchainContract = await polygonConsensusFactory.attach(rollup.rollupContract);
 
     if (initializeRollupParameters.type === transactionTypes.TIMELOCK) {
         console.log('Creating timelock txs for initialization...');
@@ -263,11 +293,6 @@ async function main() {
         console.log('#######################\n');
         console.log(`Initialized succesfully`);
     }
-    // Update rollupId
-    rollupID = await rollupManagerContract.chainIDToRollupID(chainID);
-
-    fs.writeFileSync(destPath, JSON.stringify(outputJson, null, 1));
-    console.log('Finished script, output saved at: ', destPath);
 }
 
 main().catch((e) => {
