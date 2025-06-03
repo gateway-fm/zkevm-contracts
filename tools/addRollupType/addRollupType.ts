@@ -139,13 +139,11 @@ async function main() {
     const polygonZkEVMBridgeAddress = await rollupManagerContract.bridgeAddress();
     const polygonZkEVMGlobalExitRootAddress = await rollupManagerContract.globalExitRootManager();
     const polTokenAddress = await rollupManagerContract.pol();
-    const aggLayerGatewayAddress = await rollupManagerContract.aggLayerGateway();
 
     // check all those address are not zero
     expect(polygonZkEVMBridgeAddress).to.not.equal(ethers.ZeroAddress);
     expect(polygonZkEVMGlobalExitRootAddress).to.not.equal(ethers.ZeroAddress);
     expect(polTokenAddress).to.not.equal(ethers.ZeroAddress);
-    expect(aggLayerGatewayAddress).to.not.equal(ethers.ZeroAddress);
 
     let genesis;
     if (!isPessimistic && !AggchainContracts.includes(consensusContract)) {
@@ -244,6 +242,8 @@ async function main() {
                 ]);
             }
         } else {
+            const aggLayerGatewayAddress = await rollupManagerContract.aggLayerGateway();
+
             PolygonConsensusContract = await PolygonConsensusFactory.deploy(
                 polygonZkEVMGlobalExitRootAddress,
                 polTokenAddress,
