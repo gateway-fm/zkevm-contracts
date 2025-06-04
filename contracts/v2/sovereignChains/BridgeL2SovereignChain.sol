@@ -39,7 +39,7 @@ contract BridgeL2SovereignChain is
     // newUnsetGlobalIndexHashChain = Keccak256(oldUnsetGlobalIndexHashChain,bytes32(removedGlobalIndex));
     bytes32 public unsetGlobalIndexHashChain;
 
-    // Map to store wrappedAddresses that are not mintable
+    // Local balance tree mapping
     mapping(bytes32 tokenInfoHash => uint256 amount) public localBalanceTree;
 
     /// @dev Deprecated in favor of _initializerVersion at PolygonZkEVMBridgeV2
@@ -157,14 +157,6 @@ contract BridgeL2SovereignChain is
     event UpdatedUnsetGlobalIndexHashChain(
         bytes32 unsetGlobalIndex,
         bytes32 newUnsetGlobalIndexHashChain
-    );
-
-    /**
-     * @dev Emitted when the localBalanceTree amount is initialized
-     */
-    event SetInitialLocalBalanceTreeAmount(
-        bytes32 tokenInfoHash,
-        uint256 amount
     );
 
     /**
